@@ -22,10 +22,10 @@ The CD3 files downloaded from the FEH webserver are formatted differently from t
 }
 \examples{
 #Import catchment descriptors from a NRFA peakflows CD3 file and display in console
-\donttest{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
-\donttest{CDs.4003}
+\dontrun{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
+\dontrun{CDs.4003}
 #Import catchment descriptors from a FEH webserver CD3 file and display CDs in the console
-\donttest{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
+\dontrun{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
 }
 \author{
 Anthony Hammond

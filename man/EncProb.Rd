@@ -28,8 +28,8 @@ The choice of binomial or Poisson distributions for calculating encounter probab
 #Calculate the probability of exceeding at least one 50-yr RP event
 #over a 10 year period, using the Poisson distribution.
 EncProb(n = 1, yrs = 10, RP = 50)
-#Calculate the probability of exceeding at two 100-yr RP events over a
-#100 year period, using the binomial distribution.
+#Calculate the probability of exceeding at least two 100-yr RP events
+#over a 100 year period, using the binomial distribution.
 EncProb(n = 2, yrs = 100, RP = 100, dist = "Binomial")
 }
 \author{

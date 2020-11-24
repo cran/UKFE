@@ -7,7 +7,7 @@
 AMextract(x, Plot = TRUE)
 }
 \arguments{
-\item{x}{a data.frame with dates in the first column and variable in the second}
+\item{x}{a data.frame with dates (or POSIXct) in the first column and variable in the second}
 
 \item{Plot}{a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted}
 }

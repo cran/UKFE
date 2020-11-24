@@ -1360,10 +1360,10 @@ GetAM <- function(ref) {
 #' @param web logical argument with a default of TRUE. TRUE is to be used to import CDs from a FEH webserver downloaded CD3 file. FALSE is to be used to import CDs from a peak flows dataset CD3 file
 #' @examples
 #' #Import catchment descriptors from a NRFA peakflows CD3 file and display in console
-#' \donttest{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
-#' \donttest{CDs.4003}
+#' \dontrun{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
+#' \dontrun{CDs.4003}
 #' #Import catchment descriptors from a FEH webserver CD3 file and display CDs in the console
-#' \donttest{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
+#' \dontrun{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
 #' @return A data.frame with columns; Descriptor and Value.
 #' @author Anthony Hammond
 ImportCDs <- function(x, web = TRUE) {
@@ -1442,8 +1442,8 @@ GetCDs <- function(x) {
 #' @param x the file path for the .AM file
 #' @examples
 #' #Import an AMAX sample and display the first six rows in the console
-#' \donttest{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.AM")}
-#' \donttest{head(AM.4003)]
+#' \dontrun{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.AM")}
+#' \dontrun{head(AM.4003)]
 #' @return A data.frame with columns; Date and Flow
 #' @author Anthony Hammond
 ImportAM <- function(x)
@@ -1483,7 +1483,7 @@ ImportAM <- function(x)
 #'
 #' Extracts independent peaks over a threshold from a sample
 #'
-#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. In some cases, where the baseflow component is very high, there won't be more than one independent peak per year, rendering the AM extraction and block maxim method preferable. A good example of this would be the River Alre at Drove Lane Alresford. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separted by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
+#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. In some cases, where the baseflow component is very high, there won't be more than one independent peak per year, rendering the AM extraction and block maxim method preferable. A good example of this would be the River Alre at Drove Lane Alresford. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date in the first column and hydrological variable in the second
 #' @param div user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
 #' @param thresh user chosen threshold. Default is 0.975
@@ -1605,7 +1605,7 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
 #' Extracts the annual maximum peaks from a data.frame which has dates in the first column and variable in the second.
 #'
 #'  The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are NAs for full years in the data, an -Inf will be returned for that year.
-#' @param x a data.frame with dates in the first column and variable in the second
+#' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
 #' @param Plot a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted
 #' @examples
 #' #Extract the Thames AMAX daily mean flow and display the first six rows
@@ -1645,7 +1645,7 @@ AMextract <- function(x, Plot = TRUE){
 #'
 #' Quantification of aleatoric uncertainty for pooling results for the gauged and ungauged case
 #'
-#'  Uncertainty in the ungauged case is calulated as equations 2.11 to 2.13 in Science Report – SC130009/R: 'Making better use of local data in flood frequency estimation'. The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calulcated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site estimate will be outside the intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calcuations of weighted growth curves & urban adjustment see the PoolEst() function details. A trend option is not included within the Uncertainty function and would need be considered separately if used in PoolEst. An indication of the uncertainty for trend applied in PoolEst is provided in the PoolEst function details. The method and considerations of covariance between the index flood and the Lmoment ratios, as well covariance of the sites within the pooling group, are detailed in a paper submitted for publication. The reference of which will be included here once published.
+#'  Uncertainty in the ungauged case is calulated as equations 2.11 to 2.13 in Science Report – SC130009/R: 'Making better use of local data in flood frequency estimation'. The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calcuations of weighted growth curves & urban adjustment see the PoolEst() function details. A trend option is not included within the Uncertainty function and would need be considered separately if used in PoolEst. An indication of the uncertainty for trend applied in PoolEst is provided in the PoolEst function details. The method and considerations of covariance between the index flood and the Lmoment ratios, as well covariance of the sites within the pooling group, are detailed in a paper soon to be submitted for publication. The reference of which will be included here once published.
 #' @param x the pooled group derived from the Pool() function
 #' @param gauged a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case
 #' @param RP the return period of interest. Default is 100
@@ -2449,7 +2449,7 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
 #' Hydrological plot of concurrent discharge and precipitation
 #'
 #' Plots concurrent precipitation and discharge with precipitation along the top and discharge along the bottom
-#' @param x a data.frame with three columns in the order of date, precipitation, and discharge
+#' @param x a data.frame with three columns in the order of date (or POSIXct), precipitation, and discharge
 #' @param Title a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"
 #' @param from a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x
 #' @param to an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x
@@ -2571,7 +2571,7 @@ DiagPlots <- function(x, gauged = FALSE)
 #'
 #' Extracts a mean hydrograph from a flow series
 #'
-#'All the peaks over a user defined threshold are identified and separated by a user defined value 'qu', which is a quantile of flow. The top n peaks are selected and the hydrographs extracted. Each hydrograph is centred on the peak and truncated either side, where the flow falls below the 'qu' quantile flow. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph. After an initial view of the hydrograph, it can be truncated using the 'xst' and 'xend' arguments. The default is to select 10 hydrographs for averaging, however, there may well be less if the sample is short.
+#'All the peaks over a user defined threshold are identified and separated by a user defined value 'qu', which is a quantile of flow. The top n peaks are selected and the hydrographs extracted. Each hydrograph is centred on the peak and truncated either side, where the flow falls below the 'qu' quantile flow. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph. After an initial view of the hydrograph, it can be truncated using the 'xst' and 'xend' arguments. The default is to select 10 hydrographs for averaging, however, there may well be fewer if the sample is short.
 #' @param x a numeric vector. The flow series of interest
 #' @param qu the quantile of flow which separates peaks and truncates either side of the peak to form the event hydrograph. The default is 0.8
 #' @param n number of event hydrographs from which to derive the mean hydrograph. Default is 10. Depending on the length of x, there may be less than 10
@@ -3570,8 +3570,8 @@ SCF <- function(SAAR, duration) {
 #' #Calculate the probability of exceeding at least one 50-yr RP event
 #' #over a 10 year period, using the Poisson distribution.
 #' EncProb(n = 1, yrs = 10, RP = 50)
-#' #Calculate the probability of exceeding at two 100-yr RP events over a
-#' #100 year period, using the binomial distribution.
+#' #Calculate the probability of exceeding at least two 100-yr RP events
+#' #over a 100 year period, using the binomial distribution.
 #' EncProb(n = 2, yrs = 100, RP = 100, dist = "Binomial")
 #' @return A probability
 #' @author Anthony Hammond
@@ -3595,7 +3595,7 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #'
 #' A hypothesis test for the correlation between the variable of interest and time
 #'
-#'  The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall.
+#'  The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
 #' @param x a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.
 #' @param method a choice of test method. Choices are "pearson", "spearman", and "kendall"
 #' @examples

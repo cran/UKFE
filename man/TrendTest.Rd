@@ -18,7 +18,7 @@ A data.frame with columns and associated values: P_value, correlation coefficien
 A hypothesis test for the correlation between the variable of interest and time
 }
 \details{
-The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall.
+The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
 }
 \examples{
 #Get AMAX sample and apply a trend test with the default kendall test.

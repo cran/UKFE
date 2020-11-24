@@ -15,7 +15,7 @@ HydroPlot(
 )
 }
 \arguments{
-\item{x}{a data.frame with three columns in the order of date, precipitation, and discharge}
+\item{x}{a data.frame with three columns in the order of date (or POSIXct), precipitation, and discharge}
 
 \item{Title}{a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"}
 
