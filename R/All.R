@@ -510,7 +510,7 @@ GenParetoGF <- function(lcv, lskew, RP, ppy = 1) {
 #'
 #'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample.
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeLinTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
@@ -567,7 +567,7 @@ GenLogAM <- function(x, RP = 100, q = NULL, trend = FALSE)
 #'
 #'Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeLinTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
@@ -1351,6 +1351,33 @@ GetAM <- function(ref) {
 }
 
 
+# Detrend -----------------------------------------------------------------
+
+#' Linearly detrend a sample
+#'
+#'@description Applies a linear detrend to a sample
+#'@details Adjusts all the values in the sample, of size n, by the difference between the linearly modelled ith data point and the linearly modelled nth data point.
+#'@param x a numeric vector
+#'@examples
+#'# Get an annual maximum (AM) sample that looks to have a significant trend
+#'AM.21025 <- GetAM(21025)
+#'# plot the resulting AM as a bar plot. Then detrend and compare with another plot
+#'plot(AM.21025$Flow, type = "h", ylab = "Discharge (m3/s)")
+#'AM.Detrend <- DeLinTrend(AM.21025$Flow)
+#'plot(AM.Detrend, type = "h", ylab = "Discharge (m3/s)")
+#'@return A numeric vector which is a linearly detrended version of x.
+#'@author Anthony Hammond
+DeLinTrend <- function(x) {
+  Lmod <- lm(x ~ seq(1, length(x)))
+  Lpred <- as.numeric(predict(Lmod))
+  DiffsTrend <- NULL
+  for(i in 1:length(x)) {DiffsTrend[i] <- Lpred[length(x)]-Lpred[i]}
+  Detrend <- x+DiffsTrend
+  return(Detrend)
+}
+
+
+
 #' Import catchment descriptors from .CD3 files
 #'
 #' Imports catchment descriptors from CD3 files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
@@ -1448,15 +1475,15 @@ GetCDs <- function(x) {
 #' @author Anthony Hammond
 ImportAM <- function(x)
 {
-  AMAX <- read.table(x, sep = ",", col.names = c("Date", "Flow", "Stage"), colClasses = c("character", "numeric", "NULL"), fill = T, skip = 6) # read in AM file
+  AMAX <- read.table(x, sep = ",", col.names = c("Date", "Flow", "Stage"), colClasses = c("character", "numeric", "NULL"), fill = T, skip = 6)
   Row.Strt <- 1+which(AMAX[,1] == "[AM Values]")
   AM <- AMAX[Row.Strt:length(AMAX[,1])-1,]
   AM <- AM[-1,]
   Dates <- data.frame(as.Date(AM[,1], format = "%d %b %Y"), AM[,2])
   colnames(Dates) <- c("Date", "Flow")
-  AM.c1 <- AMAX[,1] # use only the first column
-  Rej <- AM.c1[2:which(AM.c1 == "[AM Values]")-2][-1] # Select all the rejected dates
-  WYDate <- as.Date(paste(Rej, "- 10 - 01"), format = "%Y - %m - %d") # convert this to the water year start
+  AM.c1 <- AMAX[,1]
+  Rej <- AM.c1[2:which(AM.c1 == "[AM Values]")-2][-1]
+  WYDate <- as.Date(paste(Rej, "- 10 - 01"), format = "%Y - %m - %d")
   Date.Func <- function(x, y)
   {
     isTRUE(x >= y & x <= y+365)
@@ -1484,7 +1511,7 @@ ImportAM <- function(x)
 #' Extracts independent peaks over a threshold from a sample
 #'
 #'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. In some cases, where the baseflow component is very high, there won't be more than one independent peak per year, rendering the AM extraction and block maxim method preferable. A good example of this would be the River Alre at Drove Lane Alresford. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
-#' @param x either a numeric vector or dataframe with date in the first column and hydrological variable in the second
+#' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
 #' @param div user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
 #' @param thresh user chosen threshold. Default is 0.975
 #' @param Plot logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted
@@ -1614,7 +1641,8 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
 #' @return a data.frame with columns; WaterYear and AM
 #' @author Anthony Hammond
 AMextract <- function(x, Plot = TRUE){
-  suppressWarnings(if(class(x[,1]) != "Date") stop ("Column one is not a date object"))
+  Dates <- as.Date(x[,1])
+  x <- data.frame(Dates, x[,2])
   Date1 <- x[1,1]
   DateLst <- x[length(x[,1]),1]
   DateExtract <- function(d){
@@ -2488,7 +2516,7 @@ HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL,
 #'
 #' Provides two plots. First, a histogram of the sample, second, a barplot
 #'
-#' The barplot is daily so that, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
+#' When used with a GetAM object or any data.frame with dates in the first column, the barplot is daily. Therefore, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
 #' @param x a data.frame with two columns. The first a date column and the second the annual maximum (AM) sequence. An AM object derived from the GetAM or ImportAM functions can be used.
 #' @examples
 #' #Get an AMAX sample and plot
@@ -2498,7 +2526,7 @@ HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL,
 AMplot <- function(x){
   SiteRef <- as.character(x[1,3])
   hist(x[,2], main = paste("Annual maximum histogram", SiteRef, sep = ": "), xlab = "Discharge (m3/s)")
-  plot(x[, 1:2], type = "h", col = rgb(0,0.3,0.6), lwd = 1.5, main = paste("Annual maximum peak flows", SiteRef, sep = ": "), ylab = "Discharge (m3/s)", xlab = "Water Years (axis is daily scale)")
+  plot(x[, 1:2], type = "h", col = rgb(0,0.3,0.6), lwd = 1.5, main = paste("Annual maximum peak flows", SiteRef, sep = ": "), ylab = "Discharge (m3/s)", xlab = "Water Years")
 }
 
 
@@ -3179,7 +3207,7 @@ LKurt <- function(x) {
 #'
 #' Provides outputs of the ReFH model from catchment descriptors or user defined inputs
 #'
-#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also, input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D. Parameters and initial conditions can also be inidvidually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The formulation of this function avoids the need for users to select a storm duration that is an odd integer multiple of the data interval. This is achieved as follows: for the design rainfall profile, the duration is split into a sequence by multiplying duration by the reciprocal of the data interval (timestep) and rounding up to the nearest odd integer. This forms the end of a sequence starting from one and progressing at an interval of two. This sequence is divided by the duration to form the vector to which the exponent b is raised in the calculation of z for the storm profile (see Flood Estimation Handbook (1999), volume 2)
+#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D. Parameters and initial conditions can also be inidvidually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The formulation of this function avoids the need for users to select a storm duration that is an odd integer multiple of the data interval. This is achieved as follows: for the design rainfall profile, the duration is split into a sequence by multiplying duration by the reciprocal of the data interval (timestep) and rounding up to the nearest odd integer. This forms the end of a sequence starting from one and progressing at an interval of two. This sequence is divided by the duration to form the vector to which the exponent b is raised in the calculation of z for the storm profile (see Flood Estimation Handbook (1999), volume 2)
 #' @param CDs catchment descriptors derived from either GetCDs or ImportCD
 #' @param Depth a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default is a two year rainfall
 #' @param duration a numeric value. A duration for the design rainfall

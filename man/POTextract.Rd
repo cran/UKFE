@@ -7,7 +7,7 @@
 POTextract(x, div = NULL, thresh = 0.975, Plot = TRUE)
 }
 \arguments{
-\item{x}{either a numeric vector or dataframe with date in the first column and hydrological variable in the second}
+\item{x}{either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second}
 
 \item{div}{user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample}
 

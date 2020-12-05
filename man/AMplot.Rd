@@ -16,7 +16,7 @@ a histogram of the AMAX sample and a barplot
 Provides two plots. First, a histogram of the sample, second, a barplot
 }
 \details{
-The barplot is daily so that, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
+When used with a GetAM object or any data.frame with dates in the first column, the barplot is daily. Therefore, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
 }
 \examples{
 #Get an AMAX sample and plot
