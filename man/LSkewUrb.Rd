@@ -17,7 +17,7 @@ LSkewUrb(lskew, URBEXT2000, DeUrb = FALSE)
 The urban adjust Lcv or the de-urbanised Lcv
 }
 \description{
-Urbanises or de-urbanises the LSkew using the methods outlined in the guidance by Hydro Wallingford solutions: 'WINFAP 4 Urban Adjustment Procedures'
+Urbanises or de-urbanises the LSkew using the methods outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'
 }
 \details{
 The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangment of the urbanisation equation, solving for LSkew rather than LSkew-urban.
