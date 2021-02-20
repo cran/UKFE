@@ -1,6 +1,6 @@
-6272b021601676e033651f685fdac2bc *DESCRIPTION
+bc1b407aa7e7173e143452d4d9df7aab *DESCRIPTION
 70f33e496ff6c63bf8e16c2d870f9bbb *NAMESPACE
-ffaebf5e9258ba6e7577d7aba5930ff1 *R/All.R
+2b0c89428c6810e7a49f4b9a51860f8a *R/All.R
 1baf2f4a40556e15c7dd471046166051 *data/AMSP.RData
 43b8385145a60cc16ecc0f6e6b75e89d *data/NRFAData.RData
 a2ff4f3a0f66db6b5846479af7ad45ee *data/QMEDData.RData
@@ -12,7 +12,7 @@ cc7e066713cb11a82ae59ea6fb425e2a *data/UKOutline.rda
 e6094f3502558400a83416cc9d23d329 *man/ARF.Rd
 8e2136b87d2925f54eb153f536d54aa7 *man/BFI.Rd
 8c274f1ecddd5cfb9eb3541c69fe9d50 *man/DDF99.Rd
-be157bb219ea66e8a0432f21043908b3 *man/DeLinTrend.Rd
+9331b21f1f8eacb1c99d8532a79c3845 *man/DeTrend.Rd
 72a23da54f634004d58aa53cd38be72b *man/DesHydro.Rd
 2bf958abec505fdc901c8c6ed3a2a1dc *man/DiagPlots.Rd
 a86564ae7de1f34a504fb94fa7898579 *man/DonAdj.Rd
@@ -20,11 +20,11 @@ a86564ae7de1f34a504fb94fa7898579 *man/DonAdj.Rd
 95e41a0e72fa3513145634041a85b0e2 *man/EVPlot.Rd
 e292f9ce1e16ffbc0ff07b02ce7fa153 *man/EVPool.Rd
 351601164b909a39f83b0382f8fb2581 *man/EncProb.Rd
-b4dacb94cca126d446993ca2766d07cc *man/GEVAM.Rd
+5f26c5c6a35fbd83fa654e42a6b6063c *man/GEVAM.Rd
 0967dbf8bab2281e6fccfb4dfbd4cdf4 *man/GEVEst.Rd
 048fef5f79955e60003addc0c2ae6c6c *man/GEVGF.Rd
 6ba202c79d06c5ccd9c7eba8e2c6a3e5 *man/GEVPars.Rd
-fd8d82665dee7293fae64d54de2f9322 *man/GenLogAM.Rd
+285ba543aab91d74fecfa2614b60752c *man/GenLogAM.Rd
 8bbc1215bcefa7a9d5d9250be853e273 *man/GenLogEst.Rd
 edecce754ff217e31abafc7f117ef034 *man/GenLogGF.Rd
 11c683146c5ff012b126b8955ad8080c *man/GenLogPars.Rd

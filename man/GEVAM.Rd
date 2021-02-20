@@ -22,7 +22,7 @@ quantile as a function of RP or vice versa, with the option of accounting for th
 Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 }
 \details{
-If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeLinTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
 }
 \examples{
 #Get an annual maximum sample and estimate the 50-year RP

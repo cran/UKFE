@@ -510,7 +510,7 @@ GenParetoGF <- function(lcv, lskew, RP, ppy = 1) {
 #'
 #'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeLinTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
@@ -567,7 +567,7 @@ GenLogAM <- function(x, RP = 100, q = NULL, trend = FALSE)
 #'
 #'Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeLinTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
@@ -1363,11 +1363,11 @@ GetAM <- function(ref) {
 #'AM.21025 <- GetAM(21025)
 #'# plot the resulting AM as a bar plot. Then detrend and compare with another plot
 #'plot(AM.21025$Flow, type = "h", ylab = "Discharge (m3/s)")
-#'AM.Detrend <- DeLinTrend(AM.21025$Flow)
+#'AM.Detrend <- DeTrend(AM.21025$Flow)
 #'plot(AM.Detrend, type = "h", ylab = "Discharge (m3/s)")
 #'@return A numeric vector which is a linearly detrended version of x.
 #'@author Anthony Hammond
-DeLinTrend <- function(x) {
+DeTrend <- function(x) {
   Lmod <- lm(x ~ seq(1, length(x)))
   Lpred <- as.numeric(predict(Lmod))
   DiffsTrend <- NULL
@@ -3637,7 +3637,7 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #' @author Anthony Hammond
 
 TrendTest <- function(x, method = "kendall"){
-  if(class(x) == "numeric") {
+  if(class(x) == "numeric" | class(x) == "integer") {
     Res <- suppressWarnings(cor.test(x, seq(1, length(x)), method = method))} else {DayDiffs <- NULL
     for(i in 1:length(x[,1])) {DayDiffs[i] <- as.numeric(x[,1][i]-x[,1][1])}
     YrDiffs <- DayDiffs/365.25
