@@ -3784,3 +3784,68 @@ Rating <- function(x, a = NULL) {
   return(Equations)
 }
 
+
+
+# PermAdj ---------------------------------------------------
+
+#' Permeable Adjustment
+#'
+#'@description Adjusts the linear coefficient of variation (Lcv) and the linear skewness to account for non-flood years
+#'@details The permeable adjustment method is detailed in chapter 19, volume three, of the Flood Estimation Handbook, 1999. The method makes no difference for sites where there are no annual maximums (AM) in the sample that are < median(AM)/2. Once applied the results can be used with the LRatioChange function to update the associated member of a pooling group. Or can be applied directly with the growth factor functions for a single site estimate.
+#'@param x The annual maximum sample. Numeric vector
+#'@examples
+#'# Get an anuual maximum sample with a BFIHOST above 0.65 and with some
+#'# annual maximums lower than median(AM)/2. And then apply the function.
+#' AM.39001 <- GetAM(39001)
+#'PermAdj(AM.39001$Flow)
+#'@return A dataframe with one row and two columns. Lcv in the first column and Lskew in the second
+#'@author Anthony Hammond
+PermAdj <- function(x) {
+  NonFlood <- length(x[x < (median(x)/2)])
+  w <- (length(x)-NonFlood)/length(x)
+  xflood <- x[x > (median(x)/2)]
+  lcv <- Lcv(xflood)
+  k <- -LSkew(xflood)
+  Beta <- lcv*k*sin((pi)*k)/(k*pi*(k+lcv)-lcv*sin((pi)*k))
+  KPerm <- function(k, w, par) {
+    abs((1-9^-par[1])/(1-49^-par[1]) - (  (1-((10*w-1)/(2*w-1))^-k)  / (1-((50*w-1)/(2*w-1))^-k)))
+  }
+  KStar <- optim(par = k, k = k, w = w,fn = KPerm, method = "Brent", lower = -5, upper = 5)$par
+  A <- ((2*w-1)^-k - (10*w-1)^-k)/(1-9^-KStar)
+  B <- (2*w-1)^-k
+  BetaStar <- (Beta*KStar*A)/(k+Beta*(1-B))
+  LSkewness <- -KStar
+  L_cv <- (BetaStar*KStar^2*pi)/((BetaStar+KStar)*sin(KStar*pi) - BetaStar*KStar*pi)
+  DF <- data.frame(L_cv, LSkewness)
+  colnames(DF) <- c("Lcv", "LSkew")
+  return(DF)
+}
+
+
+
+# LRatioChange ---------------------------------------------------
+
+#' Adjust L-Ratios in a pooling group
+#'
+#'@description Adjusts the linear coefficient of variation (Lcv) and the linear skewness (LSkew) for a chosen site in a pooling group
+#'@details Pooling groups are formed from the NRFAData data.frame and all the Lcv and LSkew values are precalculated using the National River Flow Archive Peak flow dataset noted in the description file. The resulting pooled growth curve is calculated using the Lcv and Lskew in the pooled group. The user may have further data and be able to add further peak flows to the annual maximum samples within a pooling group. If that is the case a new Lcv and Lskew can be determined using the Lmoms function. These new values can be added to the pooling group with this LRatioChange function. Also the permeable adjustment function may have been applied to a site, which provides a new Lcv and LSkew. In which case, the LRatioChange function can be applied. The function creates a new pooling group object and x will still exist in it's original state after the function is applied.
+#'@param x pooling group derived with the Pool function
+#'@param SiteID the identification number of the site in the pooling group that is to be changed (character or integer)
+#'@param lcv The user supplied Lcv. numeric
+#'@param lskew The user supplied LSkew. numeric
+#'@examples
+#'# Get some catchment descriptors and create a pooling group.
+#' CDs.39001 <- GetCDs(39001)
+#' Pool.39001 <- Pool(CDs.39001, iug = TRUE)
+#'# apply the function to create a new adjusted pooling group,
+#'#changing the subject site lcv and lskew to 0.187 and 0.164, respectively
+#'Pool.39001Adj <- LRatioChange(Pool.39001, SiteID = 39001, lcv = 0.187, lskew = 0.164)
+#'@return A new pooling group, the same as x except for the user adjusted Lcv and Lskew for the user selected site.
+#'@author Anthony Hammond
+LRatioChange <- function(x, SiteID, lcv, lskew) {
+  SiteID <- as.character(SiteID)
+  Ind <- which(rownames(x) == SiteID)
+  NewPool <- x
+  NewPool[Ind,c(16, 17)] <- c(lcv, lskew)
+  return(NewPool)
+}

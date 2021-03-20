@@ -1,6 +1,6 @@
-bc1b407aa7e7173e143452d4d9df7aab *DESCRIPTION
+7c1162851bd4ea2d7eff5e3e9b23fda3 *DESCRIPTION
 70f33e496ff6c63bf8e16c2d870f9bbb *NAMESPACE
-2b0c89428c6810e7a49f4b9a51860f8a *R/All.R
+b1d4d3990bb49c97c129abfab3024a93 *R/All.R
 1baf2f4a40556e15c7dd471046166051 *data/AMSP.RData
 43b8385145a60cc16ecc0f6e6b75e89d *data/NRFAData.RData
 a2ff4f3a0f66db6b5846479af7ad45ee *data/QMEDData.RData
@@ -42,6 +42,7 @@ f97fa61711cc2f9bf655e2ca755a55a7 *man/GoTFPool.Rd
 c7309275c125ba2d993a617f4229f52a *man/ImportAM.Rd
 e2983148ca9cdb799a11eb1718e13748 *man/ImportCDs.Rd
 2913978bfa7079c3cc08898f6da59c4f *man/LKurt.Rd
+5a31c1c674cf8f3108b02988e8d75d0b *man/LRatioChange.Rd
 ac2fa456e0347fd53fddb82d17a326fe *man/LSkew.Rd
 a543e93d90156f407be4ffff9665b604 *man/LSkewUrb.Rd
 0f28cb64284b79001f21817ba3403357 *man/Lcv.Rd
@@ -51,6 +52,7 @@ a6511d9bf9bd0d70ec0c1a1f00637ca1 *man/NGRDist.Rd
 375b11c4ba96f3f5d1599d7bc398be14 *man/NRFAData.Rd
 b1dfe1daf87fca2dba46c461fc7a7ffe *man/OptimPars.Rd
 eb048cd51066e0ed165f11078ec32476 *man/POTextract.Rd
+73fc0f89b8eba7cb4cd0971e41c4f903 *man/PermAdj.Rd
 ea4306150eccfd62998d8c767681957b *man/Pool.Rd
 09121daf4172977a445005463357510c *man/PoolEst.Rd
 8f85c5b269503c53c880ad2fcbd8c9c2 *man/QMED.Rd
