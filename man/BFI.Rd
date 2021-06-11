@@ -4,7 +4,7 @@
 \alias{BFI}
 \title{Baseflow index (BFI)}
 \usage{
-BFI(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot")
+BFI(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot", Plot = TRUE)
 }
 \arguments{
 \item{Q}{the daily mean flow series. Numeric vector}
@@ -14,9 +14,11 @@ BFI(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot")
 \item{y.lim}{the y axis limits of the plot. Numeric vector of length two. Default is the extents of the data}
 
 \item{PlotTitle}{the title of the plot. The default is "Baseflow plot"}
+
+\item{Plot}{a logical argument with a default of TRUE. If TRUE the daily flow is plotted with the baseflow highlighted.}
 }
 \value{
-the baseflow index and a plot showing the flow time series (black) and the associated baseflow (red)
+the baseflow index and if Plot equals TRUE, a plot showing the flow time series (black) and the associated baseflow (red)
 }
 \description{
 Calculates the baseflow index from a daily mean flow series

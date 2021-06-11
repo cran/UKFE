@@ -1,6 +1,6 @@
-7c1162851bd4ea2d7eff5e3e9b23fda3 *DESCRIPTION
+f719935c7ed3feaa1d37b04c563b15bd *DESCRIPTION
 70f33e496ff6c63bf8e16c2d870f9bbb *NAMESPACE
-b1d4d3990bb49c97c129abfab3024a93 *R/All.R
+ad96cb3e5c451428092e074021c96883 *R/All.R
 1baf2f4a40556e15c7dd471046166051 *data/AMSP.RData
 43b8385145a60cc16ecc0f6e6b75e89d *data/NRFAData.RData
 a2ff4f3a0f66db6b5846479af7ad45ee *data/QMEDData.RData
@@ -10,7 +10,7 @@ cc7e066713cb11a82ae59ea6fb425e2a *data/UKOutline.rda
 0cb160cc3f200ed7f8f7298b214ffb60 *man/AMextract.Rd
 58ba1086786a8b73506f051ae7ea0099 *man/AMplot.Rd
 e6094f3502558400a83416cc9d23d329 *man/ARF.Rd
-8e2136b87d2925f54eb153f536d54aa7 *man/BFI.Rd
+d3a0063e6e01d1054efa6f9c9aa3fe8e *man/BFI.Rd
 8c274f1ecddd5cfb9eb3541c69fe9d50 *man/DDF99.Rd
 9331b21f1f8eacb1c99d8532a79c3845 *man/DeTrend.Rd
 72a23da54f634004d58aa53cd38be72b *man/DesHydro.Rd
@@ -40,7 +40,7 @@ f97fa61711cc2f9bf655e2ca755a55a7 *man/GoTFPool.Rd
 3d50ce4904a8e3bbac3ef14634cfb65f *man/H2.Rd
 56b5560217cd0c7d8319864a42247f35 *man/HydroPlot.Rd
 c7309275c125ba2d993a617f4229f52a *man/ImportAM.Rd
-e2983148ca9cdb799a11eb1718e13748 *man/ImportCDs.Rd
+fc425df4c491c902093a293dec52fc16 *man/ImportCDs.Rd
 2913978bfa7079c3cc08898f6da59c4f *man/LKurt.Rd
 5a31c1c674cf8f3108b02988e8d75d0b *man/LRatioChange.Rd
 ac2fa456e0347fd53fddb82d17a326fe *man/LSkew.Rd
@@ -51,7 +51,7 @@ c31abe39961febe8fe0fba4acdd194fe *man/LcvUrb.Rd
 a6511d9bf9bd0d70ec0c1a1f00637ca1 *man/NGRDist.Rd
 375b11c4ba96f3f5d1599d7bc398be14 *man/NRFAData.Rd
 b1dfe1daf87fca2dba46c461fc7a7ffe *man/OptimPars.Rd
-eb048cd51066e0ed165f11078ec32476 *man/POTextract.Rd
+84d8e4e670e573a6df3d853c1b20601a *man/POTextract.Rd
 73fc0f89b8eba7cb4cd0971e41c4f903 *man/PermAdj.Rd
 ea4306150eccfd62998d8c767681957b *man/Pool.Rd
 09121daf4172977a445005463357510c *man/PoolEst.Rd

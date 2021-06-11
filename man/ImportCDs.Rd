@@ -4,12 +4,10 @@
 \alias{ImportCDs}
 \title{Import catchment descriptors from .CD3 files}
 \usage{
-ImportCDs(x, web = TRUE)
+ImportCDs(x)
 }
 \arguments{
 \item{x}{the CD3 file path}
-
-\item{web}{logical argument with a default of TRUE. TRUE is to be used to import CDs from a FEH webserver downloaded CD3 file. FALSE is to be used to import CDs from a peak flows dataset CD3 file}
 }
 \value{
 A data.frame with columns; Descriptor and Value.
@@ -18,7 +16,7 @@ A data.frame with columns; Descriptor and Value.
 Imports catchment descriptors from CD3 files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 }
 \details{
-The CD3 files downloaded from the FEH webserver are formatted differently from the CD3 files of the peak flows dataset. For this reason it is necessary to specify web as TRUE or FALSE. TRUE indicates an FEH webserver derived CD3 and FALSE indicates a peak flows dataset CD3. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+The CD3 files downloaded from the FEH webserver are formatted differently from the CD3 files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
 \examples{
 #Import catchment descriptors from a NRFA peakflows CD3 file and display in console

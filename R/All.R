@@ -1080,7 +1080,7 @@ QMEDPOT <- function(x, ppy){
 #' QMEDLink(10.14, 7.352, 29.90, 0.39)
 #' @author Anthony Hammond
 QMEDLink <- function(Q5dmf, Q10dmf, DPSBAR, BFI) {
-  GRAD <- log(Q10dmf/Q5dmf)
+  GRAD <- (log10(Q5dmf)-log10(Q10dmf))/(qnorm(0.05)-qnorm(0.1))
   1.762*Q5dmf^0.866*(1+GRAD)^-0.775*DPSBAR^0.265*0.2388^(BFI^2)
 }
 
@@ -1382,9 +1382,8 @@ DeTrend <- function(x) {
 #'
 #' Imports catchment descriptors from CD3 files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' The CD3 files downloaded from the FEH webserver are formatted differently from the CD3 files of the peak flows dataset. For this reason it is necessary to specify web as TRUE or FALSE. TRUE indicates an FEH webserver derived CD3 and FALSE indicates a peak flows dataset CD3. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' The CD3 files downloaded from the FEH webserver are formatted differently from the CD3 files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the CD3 file path
-#' @param web logical argument with a default of TRUE. TRUE is to be used to import CDs from a FEH webserver downloaded CD3 file. FALSE is to be used to import CDs from a peak flows dataset CD3 file
 #' @examples
 #' #Import catchment descriptors from a NRFA peakflows CD3 file and display in console
 #' \dontrun{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
@@ -1393,7 +1392,9 @@ DeTrend <- function(x) {
 #' \dontrun{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
 #' @return A data.frame with columns; Descriptor and Value.
 #' @author Anthony Hammond
-ImportCDs <- function(x, web = TRUE) {
+ImportCDs <- function(x) {
+  WebTest <- read.table(x, stringsAsFactors = FALSE, skip = 4, nrows = 1)
+  if(WebTest[1,1] == "[CDS") {web <- TRUE} else {web <- FALSE}
   if(web == TRUE) {ImportWebCDs <- function(x) {
     IniCDs <- read.table(x, skip = 20, nrows = 23, header = FALSE, sep = ",", stringsAsFactors = FALSE)
     Excl <- IniCDs[-c(9,10,19,20,21,22),]
@@ -1445,6 +1446,7 @@ ImportCDs <- function(x, web = TRUE) {
 #' @author Anthony Hammond
 GetCDs <- function(x) {
   Site.id <- which(row.names(QMEDData) == x)
+  if(length(Site.id) == 0) stop ("Site ID not within the set of sites considered suitable for QMED")
   Site <- QMEDData[Site.id,]
   Site <- Site[,-c(19,20)]
   colnames(Site)[colnames(Site) == "X"] <-  "Easting"
@@ -1510,7 +1512,7 @@ ImportAM <- function(x)
 #'
 #' Extracts independent peaks over a threshold from a sample
 #'
-#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. In some cases, where the baseflow component is very high, there won't be more than one independent peak per year, rendering the AM extraction and block maxim method preferable. A good example of this would be the River Alre at Drove Lane Alresford. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
+#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
 #' @param div user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
 #' @param thresh user chosen threshold. Default is 0.975
@@ -3681,13 +3683,14 @@ NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
 #'@param x.lim the x axis limits of the plot. Numeric vector of length two Default is the extents of the data
 #'@param y.lim the y axis limits of the plot. Numeric vector of length two. Default is the extents of the data
 #'@param PlotTitle the title of the plot. The default is "Baseflow plot"
+#'@param Plot a logical argument with a default of TRUE. If TRUE the daily flow is plotted with the baseflow highlighted.
 #'@examples
 #'# Calculate the BFI from daily discharge at Kingston upon Thames;
 #'# which is in column three of the ThamesPQ data
 #'BFI(ThamesPQ[,3])
-#'@return the baseflow index and a plot showing the flow time series (black) and the associated baseflow (red)
+#'@return the baseflow index and if Plot equals TRUE, a plot showing the flow time series (black) and the associated baseflow (red)
 #'@author Anthony Hammond
-BFI <- function(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot") {
+BFI <- function(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot", Plot = TRUE) {
   LenNA <- length(Q[Q == "NA"])
   if(LenNA > 0) {print("There is missing data. The associated days have been removed")}
   if(LenNA > 0) {Q <- Q[-which(is.na(Q) == TRUE)]}
@@ -3727,8 +3730,9 @@ BFI <- function(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot") {
   BF <- apply(DF, 1, min)
   if(is.null(x.lim) == TRUE) {x.ext <- c(1:length(Q[MinSt:MaxSt]))} else {x.ext <- x.lim}
   if(is.null(y.lim) == TRUE) {y.ext <- c(min(Q[MinSt:MaxSt]), max(Q[MinSt:MaxSt]))} else {y.ext <- y.lim}
-  plot(Q[MinSt:MaxSt], type = "l", xlim = x.lim, ylim = y.lim, main = PlotTitle, ylab = "Daily mean flow", xlab = "Days")
-  points(BF, type = "l", col = "red")
+  if(Plot == TRUE) {
+    plot(Q[MinSt:MaxSt], type = "l", xlim = x.lim, ylim = y.lim, main = PlotTitle, ylab = "Daily mean flow", xlab = "Days")
+    points(BF, type = "l", col = "red")}
   return(sum(BF, na.rm = TRUE)/sum(Q[MinSt:(MaxSt-1)], na.rm = TRUE))
 }
 
