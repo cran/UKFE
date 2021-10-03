@@ -5,7 +5,7 @@
 \alias{NRFAData}
 \title{National River Flow Archive descriptors and calculated statistics for sites suitable for pooling}
 \format{
-A data frame with 545 rows and 30 variables
+A data frame with 546 rows and 27 variables
 }
 \source{
 \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
@@ -14,7 +14,7 @@ A data frame with 545 rows and 30 variables
 NRFAData
 }
 \description{
-A data.frame of catchment descriptors, Lmoments, Lmoment ratios, sample size and median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 9.
+A data.frame of catchment descriptors, Lmoments, Lmoment ratios, sample size and median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 10.
 }
 \details{
 The functions for pooling group formation and estimation rely on this dataframe. However, the data frame is open for manipulation in case the user wishes to add sites that aren't included, or change parts where local knowledge has improved on the data. Although, usually, in the latter case, such changes will be more appropriately applied to the formed pooling group. If changes are made, they will only remain within the workspace. If a new workspace is opened and the UKFE package is loaded, the data frame will have returned to it's original state.

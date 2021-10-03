@@ -15,20 +15,21 @@
 
 #' National River Flow Archive descriptors and calculated statistics for sites suitable for pooling
 #'
-#' A data.frame of catchment descriptors, Lmoments, Lmoment ratios, sample size and median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 9.
+#' A data.frame of catchment descriptors, Lmoments, Lmoment ratios, sample size and median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 10.
 #' @details The functions for pooling group formation and estimation rely on this dataframe. However, the data frame is open for manipulation in case the user wishes to add sites that aren't included, or change parts where local knowledge has improved on the data. Although, usually, in the latter case, such changes will be more appropriately applied to the formed pooling group. If changes are made, they will only remain within the workspace. If a new workspace is opened and the UKFE package is loaded, the data frame will have returned to it's original state.
 #'
-#' @format A data frame with 545 rows and 30 variables
+#' @format A data frame with 546 rows and 27 variables
 #' @source \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
+#' @export
 "NRFAData"
 
 
 #' National River Flow Archive (NRFA) annual maximum data for sites suitable for pooling
 #'
-#' A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 9
+#' A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 10
 #'
 #'
-#' @format A data frame with 24638 rows and 3 columns
+#' @format A data frame with 25020 rows and 3 columns
 #' \describe{
 #'   \item{Date}{Date}
 #'   \item{Flow}{Annual maximum peak flow, m3/s}
@@ -40,11 +41,11 @@
 
 #' National River Flow Archive descriptors and calculated statistics for sites suitable for QMED & pooling
 #'
-#' A data.frame of catchment & data descriptors relating to the median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 9
+#' A data.frame of catchment & data descriptors relating to the median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 10
 #'
 #' @details The functions for QMED estimation and retreieval of catchment descriptors rely on this dataframe. However, the data frame is open for manipulation in case the user wishes to add sites that aren't included, or change parts where local knowledge has improved on the data. If changes are made, they will only remain within the workspace. If a new workspace is opened and the UKFE package is loaded, the data frame will have returned to it's original state.
 #'
-#' @format A data frame with 882 rows and 24 variables
+#' @format A data frame with 885 rows and 24 variables
 #' @source \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
 "QMEDData"
 
@@ -205,6 +206,9 @@ QuickResults <- function(CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FAL
 #'@return A data.frame of the pooling group with site refence row names and 24 columns each providing catchment & gauge details for the sites in the pooling group.
 #'@author Anthony Hammond
 Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, DeUrb = FALSE){
+  if(is.null(exclude) == FALSE) {
+    Site.id <- match(exclude, row.names(NRFAData))
+    if(any(is.na(Site.id)) == TRUE) stop ("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")}
   suppressWarnings(if(is.null(CDs) == TRUE){
 
     SDMs <- function(x, AREA, SAAR, FARL, FPEXT)
@@ -258,7 +262,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
-    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,18,19,20,21,23)]
+    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,19,20)]
     colnames(Site.NRFA)[24] <- "Discordant?"
     if(DeUrb == FALSE) {Site.NRFA <- Site.NRFA} else
     { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
@@ -294,7 +298,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     Site.NRFA <- NRFAData[Char.Sites, ]
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
-    UrbUrbInd <- NRFAData[ug.index,22]
+    UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) == "URBEXT2000")]
     Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
     if(iug == FALSE) {Site.NRFA <- Site.NRFA}
     if(iug == TRUE & UrbUrbInd > 0.03) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
@@ -323,7 +327,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
-    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,18,19,20,21,23)]
+    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,19,20)]
     colnames(Site.NRFA)[24] <- "Discordant?"
     if(DeUrb == FALSE) {Site.NRFA <- Site.NRFA} else
     { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
@@ -346,7 +350,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'
 #' Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
 #'
-#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from ImportCDs or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. If trend = TRUE & gauged = FALSE, the QMED is multiplied by a trend coefficient. The coefficient was derived by calculating a weighted (by sample size) mean proportional change in the 2-year flow, from the UK National River Flow Archive benchmark sites considered suitable for pooling. The weighted per year change was first calculated and then multiplied by half the mean sample size of sites suitable for QMED. If trend = TRUE and gauged = TRUE, the weighted per year change is multiplied by half the sample size of the first site in the pooling group. This approach attempts to include a generic non-stationarity in the pooled estimates by adjusting the location parameter. Amongst other assumptions (such as the change being linear and only to the location of the distribution), it makes the assumption that apparent trends at individual sites are unreliable due to short record lengths or site specific due to human influence, but across many sites the mean increase in median peak discharge is representative of a non-stationary process across the UK. The trend is applied to whatever is in the QMED argument. Therefore, trend should equal FALSE if the QMED estimate has been user adjusted for trend already. If Lcv & Lskew have also been user adjusted for a gauged site, these can be changed in the pooling group (see Pool function details). The per year, weighted mean QMED trend, was estimated to be 0.12 percent +/- 0.05 (95 percent uncertainty - calculated by weighted resampling).
+#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from ImportCDs or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. If trend = TRUE & gauged = FALSE, the QMED is multiplied by a trend coefficient. The coefficient was derived by calculating a weighted (by sample size) mean proportional change in the 2-year flow, from the UK National River Flow Archive benchmark sites considered suitable for pooling. The weighted per year change was first calculated and then multiplied by half the mean sample size of sites suitable for QMED. If trend = TRUE and gauged = TRUE, the weighted per year change is multiplied by half the sample size of the first site in the pooling group. This approach attempts to include a generic non-stationarity in the pooled estimates by adjusting the location parameter. Amongst other assumptions (such as the change being linear and only to the location of the distribution), it makes the assumption that apparent trends at individual sites are unreliable due to short record lengths or site specific due to human influence, but across many sites the mean increase in median peak discharge is representative of a non-stationary process across the UK (this approach will be regionalise in a later version of the tool). The trend is applied to whatever is in the QMED argument. Therefore, trend should equal FALSE if the QMED estimate has been user adjusted for trend already. If Lcv & Lskew have also been user adjusted for a gauged site, these can be changed in the pooling group (see Pool function details). The per year, weighted mean QMED trend, was estimated to be 0.12 percent +/- 0.05 (95 percent uncertainty - calculated by weighted resampling).
 #'
 #'
 #'@param x pooling group derived from the Pool function
@@ -1414,21 +1418,27 @@ ImportCDs <- function(x) {
   }
   CDs <- ImportWebCDs(x)}
   else {
-    ImportNRFACDs <- function(x)
-    {cds.table <- read.table(x, sep = ",", fill = T, skip = 17, col.names = c("Descriptor", "Value"), nrows = 22)
-    Area <- read.table(x, sep = ",", fill = T, skip = 16, col.names = c("Descriptor", "Value"), nrows = 1)
-    Area[1]$Descriptor <- "AREA"
-    NGRs <- read.table(x, sep = ",", skip = 15, nrows = 1)
-    NGR.table <- data.frame(c("Easting", "Northing"), c(NGRs$V3, NGRs$V4))
-    colnames(NGR.table) <- c("Descriptor", "Value")
-    CDs <- rbind(cds.table, NGR.table)
-    CDs <- rbind(Area, CDs)
-    CDs <- CDs[-c(18,19,20,21,23), ]
-    rws <- seq(1,20)
-    row.names(CDs) <- rws
-    return(CDs)
+    ImportNRFACDs <- function(x) {
+      IniFile <- suppressWarnings(read.table(x, sep = ",", skip = 3, stringsAsFactors = FALSE, header = FALSE, quote = "\\"))
+      CDNames <- c("DTM AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST", "DPLBAR", "DPSBAR", "FARL", "FPEXT", "LDP", "PROPWET", "RMED-1H", "RMED-1D", "RMED-2D", "SAAR", "SAAR4170", "SPRHOST", "URBEXT2000")
+      MatchDescriptor <- match(CDNames, IniFile$V1)
+      MD1 <- MatchDescriptor+1
+      Descriptor <- as.character(IniFile$V1[MatchDescriptor])
+      Value <- as.numeric(IniFile$V1[MD1])
+      CDsDF <- data.frame(Descriptor, Value, stringsAsFactors = FALSE)
+      NGRInd <- which(IniFile$V1 == "CENTROID NGR")
+      Easting <- as.integer(IniFile$V1[(NGRInd+2)])
+      Northing <- as.integer(IniFile$V1[(NGRInd+3)])
+      NGRNames <- c("Easting", "Northing")
+      NGRDF <- data.frame(NGRNames, c(as.integer(Easting), as.integer(Northing)), stringsAsFactors = FALSE)
+      colnames(NGRDF) <- c("Descriptor", "Value")
+      CDsDF <- rbind(CDsDF, NGRDF)
+      CDsDF[1,1] <- "AREA"
+      rws <- seq(1,nrow(CDsDF))
+      row.names(CDsDF) <- rws
+      return(CDsDF)
     }
-  CDs <- ImportNRFACDs(x)
+    CDs <- ImportNRFACDs(x)
   }
   return(CDs)
 }
@@ -1446,7 +1456,7 @@ ImportCDs <- function(x) {
 #' @author Anthony Hammond
 GetCDs <- function(x) {
   Site.id <- which(row.names(QMEDData) == x)
-  if(length(Site.id) == 0) stop ("Site ID not within the set of sites considered suitable for QMED")
+  if(length(Site.id) == 0) stop ("Site ID not within the set of sites considered suitable for QMED or pooling analysis. For further sites the ImportCDs can be used")
   Site <- QMEDData[Site.id,]
   Site <- Site[,-c(19,20)]
   colnames(Site)[colnames(Site) == "X"] <-  "Easting"
@@ -1471,8 +1481,8 @@ GetCDs <- function(x) {
 #' @param x the file path for the .AM file
 #' @examples
 #' #Import an AMAX sample and display the first six rows in the console
-#' \dontrun{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.AM")}
-#' \dontrun{head(AM.4003)]
+#' \dontrun{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v10/Suitable for QMED/4003.AM")}
+#' \dontrun{head(AM.4003)]}
 #' @return A data.frame with columns; Date and Flow
 #' @author Anthony Hammond
 ImportAM <- function(x)
@@ -1484,26 +1494,20 @@ ImportAM <- function(x)
   Dates <- data.frame(as.Date(AM[,1], format = "%d %b %Y"), AM[,2])
   colnames(Dates) <- c("Date", "Flow")
   AM.c1 <- AMAX[,1]
-  Rej <- AM.c1[2:which(AM.c1 == "[AM Values]")-2][-1]
-  WYDate <- as.Date(paste(Rej, "- 10 - 01"), format = "%Y - %m - %d")
-  Date.Func <- function(x, y)
-  {
-    isTRUE(x >= y & x <= y+365)
-  }
-  Pass <- function(Dates, Rej, n)
-  {
-    Logic <- NULL
-    for (i in 1:length(Dates$Date))
-    {Logic[i] <- Date.Func(Dates$Date[i], Rej[n])}
-    Rem <- which(Logic == TRUE)
-    if (length(Rem > 0)) {return(Rem)} else{return(0)}
-  }
-  LOGIC <- NULL
-  for (i in 1:length(WYDate))
-    LOGIC[i] <- Pass(Dates, WYDate, i)
-  LOGIC <- LOGIC[LOGIC>0]
-  AMG <- Dates[-LOGIC,]
-  if (length(AMG$Flow) < 1) {return(Dates)} else {return(AMG)}
+  if(AMAX[1,1] == "[AM Rejected]"){
+    Rej <- AM.c1[2:which(AM.c1 == "[AM Values]")-2][-1]
+    RejEnd <- as.character(as.numeric(Rej)+1)
+    WYDate <- as.Date(paste(Rej, "- 10 - 01"), format = "%Y - %m - %d")
+    WYEnd <- as.Date(paste(RejEnd, "- 09 - 30"), format = "%Y - %m - %d")
+    Date.Func <- function(x, y, z){
+      isTRUE(x >= y & x <= z)
+    }
+    RejInd <- NULL
+    for(i in 1:nrow(Dates)) {RejInd[i] <- Date.Func(Dates$Date[i], WYDate[i], WYEnd[i])}
+    RejInd <- which(RejInd == TRUE)
+    if(length(RejInd) < 0) {Result <- Dates[-RejInd,]}  else {Result <- Dates}}
+  else {Result <- Dates}
+  return(Result)
 }
 
 
@@ -1662,10 +1666,14 @@ AMextract <- function(x, Plot = TRUE){
   WYendst <- as.Date(paste(WY+1, "09", "30", sep = "-"))
   YrEnds <- seq(WYendst, length.out = length(YrStarts), by = "year")
   AM <- NULL
-  for (i in 1:length(YrStarts)) {AM[i] <- max(x[,2][x[,1] >= YrStarts[i] & x[,1] <= YrEnds[i]], na.rm = TRUE)}
+  for (i in 1:length(YrStarts)) {AM[i] <- suppressWarnings(max(x[,2][x[,1] >= YrStarts[i] & x[,1] <= YrEnds[i]], na.rm = TRUE))}
   WaterYear <- seq(WY, WYend)
+  AMDF <- data.frame(WaterYear, AM)
+  InfInd <- which(AMDF$AM == -Inf)
+  if(length(InfInd) > 0) {AMDF <- AMDF[-InfInd,]} else {AMDF <- AMDF}
+  if(length(InfInd) > 0) {print("Warning: at least one year had no data and returned -inf. The year/s in question have been removed")}
   if(Plot == TRUE) {plot(WaterYear, AM, type = "h", col = rgb(0,0.3,0.7), main = "Hydrological annual maximum sequence", ylab = "Annual maximum quantiles")}
-  return(data.frame(WaterYear, AM))
+  return(AMDF)
 }
 
 
@@ -2519,7 +2527,7 @@ HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL,
 #' Provides two plots. First, a histogram of the sample, second, a barplot
 #'
 #' When used with a GetAM object or any data.frame with dates in the first column, the barplot is daily. Therefore, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
-#' @param x a data.frame with two columns. The first a date column and the second the annual maximum (AM) sequence. An AM object derived from the GetAM or ImportAM functions can be used.
+#' @param x a data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id is necessary for inclusion of the id in the plot title. An AM object derived from the GetAM or ImportAM functions.
 #' @examples
 #' #Get an AMAX sample and plot
 #' AMplot(GetAM(58002))
@@ -2590,11 +2598,11 @@ DiagPlots <- function(x, gauged = FALSE)
   points(x$LSkew, x$LKurt, pch = 21, cex = 1.15,  bg = "blue")
   if(gauged == TRUE) {points(LSkew(AMAX$Flow), LKurt(AMAX$Flow), pch = 19, col = "red")}
 
-  plot(UKOutline, pch = 19, cex = 0.25, xlab = "Easting", ylab = "Northing", xlim = c(25272, 650000))
+  plot(UKOutline$X_BNG/1000, UKOutline$Y_BNG/1000, pch = 19, cex = 0.25, xlab = "Easting (km)", ylab = "Northing (km)", xlim = c((25272/1000), (650000/1000)))
   Rows <- row.names(x)
   QMED.Pool <- QMEDData[Rows, 21:22]
-  points(QMED.Pool, pch = 19, col = "red")
-  if(gauged == TRUE) {points(CDs[19,2], CDs[20,2], pch = 19, col = "blue")}
+  points(QMED.Pool/1000, pch = 19, col = "red")
+  if(gauged == TRUE) {points(CDs[19,2]/1000, CDs[20,2]/1000, pch = 19, col = "blue")}
 }
 
 #' Design hydrograph extraction
@@ -2765,8 +2773,7 @@ ERPlot <- function(x, Title = "Extreme Rank Plot", dist = "GenLog", pars = NULL,
   if(ln == FALSE) {
     matplot(PlotData, type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, main = Title, xlab = "Rank", ylab = "magnitude", ylim = c(min(x)-0.1*min(x), max(x)+0.1*max(x)))
     legend("topleft", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue","black","black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)
-    text(x = quantile(seq(1:length(x)), 0.65), y = quantile(x, 0.01), labels = paste("GoTF cv:", Score[1], sep = " "), cex = 0.8, adj = 0)
-    text(x = quantile(seq(1:length(x)), 0.65), y = quantile(x, 0.13), labels = paste("GoTF mean:", Score[2], sep = " "), cex = 0.8, adj = 0)
+    text(x = 0.5*length(x), y = min(x), labels = paste(paste("GoTF cv:", Score[1], sep = " "), paste("GoTF mean:", Score[2], sep = " "), sep = ";  "), cex = 0.8, adj = 0)
   } else {
     matplot(PlotData, type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, main = Title, xlab = "Flow Ranks", ylab = "log discharge (m3/s)", ylim = c(min(log(x))-0.1*min(log(x)), max(log(x))+0.1*max(log(x))))
     legend("topleft", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue","black","black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)

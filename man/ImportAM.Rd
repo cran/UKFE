@@ -18,6 +18,11 @@ Imports the peak flows and dates from from NRFA peak flow .AM files, exluding th
 \details{
 File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
+\examples{
+#Import an AMAX sample and display the first six rows in the console
+\dontrun{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v10/Suitable for QMED/4003.AM")}
+\dontrun{head(AM.4003)]}
+}
 \author{
 Anthony Hammond
 }

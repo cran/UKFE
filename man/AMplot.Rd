@@ -7,7 +7,7 @@
 AMplot(x)
 }
 \arguments{
-\item{x}{a data.frame with two columns. The first a date column and the second the annual maximum (AM) sequence. An AM object derived from the GetAM or ImportAM functions can be used.}
+\item{x}{a data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id is necessary for inclusion of the id in the plot title. An AM object derived from the GetAM or ImportAM functions.}
 }
 \value{
 a histogram of the AMAX sample and a barplot
