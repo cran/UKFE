@@ -1,9 +1,9 @@
-886f7c876d483061630817ac36cfb4c3 *DESCRIPTION
+1015a7211f47412c2de9738fed305464 *DESCRIPTION
 70f33e496ff6c63bf8e16c2d870f9bbb *NAMESPACE
 d8c86b22babf0aa1e4ff2cdca093c65e *R/All.R
 4aa2a9efc5212cbab5efcb47ac2d2947 *data/AMSP.RData
-7b4dd11570364f310bdcff4cca562b40 *data/NRFAData.RData
-246eeb48803b3d5951d97fd55c2656b7 *data/QMEDData.RData
+47df3ba79e1c77836b334b14cc6a633e *data/NRFAData.RData
+e1668c4fe5f8f3cb4087c5f4cdccdb97 *data/QMEDData.RData
 3ca1bfee06e1e6e5800c685603b37db7 *data/ThamesPQ.rda
 cc7e066713cb11a82ae59ea6fb425e2a *data/UKOutline.rda
 d19de1b541ddfdc7131da854d92177e2 *man/AMSP.Rd
