@@ -1502,11 +1502,29 @@ ImportAM <- function(x)
     Date.Func <- function(x, y, z){
       isTRUE(x >= y & x <= z)
     }
-    RejInd <- NULL
-    for(i in 1:nrow(Dates)) {RejInd[i] <- Date.Func(Dates$Date[i], WYDate[i], WYEnd[i])}
-    RejInd <- which(RejInd == TRUE)
-    if(length(RejInd) < 0) {Result <- Dates[-RejInd,]}  else {Result <- Dates}}
+    RejFunc <- function(ind){
+      Rej <- NULL
+      for(i in 1:nrow(Dates)) {Rej[i] <- Date.Func(Dates$Date[i], WYDate[ind], WYEnd[ind])}
+      WhichTRUE <- which(Rej == TRUE)
+      if(length(WhichTRUE) == 0) {return(NA)} else {return(WhichTRUE)}
+    }
+    if(length(WYDate) > 1) {
+      RejInd <- list()
+      for(i in 1:length(WYDate)) {RejInd[[i]] <- RejFunc(i)}
+      RejInd <- unlist(RejInd)
+      if(any(is.na(RejInd)) == TRUE) {
+        NAInd <- which(is.na(RejInd == TRUE))
+        if(length(NAInd) == length(WYDate)) {RejInd <- NULL} else {
+          RejInd <- RejInd[-which(is.na(RejInd) == TRUE)]}}
+    } else {
+      RejInd <- NULL
+      for(i in 1:nrow(Dates)) {RejInd[i] <- Date.Func(Dates$Date[i], WYDate, WYEnd)}
+      RejInd <- which(RejInd == TRUE)
+      if(length(RejInd > 0)) {RejInd <- RejInd} else {RejInd <- NULL}
+    }
+    if(is.null(RejInd) == TRUE) {Result <- Dates} else {Result <- Dates[-RejInd,]}}
   else {Result <- Dates}
+  rownames(Result) <- seq(1, nrow(Result))
   return(Result)
 }
 
