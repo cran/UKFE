@@ -9,25 +9,34 @@ EVPlot(
   dist = "GenLog",
   scaled = TRUE,
   Title = "Extreme value plot",
-  ylabel = NULL
+  ylabel = NULL,
+  LineName = NULL,
+  Unc = TRUE
 )
 }
 \arguments{
 \item{x}{a numeric vector. The sample of interest}
 
-\item{dist}{a choice of distribution. "GEV", "GenLog", or "GenPareto". The default is "GenLog"}
+\item{dist}{a choice of distribution. "GEV", "GenLog", "Gumbel" or "GenPareto". The default is "GenLog"}
 
 \item{scaled}{logical argument with a default of TRUE. If TRUE the plot is a growth curve (scaled by the QMED). If FALSE, the plot is a frequency curve}
 
 \item{Title}{a character string. The user chosen plot title. The default is "Extreme value plot"}
 
 \item{ylabel}{a character string. The user chosen label for the y axis. The default is "Q/QMED" if scaled = TRUE and "Discharge (m3/s)" if scaled = FALSE}
+
+\item{LineName}{a character string. User chosen label for the plotted curve}
+
+\item{Unc}{logical argument with a default of TRUE. If TRUE, 95 percent uncertainty intervals are plotted.}
 }
 \value{
-An extreme value plot
+An extreme value plot (freqency or growth curve) with intervals to quantify uncertainty
 }
 \description{
-Plots the extreme value frequency curve or growth curve with observed sample points. With the option of generalised extreme value (GEV), generalised Pareto (GenPareto), or generalised logistic (GenLog) distributions.
+Plots the extreme value frequency curve or growth curve with observed sample points.
+}
+\details{
+The plotting has the option of generalised extreme value (GEV), generalised Pareto (GenPareto), Gumbel, or generalised logistic (GenLog) distributions. The uncertainty is quantified by bootstrapping.
 }
 \examples{
 #Get an AMAX sample and plot the growth curve with the GEV distribution

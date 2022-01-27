@@ -35,6 +35,9 @@ A plot of concurrent precipitation and discharge. With the former at the top and
 \description{
 Plots concurrent precipitation and discharge with precipitation along the top and discharge along the bottom
 }
+\details{
+The input of x is a dataframe with the first column being time. If the data is sub daily this should be class POSIXct with time as well as date.
+}
 \examples{
 #Plot the Thames precipitation and discharge for the 2013 hydrological year,
 #adjusting the y axis to 1.8.

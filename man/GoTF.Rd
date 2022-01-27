@@ -9,9 +9,9 @@ GoTF(x, dist = "GenLog", pars = NULL, GF = NULL, RepDist = NULL)
 \arguments{
 \item{x}{a numeric vector. The sample of interest}
 
-\item{dist}{a choice of distribution to be assessed. The choices are "GenLog", "GEV", or "GenPareto". The default is "GenLog"}
+\item{dist}{a choice of distribution to be assessed. The choices are "GenLog", "GEV", "Gumbel", or "GenPareto". The default is "GenLog"}
 
-\item{pars}{numeric vector of length three which are the parameters for the GEV, GenLog, or GenPareto distributions. In the order of location, scale, shape}
+\item{pars}{numeric vector of parameters for the GEV, GenLog, Gumbel, or GenPareto distributions. In the order of location, scale, shape (excluding shape for Gumbel)}
 
 \item{GF}{numeric vector of length three which are the growth factor statistics & QMED, in the order of Lcv, Lskew, & QMED}
 
@@ -21,10 +21,10 @@ GoTF(x, dist = "GenLog", pars = NULL, GF = NULL, RepDist = NULL)
 A data.frame with one row of probabilities representing the GoTF. The first column is the Tail cv and the second is the tail mean.
 }
 \description{
-Provides a GoTF score for the generalised extreme value (GEV), generalised Pareto (GenPareto), or generalised logistic (GenLog) distribution. Also for any simulated numeric distribution
+Provides two GoTF scores for the generalised extreme value (GEV), Gumbel, generalised Pareto (GenPareto), or generalised logistic (GenLog) distribution. Also for any simulated numeric distribution
 }
 \details{
-The GoTF is calculated by simulating the sample 5000 times with the desired distribution and calculating a statistic (in this case the coefficient of variation (CV) & mean) for the upper 25 percent of each sample. The same is calculated for the subject sample and compared to the distribution. The number of statistics from the simulated samples that are greater than the sample statistics is divided by 5000. The GoTF is this latter number where it is <0.5 and 1 minus this latter number where is it >0.5. If any further distributions are of interest, the representative distribution (RepDist) argument can be used. In this case a simulation of 5000*length(x) from that distribution can be used as RepDist, in place of using the dist input. If a sample that is not equal to 5000 time length(x) is in the RepDist argument, it will be resampled with replacement. An alternative is to use the pars or GF arguments which simulate from the distribution choice (dist) based on the parameters (location, scale, shape) or the growth factor (GF) inputs; the median annual maximum flow (QMED), linear coefficient of variation (Lcv), and linear skewnes (LSkew). The resulting probabilities for each statistic (the GoTF score) represent the probability of observing that statistic if the sample distribution has the same underlying distribution as the one under scrutiny.
+The closer the results are to one, the better the fit. The GoTF is calculated by simulating the sample 5000 times with the desired distribution and calculating a statistic (in this case the coefficient of variation (CV) & mean) for the upper 25 percent of each sample. The same is calculated for the subject sample and compared to the distribution. The number of statistics from the simulated samples that are greater than the sample statistics is divided by 5000. The GoTF is this latter number where it is <0.5 and 1 minus this latter number where is it >0.5. If any further distributions are of interest, the representative distribution (RepDist) argument can be used. In this case a simulation of 5000*length(x) from that distribution can be used as RepDist, in place of using the dist input. If a sample that is not equal to 5000 time length(x) is in the RepDist argument, it will be resampled with replacement. An alternative is to use the pars or GF arguments which simulate from the distribution choice (dist) based on the parameters (location, scale, shape) or the growth factor (GF) inputs; the median annual maximum flow (QMED), linear coefficient of variation (Lcv), and linear skewnes (LSkew). The resulting probabilities for each statistic (the GoTF score) represent the probability of observing that statistic if the sample distribution has the same underlying distribution as the one under scrutiny.
 }
 \examples{
 #Get an AMAX sample and derive GoTF score against the GenLog and the GEV distributions

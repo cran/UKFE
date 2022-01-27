@@ -10,13 +10,13 @@ GoTFPool(x)
 \item{x}{pooling group derived from the Pool function}
 }
 \value{
-A list of two data.frames. Each with one row of the two GoTF values related to the columns; p(Tail cv) & p(Tail mean). See GoTF details. The first data.frame is for the GEV distribution and the second is for the GenLog distribution.
+A list of two data.frames. Each with one row of the two GoTF values related to the columns; p(Tail cv) & p(Tail mean). See GoTF details. The first data.frame is for the GEV distribution, the second is for the GenLog distribution, and the third is for the Gumbel distribution.
 }
 \description{
-Calculates GoTF scores for pooling groups for both generalised extreme value (GEV) and generalised logistic (GenLog) distributions
+Calculates GoTF scores for pooling groups for both generalised extreme value (GEV), generalised logistic (GenLog) & Gumbel distributions
 }
 \details{
-The GoTF for pooling groups is calculated by standardising all the sites in the group (dividing by median) and calculating the linear coefficient of variation (Lcv) and linear skewness (Lskew) of the pooled data as if it was one sample. The GoTF() function is then applied to the pooled data with the GF arguments using the aforementioned Lcv and Lskew, and QMED equal to one. The GoTF scores are calculated for the GEV and GenLog distributions and can be used to assist the decision of which distribution to use for the final estimates. See details for the GoTF function for information about the resulting values. The closer the scores are to one, the better the tail fit.
+The GoTF for pooling groups is calculated by standardising all the sites in the group (dividing by median) and calculating the linear coefficient of variation (Lcv) and linear skewness (Lskew) of the pooled data as if it was one sample. The GoTF() function is then applied to the pooled data with the GF arguments using the aforementioned Lcv and Lskew, and QMED equal to one. The GoTF scores are calculated for the GEV, Gumbel, and GenLog distributions and can be used to assist the decision of which distribution to use for the final estimates. See details for the GoTF function for information about the resulting values. The closer the scores are to one, the better the tail fit.
 }
 \examples{
 #Get CDs, create pooled group and calculate GoTFs.

@@ -34,7 +34,9 @@ GenLogPars(AM.27090$Flow)
 GenLogPars(AM.27090$Flow, mle = TRUE)
 #calculate Lmoments and estimate the parmeters with L1, Lcv and Lskew
 Lmoms(AM.27090$Flow)
-GenLogPars(L1 = 302.2076, LCV = 0.1704826, LSKEW = 0.04211332)
+#store linear moments in an object
+LPars <- as.numeric(Lmoms(AM.27090$Flow))[c(1,5,6)]
+GenLogPars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
 }
 \author{
 Anthony Hammond

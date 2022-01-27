@@ -4,35 +4,31 @@
 \alias{SimData}
 \title{Data simulator}
 \usage{
-SimData(n, pars = NULL, dist, GF = NULL)
+SimData(n, pars = NULL, dist = "GenLog", GF = NULL)
 }
 \arguments{
 \item{n}{sample size to be simulated}
 
-\item{pars}{vector of parameters in the order of location, scale, shape}
+\item{pars}{vector of parameters in the order of location, scale, shape (only location and shape for Gumbel)}
 
-\item{dist}{choice of distribution. Either "GEV", "GenLog", or "GenPareto"}
+\item{dist}{choice of distribution. Either "GEV", "GenLog", "Gumbel" or "GenPareto"}
 
-\item{GF}{vector of GF inputs in the order of Lcv, LSkew, QMED}
+\item{GF}{vector of GF inputs in the order of Lcv, LSkew, QMED (only Lcv and QMED if dist = "Gumbel")}
 }
 \value{
 A random sample of size n for the chosen distribution.
 }
 \description{
-Simulation of a random sample from the generalised extreme value, generalised logistic, or generalised Pareto distributions
+Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, or generalised Pareto distributions
 }
 \details{
 The simulated sample can be generated using distribution parameters, or the growth factor (GF) inputs; linear coefficient of variationn (Lcv), linear skewness (LSkew) & the median annual maximum (QMED).
 }
 \examples{
-#Get an annual maximum sample, estimate the parameters and simulate a sample of
-#size 30 the parameters using Lmoments (with GenLog)
-AM.27090 <- GetAM(27090)
-GenLogPars(AM.27090$Flow)
-SimData(30, pars = c(298.6416, 51.37096, -0.04211332), dist = "GenLog")
-#calculate the Lmoments and simulate a sample of 30 with GF inputs
-Lmoms(AM.27090$Flow)
-SimData(30, GF = c(0.1704826, 0.04211332, median(AM.27090$Flow)), dist = "GenLog")
+#Simulate a sample of size 30 using parameters GenLog and parameters 299, 51, -0.042
+SimData(30, pars = c(299, 51, -0.042), dist = "GenLog")
+#Now simulate using the Lcv, Lskew, and median (0.17, 0.04, 310)
+SimData(30, GF = c(0.17, 0.04, 310), dist = "GenLog")
 }
 \author{
 Anthony Hammond

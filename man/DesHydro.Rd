@@ -11,7 +11,8 @@ DesHydro(
   thr = 0.975,
   xst = NULL,
   xend = NULL,
-  RetAll = FALSE
+  RetAll = FALSE,
+  Smooth = 1
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ DesHydro(
 \item{xend}{an integer to truncate the x axis of the plot and resulting design hydrograph. The last point of the design hydrograph}
 
 \item{RetAll}{logical argument with a default of false. If TRUE, all the hydrographs from which the mean is derived are returned in a data.frame. If FALSE, the mean hydrograph is returned}
+
+\item{Smooth}{an integer (from 0 to 5). To smooth the design hydrograph. The default is 1 which provides the minimum level of smoothing. 0 is no smoothing and 5 is the highest}
 }
 \value{
 a numeric vector which is the mean of the top n peak events in the flow series. Also a plot of the n hydrographs and the design hydrograph. If the RetAll argument equals TRUE, a data.frame of the n hydrographs is returned instead.
@@ -37,6 +40,9 @@ Extracts a mean hydrograph from a flow series
 }
 \details{
 All the peaks over a user defined threshold are identified and separated by a user defined value 'qu', which is a quantile of flow. The top n peaks are selected and the hydrographs extracted. Each hydrograph is centred on the peak and truncated either side, where the flow falls below the 'qu' quantile flow. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph. After an initial view of the hydrograph, it can be truncated using the 'xst' and 'xend' arguments. The default is to select 10 hydrographs for averaging, however, there may well be fewer if the sample is short.
+}
+\note{
+The smoothing is done by rolling average, where the the mean is of points from n to the left up to n to the right. The n is chosen by the Smooth argument.
 }
 \examples{
 #Extract a design hydrograph from the Thames daily mean flow. Then print the resulting hydrograph

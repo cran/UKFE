@@ -30,9 +30,12 @@ If the argument q is used, it overrides RP and provides RP as a function of q (m
 #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
 AM.27090 <- GetAM(27090)
 GenLogPars(AM.27090$Flow)
-GenLogEst(298.6416, 51.37096, -0.04211332, RP = 50)
+#Store parameters in an object
+Pars <- as.numeric(GenLogPars(AM.27090$Flow))
+#get estimate of 50-yr flow
+GenLogEst(Pars[1], Pars[2], Pars[3], RP = 50)
 #Estimate the RP for a 600m3/s discharge
-GenLogEst(298.6416, 51.37096, -0.04211332, q = 600)
+GenLogEst(Pars[1], Pars[2], Pars[3], q = 600)
 }
 \author{
 Anthony Hammond

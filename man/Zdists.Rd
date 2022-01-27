@@ -10,7 +10,7 @@ Zdists(x)
 \item{x}{pooling group derived from the Pool() function}
 }
 \value{
-A list with the first element a data.frame of two GoF scores related to the columns; "GEV and "GenLog". The second element is a character stating which has the best fit.
+A list with the first element a data.frame of three GoF scores related to the columns; "GEV, "GenLog", and "Gumebl. The second element is a character stating which has the best fit.
 }
 \description{
 Calculates the goodness of fit score for pooling groups with the method outlined in the Flood Estimation Hanbook (1999), volume 3.

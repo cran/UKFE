@@ -18,7 +18,7 @@ a data.frame with columns; WaterYear and AM
 Extracts the annual maximum peaks from a data.frame which has dates in the first column and variable in the second.
 }
 \details{
-The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are NAs for full years in the data, an -Inf will be returned for that year.
+The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year.
 }
 \examples{
 #Extract the Thames AMAX daily mean flow and display the first six rows

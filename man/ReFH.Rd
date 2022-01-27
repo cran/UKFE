@@ -11,7 +11,7 @@ ReFH(
   timestep = NULL,
   scaled = NULL,
   PlotTitle = NULL,
-  RP = NULL,
+  RPa = NULL,
   alpha = TRUE,
   season = NULL,
   AREA = NULL,
@@ -27,7 +27,7 @@ ReFH(
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or ImportCD}
 
-\item{Depth}{a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default is a two year rainfall}
+\item{Depth}{a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default, when Depth = NULL, is a two year rainfall.}
 
 \item{duration}{a numeric value. A duration for the design rainfall}
 
@@ -37,9 +37,9 @@ ReFH(
 
 \item{PlotTitle}{a character string. A user defined title for the ReFH plot}
 
-\item{RP}{return period (Default = 2)}
+\item{RPa}{return period for alpha adjustment. This is only for the purposes of the alpha adjustment, it doesn't change the rainfall input}
 
-\item{alpha}{a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RP. If FALSE, no alpha adjustment is made}
+\item{alpha}{a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RPa. If FALSE, no alpha adjustment is made}
 
 \item{season}{a choice of "summer" or "winter". The default is "summer" in urban catchments (URBEXT2000 > 0.03) and "winter" in rural catchments}
 
@@ -60,13 +60,13 @@ ReFH(
 \item{Rain}{numeric. User input rainfall. A numeric vector}
 }
 \value{
-A print out of parameters, a results data.frame, and a plot. First is a print of the parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
+A print out of parameters, a results data.frame, and a plot. First is a print of the parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
 }
 \description{
 Provides outputs of the ReFH model from catchment descriptors or user defined inputs
 }
 \details{
-The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D. Parameters and initial conditions can also be inidvidually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The formulation of this function avoids the need for users to select a storm duration that is an odd integer multiple of the data interval. This is achieved as follows: for the design rainfall profile, the duration is split into a sequence by multiplying duration by the reciprocal of the data interval (timestep) and rounding up to the nearest odd integer. This forms the end of a sequence starting from one and progressing at an interval of two. This sequence is divided by the duration to form the vector to which the exponent b is raised in the calculation of z for the storm profile (see Flood Estimation Handbook (1999), volume 2)
+The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D. Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1).
 }
 \examples{
 #Get CDs and apply the ReFH function

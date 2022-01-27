@@ -10,19 +10,22 @@ ERPlot(
   dist = "GenLog",
   pars = NULL,
   GF = NULL,
+  ylabel = "Discharge (m3/s)",
   ln = FALSE
 )
 }
 \arguments{
 \item{x}{numeric vector. A sample for inspection}
 
-\item{Title}{a charcter string to change the default title, which is "Extreme Rank Plot"}
+\item{Title}{a character string to change the default title, which is "Extreme Rank Plot"}
 
-\item{dist}{a choice of distribution. The choices are "GenLog", "GEV", and "GenPareto"}
+\item{dist}{a choice of distribution. The choices are "GenLog", "GEV", "Gumbel" and "GenPareto"}
 
 \item{pars}{a vector of length three. In the order of location, scale, & shape. If left null the parameters are estimated from x}
 
 \item{GF}{a vector of length three, in the order of; Lcv, LSkew and Median}
+
+\item{ylabel}{a character string. For user choice of a label for the y axis.}
 
 \item{ln}{logical TRUE or FALSE with a default of FALSE. If TRUE, the variable under consideration is log transformed for the plot}
 }
@@ -33,7 +36,7 @@ The extreme rank plot with GoTF scores
 A plot to inspect the distribution of ordered data
 }
 \details{
-By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew), with the median can be entered. In this way the pooling estimated disrtibution can be compared to the sample. The ERplot is described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
+By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. The ERplot is described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
 }
 \examples{
 #Get an AMAX sample and plot

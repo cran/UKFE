@@ -32,9 +32,12 @@ If the argument q is used, it overrides RP and provides RP as a function of q (m
 #Get a POT sample, estimate the parameters, and estimate 50-year RP
 ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
 GenParetoPars(ThamesPOT$peak)
-GenParetoEst(174.2862, 127.4085, 0.1805716, ppy = 1.867, RP = 50)
+#Store parameters in an object
+Pars <- as.numeric(GenParetoPars(ThamesPOT$peak))
+#get estimate of 50-yr flow
+GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, RP = 50)
 #Estimate the RP for a 600m3/s discharge
-GenParetoEst(174.2862, 127.4085, 0.1805716, ppy = 1.867, q = 600)
+GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, q = 600)
 }
 \author{
 Anthony Hammond
