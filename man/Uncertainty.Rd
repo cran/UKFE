@@ -10,7 +10,7 @@ Uncertainty(
   RP = 100,
   dist = "GenLog",
   qmed = NULL,
-  no.Donors = 2,
+  QMEDfse = 1.46,
   UrbAdj = FALSE,
   CDs = NULL,
   conf = 0.95
@@ -27,29 +27,29 @@ Uncertainty(
 
 \item{qmed}{the QMED estimate for the ungauged case. Or for the gauged if the user wishes to override the median from the NRFA data}
 
-\item{no.Donors}{number of donors used for estimation of QMED in the ungauged case}
+\item{QMEDfse}{The factorial standard error of the QMED estimate for when an ungauged assessment has been undertaken. The default is 1.46}
 
 \item{UrbAdj}{applies an urban adjustment to the growth curves}
 
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs. Necessary if a UrbAdj is TRUE}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML. Necessary if a UrbAdj is TRUE}
 
 \item{conf}{the confidence level of the intervals for the gauged case. Default is 0.95. Must be between 0 and 1}
 }
 \value{
-For the ungauged case a data.frame of four values relating to the lower 68 and upper 68 percent interval and the lower 95 and upper 95 percent intervals. These are headed by the associated percentiles. For the gauged case a numeric vector of two values is provided with the lower and upper intervals of the chosen conf level. The uncertainty function doesn't have a trend option; if trend is used in the pooled estimate this would need to be considered and intervals adjused accordingly. However a greater uncertainty should be considered.
+For the ungauged case a data.frame of four values relating to the lower 68 and upper 68 percent interval and the lower 95 and upper 95 percent intervals. These are headed by the associated percentiles. For the gauged case a numeric vector of two values is provided with the lower and upper intervals of the chosen conf level.
 }
 \description{
 Quantification of uncertainty for pooling results for the gauged and ungauged case
 }
 \details{
-Uncertainty in the ungauged case is calulated as equations 8, 9, and 10 in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6), 1357–1371. The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site central estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calculations of weighted growth curves & urban adjustment see the PoolEst() function details. A trend option is not included within the Uncertainty function and would need be considered separately if used in PoolEst. An indication of the uncertainty for trend applied in PoolEst is provided in the PoolEst function details. The gauged method is also detailed in Hammond (2021).
+Uncertainty in the ungauged case is calulated as detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site central estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calculations of weighted growth curves & urban adjustment see the PoolEst() function details. The gauged method is detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6), 1357–1371.
 }
 \examples{
 #Get CDs, form an ungauged pooling group and quantify the uncertainty of the
 #50-year pooled estimate when using a CDs estimate of QMED with no donors
 CDs.203018 <- GetCDs(203018)
 Pool.203018 <- Pool(CDs.203018, exclude = 203018)
-Uncertainty(Pool.203018, qmed  = QMED(CDs.203018), no.Donors = 0, RP = 50)
+Uncertainty(Pool.203018, qmed  = QMED(CDs.203018), RP = 50)
 #Form pooling group with subject site included. Quantify the uncertainty of the
 #50-year pooled estimate at the 99\% level.
  Pool.203018 <- Pool(CDs.203018)

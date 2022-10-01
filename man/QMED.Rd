@@ -17,7 +17,7 @@ QMED(
 )
 }
 \arguments{
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
 \item{Don1}{numeric site reference for the a signle donor (for donor candidates see DonAdj function)}
 

@@ -9,22 +9,19 @@ QuickResults(
   gauged = FALSE,
   dons = 2,
   Qmed = NULL,
-  trend = FALSE,
   FUngauged = FALSE,
   plot = TRUE,
   dist = "GenLog"
 )
 }
 \arguments{
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
 \item{gauged}{logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged}
 
 \item{dons}{number of donors required with a choice of 0, 1, or 2}
 
 \item{Qmed}{user supplied QMED which overrides the default QMED estimate}
-
-\item{trend}{logical argument with a default of FALSE. TRUE adjusts the stationary QMED estimate to a non-stationary estimate}
 
 \item{FUngauged}{logical argument with a default of FALSE. TRUE provides an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs)}
 
@@ -39,7 +36,7 @@ A list of length two. Element one is a data frame with columns; return period (R
 Provides pooled gauged, ungauged, or fake ungauged results, directly from the catchment descriptors
 }
 \details{
-The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result, will be erroneous. For more details of the trend argument see the details for the PoolEst function.
+The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result will be erroneous.
 }
 \examples{
 #Get some catchment descriptors

@@ -11,7 +11,8 @@ HydroPlot(
   to = NULL,
   adj.y = 1.5,
   plw = 1,
-  qlw = 1.8
+  qlw = 1.8,
+  Return = FALSE
 )
 }
 \arguments{
@@ -28,9 +29,11 @@ HydroPlot(
 \item{plw}{a numeric value to adjust the width of the precipitation lines. Default is one. A larger value thickens them and vice versa}
 
 \item{qlw}{a numeric value to adjust the width of the discharge line. Default is 1.8. A larger value thickens them and vice versa}
+
+\item{Return}{a logical argument with a default of FALSE. If TRUE the data-frame of time, precipitation, and flow is returned}
 }
 \value{
-A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom.
+A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
 }
 \description{
 Plots concurrent precipitation and discharge with precipitation along the top and discharge along the bottom

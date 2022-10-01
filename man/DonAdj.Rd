@@ -7,7 +7,7 @@
 DonAdj(CDs = NULL, x, y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 = NULL)
 }
 \arguments{
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
 \item{x}{catchment centroid easting (for when CDs isn't used)}
 

@@ -1,66 +1,5 @@
 
-#' Kingston upon Thames daily flow and catchment precipitation 2000-10-01 to 2015-09-30
-#'
-#' A data.frame of three columns; Date, Precipitation (P), & daily mean flow (Q)
-#'
-#' @format A data frame with 5478 rows and 3 columns:
-#' \describe{
-#'   \item{Date}{Date}
-#'   \item{P}{Precipitation, in mm}
-#'   \item{Q}{Daily mean discharge, in m3/s}
-#' }
-#' @source \url{https://nrfa.ceh.ac.uk/data/station/meanflow/39001}
-"ThamesPQ"
 
-
-#' National River Flow Archive descriptors and calculated statistics for sites suitable for pooling
-#'
-#' A data.frame of catchment descriptors, Lmoments, Lmoment ratios, sample size and median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 10.
-#' @details The functions for pooling group formation and estimation rely on this dataframe. However, the data frame is open for manipulation in case the user wishes to add sites that aren't included, or change parts where local knowledge has improved on the data. Although, usually, in the latter case, such changes will be more appropriately applied to the formed pooling group. If changes are made, they will only remain within the workspace. If a new workspace is opened and the UKFE package is loaded, the data frame will have returned to it's original state.
-#'
-#' @format A data frame with 546 rows and 27 variables
-#' @source \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
-#' @export
-"NRFAData"
-
-
-#' National River Flow Archive (NRFA) annual maximum data for sites suitable for pooling
-#'
-#' A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 10
-#'
-#'
-#' @format A data frame with 25020 rows and 3 columns
-#' \describe{
-#'   \item{Date}{Date}
-#'   \item{Flow}{Annual maximum peak flow, m3/s}
-#'   \item{id}{Station identification number}
-#' }
-#' @source \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
-"AMSP"
-
-
-#' National River Flow Archive descriptors and calculated statistics for sites suitable for QMED & pooling
-#'
-#' A data.frame of catchment & data descriptors relating to the median annual maximum flow (QMED). NRFA Peak Flow Dataset - Version 10
-#'
-#' @details The functions for QMED estimation and retreieval of catchment descriptors rely on this dataframe. However, the data frame is open for manipulation in case the user wishes to add sites that aren't included, or change parts where local knowledge has improved on the data. If changes are made, they will only remain within the workspace. If a new workspace is opened and the UKFE package is loaded, the data frame will have returned to it's original state.
-#'
-#' @format A data frame with 885 rows and 24 variables
-#' @source \url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
-"QMEDData"
-
-
-#' UK outline
-#'
-#' Easting and northing national grid reference points around the coast of the UK
-#'
-#' @format A data frame with 3867 rows and 2 variables
-#' \describe{
-#'   \item{X_BNG}{Easting, British national grid reference}
-#'   \item{Y_BNG}{Northing, British national grid reference}
-#' }
-#' @source \url{https://environment.data.gov.uk/}
-"UKOutline"
 
 
 globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id", "URBEXT2000"))
@@ -72,12 +11,11 @@ globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id",
 #'
 #' Provides pooled gauged, ungauged, or fake ungauged results, directly from the catchment descriptors
 #'
-#' The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result, will be erroneous. For more details of the trend argument see the details for the PoolEst function.
-#'@param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#' The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result will be erroneous.
+#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
 #'@param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
 #'@param dons number of donors required with a choice of 0, 1, or 2
 #'@param Qmed user supplied QMED which overrides the default QMED estimate
-#'@param trend logical argument with a default of FALSE. TRUE adjusts the stationary QMED estimate to a non-stationary estimate
 #'@param FUngauged logical argument with a default of FALSE. TRUE provides an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs)
 #'@param plot logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot
 #'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel; the generalised logistic, generalised extreme value, and Gumbel distributions, respectively. The default is "GenLog"
@@ -94,7 +32,7 @@ globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id",
 #'
 #'@return A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). Two additional columns quantify the uncertainty. The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). By default an extreme value plot is also returned
 #'@author Anthony Hammond
-QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FALSE,
+QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
                           FUngauged = FALSE, plot = TRUE, dist = "GenLog")
 {
   if(is.data.frame(CDs) == FALSE) {stop("CDs doesn't appear to be a CDs object")}
@@ -205,22 +143,22 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FA
     }
     if (FUngauged == FALSE) {
       if (CDs[18, 2] <= 0.03) {
-        Est <- PoolEst(PoolGroup, QMED = qmed, trend = trend,
+        Est <- PoolEst(PoolGroup, QMED = qmed,
                        dist = dist)
       }
       else {
         Est <- PoolEst(PoolGroup, QMED = qmed, UrbAdj = TRUE,
-                       CDs = CDs, trend = trend, dist = dist)
+                       CDs = CDs, dist = dist)
       }
     }
     else {
       if (CDs[18, 2] <= 0.03) {
-        Est <- PoolEst(PoolGroupFun, QMED = qmed, trend = trend,
+        Est <- PoolEst(PoolGroupFun, QMED = qmed,
                        dist = dist)
       }
       else {
         Est <- PoolEst(PoolGroupFun, QMED = qmed, UrbAdj = TRUE,
-                       CDs = CDs, trend = trend, dist = dist)
+                       CDs = CDs, dist = dist)
       }
     }
   }
@@ -241,11 +179,11 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FA
     }
     if (CDs[18, 2] <= 0.03) {
       Est <- PoolEst(PoolGroup, gauged = TRUE, QMED = qmed,
-                     trend = trend, dist = dist)
+                     dist = dist)
     }
     else {
       Est <- PoolEst(PoolGroup, gauged = TRUE, QMED = qmed,
-                     UrbAdj = TRUE, CDs = CDs, trend = trend, dist = dist)
+                     UrbAdj = TRUE, CDs = CDs, dist = dist)
     }
   }
   if (plot == TRUE) {
@@ -303,8 +241,8 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FA
 #'
 #' Function to develop a pooling group based on catchment descriptors
 #'
-#' A pooling group is created from a CDs object, derived from GetCDs or ImportCDs, or specifically with the catchment descriptors AREA, SAAR, FARL, & FPEXT (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a parcticular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
-#'@param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
+#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
 #'@param AREA catchment area in km2
 #'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
 #'@param FARL catchment flood attenuation from reservoirs & lakes
@@ -327,9 +265,9 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL, trend = FA
 #'CDs.39001 <- GetCDs(39001)
 #'Pool.39001 <- Pool(CDs.39001, iug = TRUE, DeUrb = TRUE)
 #'#Change the Lcv and LSkew of the top site in the pooling group to 0.19 & 0.18,
-#'#respectively. Lcv and Lskew are in columns 16 & 17.
-#'Pool.39001[1,c(16, 17)] <- c(0.19, 0.18)
-#'@return A data.frame of the pooling group with site refence row names and 24 columns each providing catchment & gauge details for the sites in the pooling group.
+#'#respectively.
+#'PoolUpdate <- LRatioChange(Pool.39001, SiteID = 39001, 0.19, 0.18)
+#'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
 #'@author Anthony Hammond
 Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, DeUrb = FALSE){
   if(is.null(exclude) == FALSE) {
@@ -470,13 +408,240 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 }
 
 
+# Pool Small catchments--------------------------------------------------------------------
+
+#' Create pooling group for small catchments
+#'
+#' Function to develop a small catchments pooling group based on catchment descriptors
+#'
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the necessary catchment descriptors (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a partcicular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised.
+#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
+#'@param AREA catchment area in km2
+#'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
+#'@param N minimum Number of total gauged record years for the pooling group
+#'@param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
+#'@param iug iug stands for 'include urban gauge'. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space to the CDs provided if it has URBEXT2000 >= 0.03
+#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of the top site in the pooling group will be de-urbanised
+#'@examples
+#'#Get some catchment descriptors
+#'CDs.21001 <- GetCDs(21001)
+#'#Set up a pooling group object called Pool.21001 excluding site 206006
+#'#Then print the group to the console
+#'Pool.21001 <- PoolSmall(CDs.21001, exclude = 206006)
+#'Pool.21001
+#'#Form a pooling group, called PoolGroup, with the catchment descriptors specifically
+#'PoolGroup <- PoolSmall(AREA = 22, SAAR = 1702)
+#'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
+#'@author Anthony Hammond
+PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
+                       iug = FALSE, DeUrb = FALSE)
+{
+  if (is.null(exclude) == FALSE) {
+    Site.id <- match(exclude, row.names(NRFAData))
+    if (any(is.na(Site.id)) == TRUE)
+      stop("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")
+  }
+  suppressWarnings(if (is.null(CDs) == TRUE) {
+    SDMs <- function(x, AREA, SAAR) {
+      sqrt((((log(AREA) - log(x[, 1]))/1.264)^2) +
+             (((log(SAAR) - log(x[, 15]))/0.349)^2))
+    }
+    suppressWarnings(if (is.null(exclude) == TRUE) {
+      NRFAData <- NRFAData
+    }
+    else {
+      index <- NULL
+      for (i in 1:length(exclude)) {
+        index[i] <- which(row.names(NRFAData) == exclude[i])
+      }
+      NRFAData <- NRFAData[-index, ]
+    })
+    Site <- SDMs(NRFAData, AREA, SAAR)
+    Refs <- data.frame(row.names(NRFAData), Site)
+    colnames(Refs) <- c("Site", "SDM")
+    Refs.Order <- Refs[order(Refs$SDM), ]
+    Char.Sites <- Refs.Order$Site
+    Char.Sites <- as.character(Char.Sites)
+    Site.NRFA <- NRFAData[Char.Sites, ]
+    UrbInd <- Char.Sites[1]
+    ug.index <- which(row.names(NRFAData) == UrbInd)
+    UrbUrbInd <- NRFAData[ug.index, 22]
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    if (iug == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd > 0.03) {
+      Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
+    }
+    else {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd <= 0.03) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")
+    }
+    SDM <- SDMs(Site.NRFA, AREA, SAAR)
+    Site.NRFA <- cbind(Site.NRFA, SDM)
+    Cum.N <- NULL
+    for (i in 1:length(Site.NRFA$N)) {
+      Cum.N[i] <- sum(Site.NRFA$N[1:i])
+    }
+    min(which(Cum.N >= 500))
+    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)), ]
+    Ds <- function(x) {
+      u.hat <- apply(tf, 2, mean)
+      Res <- numeric(1)
+      for (i in 1:length(Site.NRFA$N)) {
+        Res <- Res + as.numeric(tf[i, ] - u.hat) %*%
+          t(as.numeric((tf[i, ] - u.hat)))
+      }
+      D <- NULL
+      for (i in 1:length(Site.NRFA$N)) {
+        D[i] <- ((1/3) * length(Site.NRFA$N)) * as.numeric(tf[i,
+        ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i,
+        ] - u.hat)))
+      }
+      return(D)
+    }
+    tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
+    Discordancy <- Ds(tf)
+    crit.vs <- c(1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
+                 2.632, 2.757, 2.869, 2.971, 3)
+    xd <- seq(5, 15)
+    Crit.frame <- data.frame(xd, crit.vs)
+    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),
+                      2]
+    Discordant <- NULL
+    for (i in 1:length(Discordancy)) {
+      Discordant[i] <- isTRUE(Discordancy[i] > C.V)
+    }
+    Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
+    Site.NRFA <- Site.NRFA[, -c(12, 13, 14, 16, 19, 20)]
+    colnames(Site.NRFA)[24] <- "Discordant?"
+    if (DeUrb == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    else {
+      LcvCol <- which(colnames(Site.NRFA) == "Lcv")
+      LskewCol <- which(colnames(Site.NRFA) == "LSkew")
+      UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
+      DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1,
+                                                           UrbCol], DeUrb = TRUE)
+      DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol],
+                               Site.NRFA[1, UrbCol], DeUrb = TRUE)
+      Site.NRFA[1, LcvCol] <- DeUrbesLCV
+      Site.NRFA[1, LskewCol] <- DeUrbesLSKEW
+      if (Site.NRFA[1, 14] < 0.03) {
+        print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03. The sites' Lcv & lskew have been adjusted as if it were urban")
+      }
+    }
+    return(Site.NRFA)
+  }
+  else {
+    SDMs <- function(x, AREA, SAAR) {
+      sqrt((((log(AREA) - log(x[, 1]))/1.264)^2) +
+             (((log(SAAR) - log(x[, 15]))/0.349)^2))
+    }
+    suppressWarnings(if (is.null(exclude) == TRUE) {
+      NRFAData <- NRFAData
+    }
+    else {
+      index <- NULL
+      for (i in 1:length(exclude)) {
+        index[i] <- which(row.names(NRFAData) == exclude[i])
+      }
+      NRFAData <- NRFAData[-index, ]
+    })
+    Site <- SDMs(NRFAData, CDs[1, 2], CDs[15, 2])
+    Refs <- data.frame(row.names(NRFAData), Site)
+    colnames(Refs) <- c("Site", "SDM")
+    Refs.Order <- Refs[order(Refs$SDM), ]
+    Char.Sites <- Refs.Order$Site
+    Char.Sites <- as.character(Char.Sites)
+    Site.NRFA <- NRFAData[Char.Sites, ]
+    UrbInd <- Char.Sites[1]
+    ug.index <- which(row.names(NRFAData) == UrbInd)
+    UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) ==
+                                            "URBEXT2000")]
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    if (iug == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd > 0.03) {
+      Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
+    }
+    else {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd <= 0.03) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")
+    }
+    SDM <- SDMs(Site.NRFA, CDs[1, 2], CDs[15, 2])
+    Site.NRFA <- cbind(Site.NRFA, SDM)
+    Cum.N <- NULL
+    for (i in 1:length(Site.NRFA$N)) {
+      Cum.N[i] <- sum(Site.NRFA$N[1:i])
+    }
+    min(which(Cum.N >= 500))
+    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)), ]
+    Ds <- function(x) {
+      u.hat <- apply(tf, 2, mean)
+      Res <- numeric(1)
+      for (i in 1:length(Site.NRFA$N)) {
+        Res <- Res + as.numeric(tf[i, ] - u.hat) %*%
+          t(as.numeric((tf[i, ] - u.hat)))
+      }
+      D <- NULL
+      for (i in 1:length(Site.NRFA$N)) {
+        D[i] <- ((1/3) * length(Site.NRFA$N)) * as.numeric(tf[i,
+        ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i,
+        ] - u.hat)))
+      }
+      return(D)
+    }
+    tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
+    Discordancy <- Ds(tf)
+    crit.vs <- c(1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
+                 2.632, 2.757, 2.869, 2.971, 3)
+    xd <- seq(5, 15)
+    Crit.frame <- data.frame(xd, crit.vs)
+    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),
+                      2]
+    Discordant <- NULL
+    for (i in 1:length(Discordancy)) {
+      Discordant[i] <- isTRUE(Discordancy[i] > C.V)
+    }
+    Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
+    Site.NRFA <- Site.NRFA[, -c(12, 13, 14, 16, 19, 20)]
+    colnames(Site.NRFA)[24] <- "Discordant?"
+    if (DeUrb == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    else {
+      LcvCol <- which(colnames(Site.NRFA) == "Lcv")
+      LskewCol <- which(colnames(Site.NRFA) == "LSkew")
+      UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
+      DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1,
+                                                           UrbCol], DeUrb = TRUE)
+      DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol],
+                               Site.NRFA[1, UrbCol], DeUrb = TRUE)
+      Site.NRFA[1, LcvCol] <- DeUrbesLCV
+      Site.NRFA[1, LskewCol] <- DeUrbesLSKEW
+      if (Site.NRFA[1, 14] < 0.03) {
+        print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03")
+      }
+    }
+    return(Site.NRFA)
+  })
+}
+
+
 # PoolEst -----------------------------------------------------------------
 
 #' Pooled flood estimates
 #'
 #' Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
 #'
-#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from ImportCDs or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6): 1357–1371. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. If trend = TRUE & gauged = FALSE, the QMED is multiplied by a trend coefficient. The coefficient was derived by calculating a weighted (by sample size) mean proportional change in the 2-year flow, from the UK National River Flow Archive benchmark sites considered suitable for pooling. The weighted per year change was first calculated and then multiplied by half the mean sample size of sites suitable for QMED. If trend = TRUE and gauged = TRUE, the weighted per year change is multiplied by half the sample size of the first site in the pooling group. This approach attempts to include a generic non-stationarity in the pooled estimates by adjusting the location parameter. Among other assumptions (such as the change being linear and only to the location of the distribution), it makes the assumption that apparent trends at individual sites are unreliable due to short record lengths or site specific due to human influence, but across many sites the mean increase in median peak discharge is representative of a non-stationary process across the UK (this approach will be regionalised in a later version of the tool). The trend is applied to whatever is in the QMED argument. Therefore, trend should equal FALSE if the QMED estimate has been user adjusted for trend already. If Lcv & Lskew have also been user adjusted for a gauged site, these can be changed in the pooling group (see Pool function details). The per year, weighted mean QMED trend, was estimated to be 0.12 percent +/- 0.05 (95 percent uncertainty - calculated by weighted resampling).
+#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from CDsXML or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'.
 #'
 #'@param x pooling group derived from the Pool function
 #'@param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
@@ -484,10 +649,9 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel"; the generalised logistic, generalised extreme value, and Gumbel distribution, respectively. The default is "GenLog"
 #'@param RP return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000
 #'@param UrbAdj logical argument with a default of FALSE. When TRUE, an urban adjustment is applied to the pooled Lcv and LSkew
-#'@param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
 #'@param URBEXT the catchment URBEXT2000, to be supplied if UrbAdj is TRUE and if CDs have not been
-#'@param trend logical argument with a default of FALSE. TRUE adjusts the stationary QMED estimate to a non-stationary estimate
-#'@param fseQMED factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.41
+#'@param fseQMED factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46
 #'@examples
 #'#Get some catchment descriptors and form a pooling group. It's urban and
 #'#therefore the site of interest is not included.
@@ -503,7 +667,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'
 #'@return A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew.
 #'@author Anthony Hammond
-PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,50,75,100,200,500,1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, trend = FALSE, fseQMED = 1.41) {
+PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,50,75,100,200,500,1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, fseQMED = 1.46) {
   if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
   if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
   if(UrbAdj == TRUE) {
@@ -518,8 +682,6 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
   if(UrbAdj == TRUE) {lskew <- ((lskew+1)*1.096017^(1.567*URBEXT2000))-1} else {lskew <- lskew}
   if(dist == "Gumbel") {Zt <- func(lcv, RP = RP)} else {Zt <- func(lcv, lskew, RP = RP)}
   GF <- as.numeric(format(round(Zt, 3), nsmall = 3))
-  if(trend == TRUE & gauged == FALSE) {QMED <- QMED*1.023}
-  if(trend == TRUE & gauged == TRUE) {QMED <- QMED+(QMED*0.001048557*(x$N[1]/2))}
   Qt <- Zt*QMED
   Q <- as.numeric(format(round(Qt, 3), nsmall = 3))
   PooledLcv <- lcv
@@ -694,6 +856,42 @@ GumbelGF <- function(lcv, RP){
   gf <- 1+B*(log(log(2))-log(-log(1-(1/RP))))
   return(gf)
 }
+
+
+#'Kappa3 distribution growth factors
+#'
+#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#'
+#' @details Growth factors are calculated by the method outlined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142
+#' @param lcv linear coefficient of variation
+#' @param lskew linear skewness
+#' @param RP return period
+#' @examples
+#' #Get a ungauged pooled Lcv and LSkew for catchment 15006
+#' PooledRes <- as.numeric(QuickResults(GetCDs(15006), plot = FALSE)[[2]])
+#' #Calculate Kappa growth factor for the 100-year flood
+#' Kappa3GF(PooledRes[1], PooledRes[2], RP = 100)
+#' @return Kappa3 distribution estimated growth factor
+#' @author Anthony Hammond
+Kappa3GF <- function(lcv, lskew, RP) {
+  gr <- function(k){
+    g1 <- (1*gamma(1+k)*gamma(-k-1/-0.4))/((0.4)^(1+k)*gamma(1-1/-0.4))
+    g2 <- (2*gamma(1+k)*gamma(-k-2/-0.4))/((0.4)^(1+k)*gamma(1-2/-0.4))
+    g3 <- (3*gamma(1+k)*gamma(-k-3/-0.4))/((0.4)^(1+k)*gamma(1-3/-0.4))
+    vec <- c(g1,g2,g3)
+    return(vec)
+  }
+  KSolve <- function(k) {
+    abs(((- gr(k)[1] + 3*gr(k)[2] - 2*gr(k)[3])/ (gr(k)[1] - gr(k)[2])) - lskew)
+  }
+  k <- 0.01
+  KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
+  GrRes <- gr(KRes)
+  B <- (lcv * KRes) / ((GrRes[1]-GrRes[2]) + lcv*(GrRes[1] - (log(2.22)^KRes)))
+  xT <- 1 + (B/KRes) *(log(2.22)^KRes - ((1-((RP-1)/RP)^-0.4)/-0.4)^KRes)
+  return(xT)
+}
+
 
 
 #'Generalised logistic distribution - estimates directly from sample
@@ -1300,7 +1498,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
       if(dist == "Gumbel"){
         return(res*GF[2])
       } else
-      return(res*GF[3])}
+        return(res*GF[3])}
 }
 
 
@@ -1311,7 +1509,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #'Estimated median annual maximum flow from catchment descriptors and donor sites
 #'
 #'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
-#' @param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param Don1 numeric site reference for the a signle donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
 #' @param UrbAdj logical argument with a default of FALSE. True applies an urban adjustment
@@ -1469,7 +1667,7 @@ QMEDDonEq <- function(AREA, SAAR, FARL, BFIHOST, QMEDgObs, QMEDgCds, xSI, ySI, x
 #'Provides donor adjustment candidates, descriptors, and results in order of the proximity to the centroid of the subject catchment.
 #'
 #'When d2 is FALSE the results for single donor adjustment are in the final column headed 'QMED.adj' for each site. If alpha is set to FALSE, the results in this column are from the same donor equation but with an exponent of 1. The donor adjustment method is as outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When two donors are used, only the result is returned, rather than donor candidates. The QMEDfse column provides the gauged factorial standard error for the median of the annual maximum sample. It is worth considering this when choosing a donor site (a high value indicates a poor donor). When choosing between two donors, the site with a lower QMEDfse would be an appropriate choice (all else being equal). The QMEDfse is calculated with the QMEDfseSS() function.
-#' @param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param x catchment centroid easting (for when CDs isn't used)
 #' @param y catchment centroid northing (for when CDs isn't used)
 #' @param QMEDscd QMED estimate for the catchment of interest (for when CDs isn't used)
@@ -1644,7 +1842,7 @@ LSkewUrb <- function(lskew, URBEXT2000, DeUrb = FALSE) {if(DeUrb == FALSE) {((ls
 #'
 #' UAF and PRUAF from catchment descriptors for QMED estimation in ungauged urban catchments
 #'
-#' @param CDs catchment descriptors derived from either GetCDs or ImportCDs
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param URBEXT2000 quantification of catchment urbanisation (used when CDs is not)
 #' @param BFIHOST baseflow index as a function of hydrological soil type of the catchment (used when CDs is not)
 #' @examples
@@ -1718,72 +1916,77 @@ DeTrend <- function(x) {
 }
 
 
-
-#' Import catchment descriptors from .CD3 files
+#' Import catchment descriptors from .xml files
 #'
-#' Imports catchment descriptors from CD3 files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
+#' Imports catchment descriptors from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' The CD3 files downloaded from the FEH webserver are formatted differently from the CD3 files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
-#' @param x the CD3 file path
+#' File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' @param x the xml file path
 #' @examples
-#' #Import catchment descriptors from a NRFA peakflows CD3 file and display in console
-#' \dontrun{CDs.4003 <- ImportCDs("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/4003.CD3", web = FALSE)}
+#' #Import catchment descriptors from a NRFA peakflows xml file and display in console
+#' \dontrun{CDs.4003 <- CDsXML("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.xml")}
 #' \dontrun{CDs.4003}
-#' #Import catchment descriptors from a FEH webserver CD3 file and display CDs in the console
-#' \dontrun{CDs.MySite <- ImportCDs("C:/Data/FEH_Catchment_384200_458200.CD3")}
+#' #Import catchment descriptors from a FEH webserver xml file and display xml in the console
+#' \dontrun{CDs.MySite <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")}
 #' @return A data.frame with columns; Descriptor and Value.
 #' @author Anthony Hammond
-ImportCDs <- function(x) {
-  WebTest <- read.table(x, stringsAsFactors = FALSE, skip = 4, nrows = 1)
-  if(WebTest[1,1] == "[CDS") {web <- TRUE} else {web <- FALSE}
-  if(web == TRUE) {ImportWebCDs <- function(x) {
-    IniCDs <- read.table(x, skip = 20, nrows = 23, header = FALSE, sep = ",", stringsAsFactors = FALSE)
-    Excl <- IniCDs[-c(9,10,19,20,21,22),]
-    Area <- read.table(x, skip = 18, nrows = 1, header = FALSE, sep = ",", stringsAsFactors = FALSE)
-    Centroid <- read.table(x, skip = 19, nrows = 1, header = FALSE, sep = ",", stringsAsFactors = FALSE)
-    Easting <- Centroid[2:3]
-    colnames(Easting) <- c("V1", "V2")
-    Northing <- Centroid[3:4]
-    colnames(Northing) <- c("V1", "V2")
-    CDSet <- rbind(Area, Excl, Easting, Northing)
-    rownames(CDSet) <- seq(1,20)
-    CDSet[19,1] <- "Easting"
-    CDSet[20,1] <- "Northing"
-    CDSet[1,1] <- "AREA"
-    colnames(CDSet) <- c("Descriptor", "Value")
-    return(CDSet)
+CDsXML <- function(x) {
+  xmlx <- xml2::read_xml(x)
+  ListXML <- xml2::as_list(xmlx)
+  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+    CDS <- ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors
   }
-  CDs <- ImportWebCDs(x)}
-  else {
-    ImportNRFACDs <- function(x) {
-      IniFile <- suppressWarnings(read.table(x, sep = ",", skip = 3, stringsAsFactors = FALSE, header = FALSE, quote = "\\"))
-      CDNames <- c("DTM AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST", "DPLBAR", "DPSBAR", "FARL", "FPEXT", "LDP", "PROPWET", "RMED-1H", "RMED-1D", "RMED-2D", "SAAR", "SAAR4170", "SPRHOST", "URBEXT2000")
-      MatchDescriptor <- match(CDNames, IniFile$V1)
-      MD1 <- MatchDescriptor+1
-      Descriptor <- as.character(IniFile$V1[MatchDescriptor])
-      Value <- as.numeric(IniFile$V1[MD1])
-      CDsDF <- data.frame(Descriptor, Value, stringsAsFactors = FALSE)
-      NGRInd <- which(IniFile$V1 == "CENTROID NGR")
-      Easting <- as.integer(IniFile$V1[(NGRInd+2)])
-      Northing <- as.integer(IniFile$V1[(NGRInd+3)])
-      NGRNames <- c("Easting", "Northing")
-      NGRDF <- data.frame(NGRNames, c(as.integer(Easting), as.integer(Northing)), stringsAsFactors = FALSE)
-      colnames(NGRDF) <- c("Descriptor", "Value")
-      CDsDF <- rbind(CDsDF, NGRDF)
-      CDsDF[1,1] <- "AREA"
-      rws <- seq(1,nrow(CDsDF))
-      row.names(CDsDF) <- rws
-      return(CDsDF)
-    }
-    CDs <- ImportNRFACDs(x)
+  if(attributes(ListXML)$names == "FEHDescriptors") {
+    CDS <- ListXML$FEHDescriptors$CatchmentDescriptors
   }
-  return(CDs)
+
+  Descriptor <- c("AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST19", "DPLBAR",
+                  "DPSBAR", "FARL", "FPEXT", "LDP", "PROPWET", "RMED-1H",
+                  "RMED-1D", "RMED-2D", "SAAR", "SAAR4170", "SPRHOST",
+                  "URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFIHOST")
+  if(length(as.numeric(CDS$area)) < 1) {AREA <- NA} else {AREA <- as.numeric(CDS$area)}
+  if(length(as.numeric(CDS$altbar)) < 1) {ALTBAR <- NA} else {ALTBAR <- as.numeric(CDS$altbar)}
+  if(length(as.numeric(CDS$aspbar)) < 1) {ASPBAR <- NA} else {ASPBAR <- as.numeric(CDS$aspbar)}
+  if(length(as.numeric(CDS$aspvar)) < 1) {ASPVAR <- NA} else {ASPVAR <- as.numeric(CDS$aspvar)}
+  if(length(as.numeric(CDS$bfihost19)) < 1) {BFIHOST19 <- NA} else {BFIHOST19 <- round(as.numeric(CDS$bfihost19), 3)}
+  if(length(as.numeric(CDS$dplbar)) < 1) {DPLBAR <- NA} else {DPLBAR <- as.numeric(CDS$dplbar)}
+  if(length(as.numeric(CDS$dpsbar)) < 1) {DPSBAR <- NA} else {DPSBAR <- as.numeric(CDS$dpsbar)}
+  if(length(as.numeric(CDS$farl)) < 1) {FARL <- NA} else {FARL <- as.numeric(CDS$farl)}
+  if(length(as.numeric(CDS$fpext)) < 1) {FPEXT <- NA} else {FPEXT <- as.numeric(CDS$fpext)}
+  if(length(as.numeric(CDS$ldp)) < 1) {LDP <- NA} else {LDP <- as.numeric(CDS$ldp)}
+  if(length(as.numeric(CDS$propwet)) < 1) {PROPWET <- NA} else {PROPWET <- as.numeric(CDS$propwet)}
+  if(length(as.numeric(CDS$rmed_1h)) < 1) {RMED1H <- NA} else {RMED1H <- as.numeric(CDS$rmed_1h)}
+  if(length(as.numeric(CDS$rmed_1d)) < 1) {RMED1D <- NA} else {RMED1D <- as.numeric(CDS$rmed_1d)}
+  if(length(as.numeric(CDS$rmed_2d)) < 1) {RMED2D <- NA} else {RMED2D <- as.numeric(CDS$rmed_2d)}
+  if(length(as.numeric(CDS$saar)) < 1) {SAAR <- NA} else {SAAR <- as.numeric(CDS$saar)}
+  if(length(as.numeric(CDS$saar4170)) < 1) {SAAR4170 <- NA} else {SAAR4170 <- as.numeric(CDS$saar4170)}
+  if(length(as.numeric(CDS$sprhost)) < 1) {SPRHOST <- NA} else {SPRHOST <- as.numeric(CDS$sprhost)}
+  if(length(as.numeric(CDS$urbext2000)) < 1) {URBEXT2000 <- NA} else {URBEXT2000 <- as.numeric(CDS$urbext2000)}
+  Easting <- attributes(CDS$CatchmentCentroid)$x
+  Northing <- attributes(CDS$CatchmentCentroid)$y
+  if(length(as.numeric(CDS$urbext1990)) < 1) {URBEXT1990 <- NA} else {URBEXT1990 <- as.numeric(CDS$urbext1990)}
+  if(length(as.numeric(CDS$bfihost)) < 1) {BFIHOST <- NA} else {BFIHOST <- as.numeric(CDS$bfihost)}
+  Value <- c(AREA, ALTBAR, ASPBAR, ASPVAR, BFIHOST19, DPLBAR,
+             DPSBAR, FARL, FPEXT, LDP, PROPWET, RMED1H,
+             RMED1D, RMED2D, SAAR, SAAR4170, SPRHOST,
+             URBEXT2000, Easting, Northing, URBEXT1990, BFIHOST)
+  DF <- data.frame(Descriptor, Value)
+  NALogic <- is.na(DF$Value)
+  if(NALogic[5] == TRUE & NALogic[22] ==FALSE){DF$Value[5] <- DF$Value[22]}
+  if(NALogic[5] == TRUE & NALogic[22] ==FALSE) print("BFIHOST19 is not in the xml file and has been replaced by BFIHOST")
+  TrueInd <- which(NALogic == TRUE)
+  if(length(TrueInd) > 0 & NALogic[5] == FALSE) print("One or more catchment descriptors are missing from the xml file")
+  if(length(TrueInd) > 1 & NALogic[5] == TRUE) print("One or more catchment descriptors are missing from the xml file. This may impact use of this CDs object with other functions")
+  DF[,2] <- as.numeric(DF[,2])
+  return(DF)
 }
 
 
-#' Get catchment descriptors from the National River Flow Archive sites considered suitable for median annual maximum flow estimation (QMED).
+
+
+#' Get catchment descriptors from the National River Flow Archive sites considered suitable for median annual maximum flow estimation (QMED) and pooling.
 #'
-#' Extracts the catchment descriptors for a site of interest from those suitable for QMED.
+#' Extracts the catchment descriptors for a site of interest from those suitable for QMED and pooling.
 #' @param x the site reference of interest (numeric)
 #' @examples
 #' #Get CDs and display in the console
@@ -1793,7 +1996,7 @@ ImportCDs <- function(x) {
 #' @author Anthony Hammond
 GetCDs <- function(x) {
   Site.id <- which(row.names(QMEDData) == x)
-  if(length(Site.id) == 0) stop ("Site ID not within the set of sites considered suitable for QMED or pooling analysis. For further sites the ImportCDs can be used")
+  if(length(Site.id) == 0) stop ("Site ID not within the set of sites considered suitable for QMED or pooling analysis. For further sites CDsXML can be used")
   Site <- QMEDData[Site.id,]
   Site <- Site[,-c(19,20)]
   colnames(Site)[colnames(Site) == "X"] <-  "Easting"
@@ -1801,7 +2004,7 @@ GetCDs <- function(x) {
   Site <- t(Site)
   rws <- as.vector(row.names(Site))
   values <- NULL
-  for(i in 1:22) {values[i] <- Site[i,1]}
+  for(i in 1:24) {values[i] <- Site[i,1]}
   dframe <- data.frame(rws, values)
   colnames(dframe) <- c("Descriptor", "Value")
   dframe[1:14,2] <- round(dframe[1:14,2], 4)
@@ -1818,11 +2021,11 @@ GetCDs <- function(x) {
 #' @param x the file path for the .AM file
 #' @examples
 #' #Import an AMAX sample and display the first six rows in the console
-#' \dontrun{AM.4003 <- ImportAM("C:/Data/NRFAPeakFlow_v10/Suitable for QMED/4003.AM")}
+#' \dontrun{AM.4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")}
 #' \dontrun{head(AM.4003)]}
 #' @return A data.frame with columns; Date and Flow
 #' @author Anthony Hammond
-ImportAM <- function(x)
+AMImport <- function(x)
 {
   AMAX <- read.table(x, sep = ",", col.names = c("Date", "Flow", "Stage"), colClasses = c("character", "numeric", "NULL"), fill = T, skip = 6)
   Row.Strt <- 1+which(AMAX[,1] == "[AM Values]")
@@ -1871,7 +2074,7 @@ ImportAM <- function(x)
 #'
 #' Extracts independent peaks over a threshold from a sample
 #'
-#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be timestamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours, with no rain, are independent). For sub-daily rainfall, further work, after use of the function, would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. When plotted, the blue line is the threshold and the green line is the independence line (div).
+#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be time-stamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours with no rain, are independent). For sub-daily rainfall, further work would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. Alternatively, the data could be aggregated (extracting max rain) to the daily scale first (or any scale necessary to ensure independence) and then the function applied. When plotted, the blue line is the threshold, and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
 #' @param div user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
 #' @param thresh user chosen threshold. Default is 0.975
@@ -1928,7 +2131,7 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
     return(vp)
   }
   NAs <- FALSE
-  if(class(x) != "data.frame") {
+  if(is(x, "data.frame") == FALSE) {
     if(is.null(div)) {mu <- mean(x,na.rm = TRUE)} else {mu <- div}
     if(mu >= quantile(x,thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
     QThresh <- as.numeric(quantile(x, thresh, na.rm = TRUE))
@@ -1990,44 +2193,77 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
 
 #' Annual maximum extraction
 #'
-#' Extracts the annual maximum peaks from a data.frame which has dates in the first column and variable in the second.
+#' Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 #'
-#'  The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year.
+#'  The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
 #' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
+#' @param func A user chosen function to extract statistics other than maximums.
 #' @param Plot a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted
+#' @param Title Title of the plot when. Default is "Hydrological annual maximum sequence"
+#' @param Ylabel Label for the y axis. Default is "Annual maximum quantiles"
 #' @examples
 #' #Extract the Thames AMAX daily mean flow and display the first six rows
 #' ThamesAM <- AMextract(ThamesPQ[,c(1,3)])
 #' head(ThamesAM)
+#' #Extract the annual rainfall totals and change the plot labels accordingly
+#' ThamesAnnualP <- AMextract(ThamesPQ[,1:2], func = sum, Title = "", Ylab = "Rainfall (mm)")
 #' @return a data.frame with columns; WaterYear and AM
 #' @author Anthony Hammond
-AMextract <- function(x, Plot = TRUE){
-  Dates <- as.Date(x[,1])
-  x <- data.frame(Dates, x[,2])
-  Date1 <- x[1,1]
-  DateLst <- x[length(x[,1]),1]
-  DateExtract <- function(d){
-    yr <- as.POSIXlt(d)$year+1900
-    mnth <- as.POSIXlt(d)$mon+1
+AMextract <- function (x, func = NULL, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Annual maximum quantiles")
+{
+  if(is.null(func) == TRUE) {func <- max} else {func <- func}
+  Dates <- as.Date(x[, 1])
+  x <- data.frame(Dates, x[, 2])
+  Date1 <- x[1, 1]
+  DateLst <- x[length(x[, 1]), 1]
+  DateExtract <- function(d) {
+    yr <- as.POSIXlt(d)$year + 1900
+    mnth <- as.POSIXlt(d)$mon + 1
     return(c(yr, mnth))
   }
   Date1.ext <- DateExtract(Date1)
   DateLst.ext <- DateExtract(DateLst)
-  if(Date1.ext[2] < 10) {WY <- Date1.ext[1]-1} else {WY <- Date1.ext[1]}
-  if(DateLst.ext[2] < 10) {WYend <- DateLst.ext[1]-1} else {WYend <- DateLst.ext[1]}
+  if (Date1.ext[2] < 10) {
+    WY <- Date1.ext[1] - 1
+  }
+  else {
+    WY <- Date1.ext[1]
+  }
+  if (DateLst.ext[2] < 10) {
+    WYend <- DateLst.ext[1] - 1
+  }
+  else {
+    WYend <- DateLst.ext[1]
+  }
   WYrSt <- as.Date(paste(WY, "10", "01", sep = "-"))
-  WYrSt.to <- as.Date(paste(WYend, "10", "01", sep = "-"))
+  WYrSt.to <- as.Date(paste(WYend, "10", "01",
+                            sep = "-"))
   YrStarts <- seq(WYrSt, WYrSt.to, by = "year")
-  WYendst <- as.Date(paste(WY+1, "09", "30", sep = "-"))
+  WYendst <- as.Date(paste(WY + 1, "09", "30",
+                           sep = "-"))
   YrEnds <- seq(WYendst, length.out = length(YrStarts), by = "year")
   AM <- NULL
-  for (i in 1:length(YrStarts)) {AM[i] <- suppressWarnings(max(x[,2][x[,1] >= YrStarts[i] & x[,1] <= YrEnds[i]], na.rm = TRUE))}
+  for (i in 1:length(YrStarts)) {
+    AM[i] <- suppressWarnings(func(x[, 2][x[, 1] >= YrStarts[i] &
+                                            x[, 1] <= YrEnds[i]], na.rm = TRUE))
+  }
   WaterYear <- seq(WY, WYend)
   AMDF <- data.frame(WaterYear, AM)
   InfInd <- which(AMDF$AM == -Inf)
-  if(length(InfInd) > 0) {AMDF <- AMDF[-InfInd,]} else {AMDF <- AMDF}
-  if(length(InfInd) > 0) {print("Warning: at least one year had no data and returned -inf. The year/s in question have been removed")}
-  if(Plot == TRUE) {plot(WaterYear, AM, type = "h", col = rgb(0,0.3,0.7), main = "Hydrological annual maximum sequence", ylab = "Annual maximum quantiles")}
+  if (length(InfInd) > 0) {
+    AMDF <- AMDF[-InfInd, ]
+  }
+  else {
+    AMDF <- AMDF
+  }
+  if (length(InfInd) > 0) {
+    print("Warning: at least one year had no data and returned -inf. The year/s in question have been removed")
+  }
+  if (Plot == TRUE) {
+    plot(WaterYear, AM, type = "h", col = rgb(0, 0.3,
+                                              0.7), main = Title,
+         ylab = Ylabel)
+  }
   return(AMDF)
 }
 
@@ -2038,114 +2274,198 @@ AMextract <- function(x, Plot = TRUE){
 #'
 #' Quantification of uncertainty for pooling results for the gauged and ungauged case
 #'
-#'  Uncertainty in the ungauged case is calulated as equations 8, 9, and 10 in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6), 1357–1371. The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site central estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calculations of weighted growth curves & urban adjustment see the PoolEst() function details. A trend option is not included within the Uncertainty function and would need be considered separately if used in PoolEst. An indication of the uncertainty for trend applied in PoolEst is provided in the PoolEst function details. The gauged method is also detailed in Hammond (2021).
+#'  Uncertainty in the ungauged case is calulated as detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site central estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calculations of weighted growth curves & urban adjustment see the PoolEst() function details. The gauged method is detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6), 1357–1371.
 #' @param x the pooled group derived from the Pool() function
 #' @param gauged a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case
 #' @param RP the return period of interest. Default is 100
 #' @param dist a choice of distribution to use for the estimates. Choices are "GEV", "GenLog" or "Gumbel". The default is "GenLog"
 #' @param qmed the QMED estimate for the ungauged case. Or for the gauged if the user wishes to override the median from the NRFA data
-#' @param no.Donors number of donors used for estimation of QMED in the ungauged case
+#' @param QMEDfse The factorial standard error of the QMED estimate for when an ungauged assessment has been undertaken. The default is 1.46
 #' @param UrbAdj applies an urban adjustment to the growth curves
-#' @param CDs catchment descriptors derived from either GetCDs or ImportCDs. Necessary if a UrbAdj is TRUE
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML. Necessary if a UrbAdj is TRUE
 #' @param conf the confidence level of the intervals for the gauged case. Default is 0.95. Must be between 0 and 1
 #' @examples
 #' #Get CDs, form an ungauged pooling group and quantify the uncertainty of the
 #' #50-year pooled estimate when using a CDs estimate of QMED with no donors
 #' CDs.203018 <- GetCDs(203018)
 #' Pool.203018 <- Pool(CDs.203018, exclude = 203018)
-#' Uncertainty(Pool.203018, qmed  = QMED(CDs.203018), no.Donors = 0, RP = 50)
+#' Uncertainty(Pool.203018, qmed  = QMED(CDs.203018), RP = 50)
 #' #Form pooling group with subject site included. Quantify the uncertainty of the
 #' #50-year pooled estimate at the 99% level.
 #'  Pool.203018 <- Pool(CDs.203018)
 #'  Uncertainty(Pool.203018, gauged = TRUE, RP = 50, conf = 0.99)
-#' @return For the ungauged case a data.frame of four values relating to the lower 68 and upper 68 percent interval and the lower 95 and upper 95 percent intervals. These are headed by the associated percentiles. For the gauged case a numeric vector of two values is provided with the lower and upper intervals of the chosen conf level. The uncertainty function doesn't have a trend option; if trend is used in the pooled estimate this would need to be considered and intervals adjused accordingly. However a greater uncertainty should be considered.
+#' @return For the ungauged case a data.frame of four values relating to the lower 68 and upper 68 percent interval and the lower 95 and upper 95 percent intervals. These are headed by the associated percentiles. For the gauged case a numeric vector of two values is provided with the lower and upper intervals of the chosen conf level.
 #' @author Anthony Hammond
-Uncertainty <- function(x, gauged = FALSE, RP = 100, dist = "GenLog", qmed = NULL, no.Donors = 2, UrbAdj = FALSE, CDs = NULL, conf = 0.95){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  if(UrbAdj == TRUE & is.null(CDs) == TRUE) stop("if UrbAdj = TRUE, CD object is necessary")
-  if(is.null(CDs) == FALSE) {URBEXT2000 <- CDs[18,2]}
-  if(gauged == FALSE) {
-    if(is.null(qmed) == TRUE) stop("Need to input qmed & no.of donors")
-    y <- -log(-log(1-1/RP))
-    if(no.Donors == 0) {FSE <- 1.4665 - 0.0135*y + 0.0096*y^2}
-    if(no.Donors == 1) {FSE <- 1.427 - 0.0134*y + 0.0098*y^2}
-    if(no.Donors == 2) {FSE <- 1.4149 - 0.0163*y + 0.0102*y^2}
-    Central <- as.numeric(PoolEst(x = x, gauged = gauged, RP = RP, dist = dist, QMED = qmed, trend = FALSE, UrbAdj = UrbAdj, CDs = CDs)[[1]][2])
+Uncertainty <- function (x, gauged = FALSE, RP = 100, dist = "GenLog",
+                         qmed = NULL, QMEDfse = 1.46, UrbAdj = FALSE, CDs = NULL, conf = 0.95)
+{
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24)
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  if (UrbAdj == TRUE & is.null(CDs) == TRUE)
+    stop("if UrbAdj = TRUE, CD object is necessary")
+  if (is.null(CDs) == FALSE) {
+    URBEXT2000 <- CDs[18, 2]
+  }
+  if (gauged == FALSE) {
+    if (is.null(qmed) == TRUE)
+      stop("Need to input qmed")
+    y <- -log(-log(1 - 1/RP))
+    FSE <- QMEDfse*(0.0069*y^2 - 0.0099*y + 1.0039)
+    Central <- as.numeric(PoolEst(x = x, gauged = gauged,
+                                  RP = RP, dist = dist, QMED = qmed,
+                                  UrbAdj = UrbAdj, CDs = CDs)[[1]][2])
     L68 <- Central/FSE
-    U68 <- Central*FSE
+    U68 <- Central * FSE
     L95 <- Central/FSE^2
-    U95 <- Central*FSE^2
+    U95 <- Central * FSE^2
     df <- data.frame(L68, U68, L95, U95)
-    colnames(df) <- c("16%", "84%", "2.5%", "97.5%")
+    colnames(df) <- c("16%", "84%", "2.5%",
+                      "97.5%")
     return(df)
-  } else {
-    Unc.gauged <- function(x, RP, dist = "GenLog", UrbAdj = FALSE, trend = FALSE, qmed = NULL, fse = FALSE, conf = 0.68) {
-      if(dist == "GenLog") {func <- GenLogGF}
-      if(dist == "GEV") {func <- GEVGF}
-      if(dist == "Gumbel") {func <- GumbelGF}
+  }
+  else {
+    Unc.gauged <- function(x, RP, dist = "GenLog",
+                           UrbAdj = FALSE, qmed = NULL, fse = FALSE,
+                           conf = 0.68) {
+      if (dist == "GenLog") {
+        func <- GenLogGF
+      }
+      if (dist == "GEV") {
+        func <- GEVGF
+      }
+      if (dist == "Gumbel") {
+        func <- GumbelGF
+      }
       Boot <- function(AM.ref) {
         x <- GetAM(AM.ref)
-        x <- x[,2]
-        resample <- sample(x, size = length(x)*500, replace = TRUE)
+        x <- x[, 2]
+        resample <- sample(x, size = length(x) * 500,
+                           replace = TRUE)
         mat <- matrix(resample, nrow = length(x), ncol = 500)
         lcvs <- apply(mat, 2, Lcv)
         lskews <- apply(mat, 2, LSkew)
         dfRatios <- data.frame(lcvs, lskews)
         return(dfRatios)
       }
-
       SiteRatios <- NULL
-      for(i in 1:length(x$N)) {SiteRatios[[i]] <- Boot(rownames(x)[i])}
-
-      LratTemp <- function(x, j){
+      for (i in 1:length(x$N)) {
+        SiteRatios[[i]] <- Boot(rownames(x)[i])
+      }
+      LratTemp <- function(x, j) {
         lcvs1 <- NULL
-        for (i in 1:length(x$N)) {lcvs1[i] <- SiteRatios[[i]][j,1]}
+        for (i in 1:length(x$N)) {
+          lcvs1[i] <- SiteRatios[[i]][j, 1]
+        }
         lskews1 <- NULL
-        for (i in 1:length(x$N)) {lskews1[i] <- SiteRatios[[i]][j,2]}
+        for (i in 1:length(x$N)) {
+          lskews1[i] <- SiteRatios[[i]][j, 2]
+        }
         PoolTemp <- x
-        PoolTemp[,16] <- lcvs1
-        PoolTemp[,17] <- lskews1
+        PoolTemp[, 16] <- lcvs1
+        PoolTemp[, 17] <- lskews1
         lcvGTemp <- WGaugLcv(PoolTemp)
         lskewGTemp <- WGaugLSkew(PoolTemp)
         df <- data.frame(lcvGTemp, lskewGTemp)
         return(df)
       }
-
       Lratios <- LratTemp(x, 1)
-      for(j in 2:500) {Lratios <- rbind(Lratios, LratTemp(x, j))}
-      if(UrbAdj == TRUE) {LCVs <- LcvUrb(Lratios[,1], URBEXT2000)} else {LCVs <- Lratios[,1]}
-      if(UrbAdj == TRUE) {LSKEWs <- LSkewUrb(Lratios[,2], URBEXT2000)} else {LSKEWs <- Lratios[,2]}
-      if(dist == "Gumbel") {Zts <- func(LCVs, RP = RP)} else {Zts <- func(LCVs, LSKEWs, RP = RP)}
+      for (j in 2:500) {
+        Lratios <- rbind(Lratios, LratTemp(x, j))
+      }
+      if (UrbAdj == TRUE) {
+        LCVs <- LcvUrb(Lratios[, 1], URBEXT2000)
+      }
+      else {
+        LCVs <- Lratios[, 1]
+      }
+      if (UrbAdj == TRUE) {
+        LSKEWs <- LSkewUrb(Lratios[, 2], URBEXT2000)
+      }
+      else {
+        LSKEWs <- Lratios[, 2]
+      }
+      if (dist == "Gumbel") {
+        Zts <- func(LCVs, RP = RP)
+      }
+      else {
+        Zts <- func(LCVs, LSKEWs, RP = RP)
+      }
       AM <- GetAM(rownames(x)[1])
-      AM <- AM[,2]
-      resample <- sample(AM, size = length(AM)*500, replace = TRUE)
+      AM <- AM[, 2]
+      resample <- sample(AM, size = length(AM) * 500, replace = TRUE)
       mat <- matrix(resample, nrow = length(AM), ncol = 500)
       Meds <- apply(mat, 2, median)
-      if(is.null(qmed) == TRUE) {QMEDCentral <- median(AM)} else {QMEDCentral <- qmed}
+      if (is.null(qmed) == TRUE) {
+        QMEDCentral <- median(AM)
+      }
+      else {
+        QMEDCentral <- qmed
+      }
       lcvCentral <- WGaugLcv(x)
       lskewCentral <- WGaugLSkew(x)
-      if(UrbAdj == TRUE) {lcvCentral <- LcvUrb(lcvCentral, URBEXT2000 = URBEXT2000)}
-      if(UrbAdj == TRUE) {lskewCentral <- LSkewUrb(lskewCentral, URBEXT2000 = URBEXT2000)}
-      if(dist == "Gumbel") {ZtCentral <- func(lcv = lcvCentral, RP = RP)} else {ZtCentral <- func(lcv = lcvCentral, lskew = lskewCentral, RP = RP)}
-      FSEest <- function(x) {exp(sd(log(x) - mean(log(x))))}
-      #if(trend == TRUE){Meds <- Meds*1.082} else {Meds <- Meds}
-      Res500 <- Meds*Zts
+      if (UrbAdj == TRUE) {
+        lcvCentral <- LcvUrb(lcvCentral, URBEXT2000 = URBEXT2000)
+      }
+      if (UrbAdj == TRUE) {
+        lskewCentral <- LSkewUrb(lskewCentral, URBEXT2000 = URBEXT2000)
+      }
+      if (dist == "Gumbel") {
+        ZtCentral <- func(lcv = lcvCentral, RP = RP)
+      }
+      else {
+        ZtCentral <- func(lcv = lcvCentral, lskew = lskewCentral,
+                          RP = RP)
+      }
+      FSEest <- function(x) {
+        exp(sd(log(x) - mean(log(x))))
+      }
+      Res500 <- Meds * Zts
       FSE <- FSEest(Res500)
-      Intervals <- quantile(Res500, c((1-conf)/2, 1-(1-conf)/2))
+      Intervals <- quantile(Res500, c((1 - conf)/2, 1 -
+                                        (1 - conf)/2))
       Res <- list(fse, Intervals)
-      names(Res) <- c("Factorial standard error", "Intervals")
-      if(fse == TRUE) {return(Res)} else {return(Intervals)}
+      names(Res) <- c("Factorial standard error",
+                      "Intervals")
+      if (fse == TRUE) {
+        return(Res)
+      }
+      else {
+        return(Intervals)
+      }
     }
-    Res <- Unc.gauged(x = x, RP = RP, dist = dist, trend = FALSE, UrbAdj = UrbAdj, qmed = qmed, fse = FALSE, conf = conf)
-    if(dist == "GenLog") {func <- GenLogGF}
-    if(dist == "GEV") {func <- GEVGF}
-    if(dist == "Gumbel") {func <- GumbelGF}
+    Res <- Unc.gauged(x = x, RP = RP, dist = dist,
+                      UrbAdj = UrbAdj, qmed = qmed, fse = FALSE, conf = conf)
+    if (dist == "GenLog") {
+      func <- GenLogGF
+    }
+    if (dist == "GEV") {
+      func <- GEVGF
+    }
+    if (dist == "Gumbel") {
+      func <- GumbelGF
+    }
     MedianAM <- GetQMED(rownames(x)[1])
-    if(is.null(qmed) == TRUE) {QMEDCentral <- MedianAM} else {QMEDCentral <- qmed}
-    if(dist == "Gumbel") {SSEst <- QMEDCentral*func(x[1,16], RP = RP)} else {SSEst <- QMEDCentral*func(x[1,16], x[1,17], RP = RP)}
-    if(SSEst < Res[1]) {Res[1] <- SSEst}
-    if(SSEst > Res[2]) {Res[2] <- SSEst}
+    if (is.null(qmed) == TRUE) {
+      QMEDCentral <- MedianAM
+    }
+    else {
+      QMEDCentral <- qmed
+    }
+    if (dist == "Gumbel") {
+      SSEst <- QMEDCentral * func(x[1, 16], RP = RP)
+    }
+    else {
+      SSEst <- QMEDCentral * func(x[1, 16], x[1, 17], RP = RP)
+    }
+    if (SSEst < Res[1]) {
+      Res[1] <- SSEst
+    }
+    if (SSEst > Res[2]) {
+      Res[2] <- SSEst
+    }
   }
   return(Res)
 }
@@ -2168,16 +2488,24 @@ Uncertainty <- function(x, gauged = FALSE, RP = 100, dist = "GenLog", qmed = NUL
 #' UncSS(AM.203018$Flow, func = sd, conf = 0.90)
 #' @return A data.frame of three values; central, lower, and upper bootstrapped estimates.
 #' @author Anthony Hammond
-UncSS <- function(x, func, conf = 0.95, RP = FALSE) {
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  resample <- sample(x, size = length(x)*500, replace = TRUE)
+UncSS <- function (x, func, conf = 0.95, RP = NULL)
+{
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  resample <- sample(x, size = length(x) * 500, replace = TRUE)
   mat <- matrix(resample, nrow = length(x), ncol = 500)
-  if(RP == FALSE) {res <- apply(mat, 2, func)} else  {res <- apply(mat, 2, func, RP)}
-  lint <- (1-conf)/2
-  uint <- ((1-conf)/2)+conf
-  lower <-  quantile(res, lint, na.rm = TRUE)
+  if (is.null(RP) == TRUE) {
+    res <- apply(mat, 2, func)
+  }
+  else {
+    res <- apply(mat, 2, func, RP = RP)
+  }
+  lint <- (1 - conf)/2
+  uint <- ((1 - conf)/2) + conf
+  lower <- quantile(res, lint, na.rm = TRUE)
   upper <- quantile(res, uint, na.rm = TRUE)
-  centre <- quantile(res, 0.5,na.rm = TRUE)
+  centre <- quantile(res, 0.5, na.rm = TRUE)
   frame <- data.frame(centre, lower, upper)
   rownames(frame) <- ""
   return(frame)
@@ -2288,8 +2616,8 @@ GoTF <- function(x, dist = "GenLog", pars = NULL, GF = NULL, RepDist = NULL){
     if(Ind2 == Inf | Ind2 == 0) {Prop2 <- 0.0002} else {Prop2 <- Ind2/5000}
     if(Prop2 > 0.5) {res2 <- 1-Prop2} else {res2 <- Prop2}
     if(Ind2 == Inf | res2 == 0) {res2 <- "< 0.0002"} else {res2 <- res2/0.5}
-    if(class(res) == "character") {res <- res} else {res <- round(res, 4)}
-    if(class(res2) == "character") {res2 <- res2} else {res2 <- round(res2, 4)}
+    if(is(res, "character") == TRUE) {res <- res} else {res <- round(res, 4)}
+    if(is(res2, "character") == TRUE) {res2 <- res2} else {res2 <- round(res2, 4)}
     ResDF <- data.frame(res, res2)
     colnames(ResDF) <- c("p(Tail cv)", "p(Tail mean)")
     return(ResDF)
@@ -2676,7 +3004,7 @@ H2 <- function(x){
 #' @author Anthony Hammond
 
 EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plot", ylabel = NULL, LineName = NULL, Unc = TRUE) {
-  if(class(x) != "numeric") stop ("x must be a numeric vector")
+  if(is(x, "numeric") == FALSE) stop ("x must be a numeric vector")
   if(dist == "GenLog") {func <- GenLogGF}
   if(dist == "GEV") {func <- GEVGF}
   if(dist == "GenPareto") {func <- GenParetoGF}
@@ -2695,9 +3023,9 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
   ss.lskew <- LSkew(x)
   if(scaled == TRUE) {
     if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)} else {
-    SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)}} else {
-      if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)*median(x)} else
-      {SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)*median(x)}}
+      SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)}} else {
+        if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)*median(x)} else
+        {SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)*median(x)}}
   if(is.null(ylabel) == TRUE) {
     if(scaled == TRUE) {YLab <- "Q/QMED"} else {YLab <- "Discharge (m3/s)"}} else {YLab = ylabel}
   Ymax <- median(c(max(AM.sort), max(SimSS)))
@@ -2735,8 +3063,8 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
     for(i in 2:500) {LmomsAll <- rbind(LmomsAll, Lmoms(mat[,i]))}
     if(dist == "Gumbel") {FCs <- func(LmomsAll$Lcv[1], RP = RPs)*Medians[1]
     for(i in 2:500) {FCs <- rbind(FCs, func(LmomsAll$Lcv[i], RP = RPs)*Medians[i])} } else {
-    FCs <- func(LmomsAll$Lcv[1], LmomsAll$LSkew[1], RP = RPs)*Medians[1]
-    for(i in 2:500) {FCs <- rbind(FCs, func(LmomsAll$Lcv[i], LmomsAll$LSkew[i], RP = RPs)*Medians[i])}}
+      FCs <- func(LmomsAll$Lcv[1], LmomsAll$LSkew[1], RP = RPs)*Medians[1]
+      for(i in 2:500) {FCs <- rbind(FCs, func(LmomsAll$Lcv[i], LmomsAll$LSkew[i], RP = RPs)*Medians[i])}}
     lower95 <- as.numeric(apply(FCs, 2, quantile, 0.025, na.rm = TRUE))
     upper95 <- as.numeric(apply(FCs, 2, quantile, 0.975, na.rm = TRUE))
     if(scaled == TRUE) {
@@ -2795,12 +3123,12 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
     if(dist == "Gumbel") {
       points(Log.Red.Var, func(Pars[1], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)
     } else {
-    points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)}}
+      points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)}}
   if(is.null(MED) == FALSE) {
     if(dist == "Gumbel") {
       points(Log.Red.Var, func(Pars[1], RP = RPs)*MED, type = "l", col = col, lwd = 2, lty = lty)
     } else {
-    points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs)*MED, type = "l", col = col, lwd = 2, lty = lty)}
+      points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs)*MED, type = "l", col = col, lwd = 2, lty = lty)}
   }
   if(is.null(xyleg) == TRUE) {print("Warning: as the xyleg argument was not used, the line has not been added to the legend")} else {
     legend(x = xyleg[1], y = xyleg[2], legend = Name, lty = lty, lwd = 2, col = col, bty = "n", seg.len = 2, cex = 0.8, x.intersp = 0.8)}
@@ -2829,7 +3157,7 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
 #' @param QMED a chosen QMED to convert the curve from a growth curve to the frequency curve
 #' @param Title a character string. The user chosen plot title. The default is "Pooled growth curve"
 #' @param UrbAdj a logical argument with a default of FALSE. If TRUE and urban adjustment is applied to the pooled growth curve
-#' @param CDs catchment descriptors derived from either GetCDs or ImportCDs. Only necessary if UrbAdj is TRUE
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML. Only necessary if UrbAdj is TRUE
 #' @examples
 #' #Get some CDs, form an ungauged pooling group and apply EVPlot.
 #' CDs.96001 <- GetCDs(96001)
@@ -2998,14 +3326,15 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
 #' @param adj.y a numeric value to adjust the closeness of the preciptation and discharge in the plot. Default is 1.5. A lower value brings them closer and a larger value further apart
 #' @param plw a numeric value to adjust the width of the precipitation lines. Default is one. A larger value thickens them and vice versa
 #' @param qlw a numeric value to adjust the width of the discharge line. Default is 1.8. A larger value thickens them and vice versa
+#' @param Return a logical argument with a default of FALSE. If TRUE the data-frame of time, precipitation, and flow is returned
 #' @examples
 #' #Plot the Thames precipitation and discharge for the 2013 hydrological year,
 #' #adjusting the y axis to 1.8.
 #' HydroPlot(ThamesPQ, from = "2013-10-01", to = "2014-09-30", adj.y = 1.8)
-#' @return A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom.
+#' @return A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
 #' @author Anthony Hammond
 
-HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL, to = NULL, adj.y = 1.5, plw = 1, qlw = 1.8){
+HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL, to = NULL, adj.y = 1.5, plw = 1, qlw = 1.8, Return = FALSE){
   if(is.data.frame(x) == FALSE) stop("x needs to be a dataframe with date of POSIXct in the first column, precipitation in the second and discharge in the third")
   if(is.factor(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class factor")}
   if(is.character(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class character")}
@@ -3014,7 +3343,7 @@ HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL,
   if(length(unique(x[,1])) < nrow(x)) {stop("The time column has duplicated values")}
   ind1 <- 1
   ind2 <- length(x[,1])
-  suppressWarnings(if(class(x[1,1]) == "Date"){
+  suppressWarnings(if(is(x[1,1], "Date") == TRUE){
     if(is.null(from)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.Date(from))}
     if(is.null(to)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.Date(to))} } else
     {
@@ -3028,6 +3357,8 @@ HydroPlot <- function(x, Title = "Concurrent Rainfall & Discharge", from = NULL,
   axis(side = 4)
   mtext(side = 4, line = 3, "Rainfall (mm)")
   par(mar = c(5.1, 4.1, 4.1, 2.1))
+  DFRet <- x[ind1:ind2, ]
+  if(Return == TRUE) {return(DFRet)}
 }
 
 
@@ -3091,8 +3422,8 @@ DiagPlots <- function(x, gauged = FALSE){
   text(x = x$FPEXT, y = 0, labels = rep("x", length(x$FPEXT)))
   suppressWarnings(if(gauged == TRUE) {text(x = CDs[9,2], y = 0, labels = "x", col = "red", cex = 2)})
 
-  hist(NRFAData$BFIHOST, col="grey", lty=0, main = "", xlab = "BFIHOST")
-  text(x = x$BFIHOST, y = 0, labels = rep("x", length(x$BFIHOST)))
+  hist(NRFAData$BFIHOST19, col="grey", lty=0, main = "", xlab = "BFIHOST19")
+  text(x = x$BFIHOST19, y = 0, labels = rep("x", length(x$BFIHOST19)))
   suppressWarnings(if(gauged == TRUE) {text(x = CDs[5,2], y = 0, labels = "x", col = "red", cex = 2)})
 
   NRFARural <- subset(NRFAData, URBEXT2000 <= 0.03)
@@ -3757,10 +4088,10 @@ LKurt <- function(x) {
 #'
 #' Provides outputs of the ReFH model from catchment descriptors or user defined inputs
 #'
-#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D. Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1).
+#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D (then a seasonal correction factor is applied). Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1).
 #' @param CDs catchment descriptors derived from either GetCDs or ImportCD
 #' @param Depth a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default, when Depth = NULL, is a two year rainfall.
-#' @param duration a numeric value. A duration for the design rainfall
+#' @param duration a numeric value. A duration (hrs) for the design rainfall
 #' @param timestep a numeric value. A user defined data interval. The default changes depending on the estimated time to peak to formulate a sensible looking result
 #' @param scaled a numeric value of peak flow in m3/s
 #' @param PlotTitle a character string. A user defined title for the ReFH plot
@@ -3774,7 +4105,7 @@ LKurt <- function(x) {
 #' @param Cmax numeric. Maximum soil moisture capacity parameter (mm)
 #' @param Cini numeric. Initial soil moisture content (mm)
 #' @param BFini numeric. Initial baseflow (m3/s)
-#' @param Rain numeric. User input rainfall. A numeric vector
+#' @param Rain numeric. User input rainfall (hourly). A numeric vector
 #' @examples
 #' #Get CDs and apply the ReFH function
 #' CDs.203018 <- GetCDs(203018)
@@ -3799,14 +4130,14 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
   Params <- function(x, season, D = NULL, cini = NULL) {
     PROPWET <- x[11,2]
     DPLBAR <- x[6,2]
-    URBEXT2000 <- x[18,2]
+    URBEXT1990 <- x[23,2]
     DPSBAR <- x[7,2]
     SAAR <- x[15,2]
     BFIHOST <- x[5,2]
     AREA <- x[1,2]
-    TP <- 1.56*PROPWET^-1.09*DPLBAR^0.6*(1+URBEXT2000)^-3.34*DPSBAR^-0.28
+    TP <- 1.56*PROPWET^-1.09*DPLBAR^0.6*(1+URBEXT1990)^-3.34*DPSBAR^-0.28
     if(is.null(D) == TRUE) {D <- TP*(1+(SAAR/1000))} else {D <- D}
-    BL <- 25.5*BFIHOST^0.47*DPLBAR^0.21*PROPWET^-0.53*(1+URBEXT2000)^-3.01
+    BL <- 25.5*BFIHOST^0.47*DPLBAR^0.21*PROPWET^-0.53*(1+URBEXT1990)^-3.01
     BR <- 3.75*BFIHOST^1.08*PROPWET^0.36
     Cmax <- 596.7*BFIHOST^0.95*PROPWET^-0.24
     if(is.null(cini) == TRUE) {
@@ -3951,6 +4282,12 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
   if(is.null(CDs) == FALSE) {Rmod <- lm(CDs[12:14, 2] ~ c(1, 24, 48) + I(c(1, 24, 48)^2))
   RMEDmod <- function(x) {Rmod$coefficients[1] + Rmod$coefficients[2]*x + Rmod$coefficients[3]*x^2}
   RMEDest <- RMEDmod(Pars$D)}
+  if(is.null(CDs) == FALSE) {
+    SAAR <- CDs[15,2]
+    scf <- SCF(SAAR = SAAR, duration = duration)
+    if(Season == "summer") {scf <- scf[,1]}
+    if(Season == "winter") {scf <- scf[,2]}
+    RMEDest <- RMEDest*scf}
   if(is.null(Depth) == TRUE) {Rain <- Rain*RMEDest} else {Rain <- Rain*Depth}
   if(is.null(Depth) == FALSE & is.null(RPa) == TRUE & alpha == TRUE) stop ("if a depth is supplied, RPa is needed or change alpha to FALSE")
   if(Season == "winter") {Cini <- Pars$Cini.win}
@@ -3999,13 +4336,175 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 
 # Precipitation -----------------------------------------------------------
 
+#' DDF13 results from .xml files
+#'
+#' Imports the depth duration frequency 2013 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
+#'
+#' This function returns a data-frame of results. For further durations and return periods the DDF13 function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' @param x the xml file path
+#' @param ARF logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied
+#' @param Plot logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods
+#' @examples
+#' #Import DDF13 results from a NRFA peakflows xml file and display in console
+#' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
+#' \dontrun{DDF13.4003}
+#' #Import DDF13 results from a FEH webserver xml file and display in the console
+#' \dontrun{DDF13.MySite <- DDF13Import("C:/Data/FEH_Catchment_384200_458200.xml")}
+#' @return A data frame of DDF13 results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned
+#' @author Anthony Hammond
+DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
+  xmlx <- xml2::read_xml(x)
+  ListXML <- xml2::as_list(xmlx)
+  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+    Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+    RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+    Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
+    for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+    AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
+  }
+  if(attributes(ListXML)$names == "FEHDescriptors") {
+    Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+    RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+    Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
+    for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+    AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
+  }
+
+  if(ARF == TRUE){
+    DepthsARF <- ARF(Depth[,1], Area = AREA, D = Hrs[1])
+    for(i in 2:ncol(Depth)) {DepthsARF <- cbind(DepthsARF, ARF(Depth[,i], Area = AREA, D = Hrs[i]))}
+    DepthsARF <- round(DepthsARF, 1)
+    Depth <- DepthsARF
+  }
+  colnames(Depth) <- as.character(Hrs)
+  rownames(Depth) <- as.character(RP)
+  Depth <- Depth[-c(1,2, 22, 21, 20, 19),]
+  Depth <- Depth[,-1]
+  RP2 <- Depth[1,]
+  RP10 <- Depth[4,]
+  RP56 <- Depth[7,]
+  RP100 <- Depth[8,]
+  RP180 <- Depth[9,]
+  RP560 <- Depth[11,]
+  DF <- data.frame(RP2, RP10, RP56, RP100, RP180, RP560)
+  if(Plot == TRUE) {
+    matplot(x = as.numeric(colnames(Depth)), DF, lty = 1, lwd = 2,
+            ylab = "Rainfall (mm)", xlab = "Duration (hrs)", col = hcl.colors(6, palette = "spectral", rev = TRUE), type = "l")
+    abline(v = seq(0, 1000,  by = 20), lty = 3)
+    abline(h = seq(0, 1000, by = 20), lty = 3)
+    legend("topleft", legend = c("2", "10", "56", "100", "180", "560"),
+           col = hcl.colors(6, palette = "spectral", rev = TRUE), lty = 1, lwd = 2, cex = 0.7, y.intersp = 0.7,
+           x.intersp = 0.7, title = "Return Period")}
+  return(Depth)
+}
+
+
+#' DDF13 results from a DDF13Import object
+#'
+#' Extracts results from a data frame imported using the DDF99Import function
+#'
+#' The .xml files only provide a set number of durations and return periods for DDF13.
+#' This function optimises the GEV distribution on the results in order to interpolate
+#' across return periods. A linear interpolation is used between durations.
+#' The interpolation method may provide results that differ from the FEH webserver in the region of 0.1mm.
+#' The result is then rounded to an integer.
+#' @param x A data frame of DDF13 results imported using the DDF13Import functions
+#' @param duration the duration (hrs) for which a rainfall depth estimate is required
+#' @param RP the return period (years) for which a rainfall depth estimate is required
+#' @examples
+#' #Get DDF13 results from a the DDF
+#' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml")}
+#' #Estimate the 20-year, 5 hour depth
+#' \dontrun{DDF13(DDF13.4003, duration = 5, RP = 20)}
+#' @return A DDF13 estimate of rainfall depth (mm)
+#' @author Anthony Hammond
+DDF13 <- function(x, duration, RP = 100) {
+  if(duration > 240 | duration < 0.25) stop("Duration outside range (0.25 to 240 hours)")
+  if(RP < 2 | RP > 1000) stop("RP outside range (2 to 1000)")
+  Hrs <- as.numeric(colnames(x))
+  RPs <- as.numeric(rownames(x))
+  ColN1 <- max(which(Hrs <= duration))
+  ColN2 <- min(which(Hrs >= duration))
+  Optim1 <- OptimPars(data.frame(RPs[1:12], x[1:12,ColN1]), dist = "GEV")
+  Est1 <- GEVEst(Optim1$loc, Optim1$scale, Optim1$shape, RP = RP)
+  Optim2 <- OptimPars(data.frame(RPs[1:12], x[1:12,ColN2]), dist = "GEV")
+  Est2 <- GEVEst(Optim2$loc, Optim2$scale, Optim2$shape, RP = RP)
+  HrMod <- c(Hrs[ColN1], Hrs[ColN2])
+  EstMod <- c(Est1, Est2)
+  LM <- lm(EstMod ~ HrMod)
+  Result <-  as.numeric(LM$coefficients[2])*duration + as.numeric(LM$coefficients[1])
+  if(ColN1 == ColN2) {
+    Result <- Est1} else {Result <- Result}
+  Result <- round(Result)
+  return(Result)
+}
+
+
+#' DDF99 parameters from .xml files
+#'
+#' Imports the FEH 1999 depth duration frequency parameters from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
+#'
+#' The xml files downloaded from the FEH webserver are formatted differently from the xml files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' @param x the xml file path
+#' @examples
+#' #Import DDF99 parameters from a NRFA peakflows xml file and display in console
+#' \dontrun{DDF99.4003 <- DDF99Pars("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
+#' \dontrun{DDF99.4003}
+#' #Import DDF99 parameters from a FEH webserver xml file and display in the console
+#' \dontrun{DDF99.MySite <- DDF99Pars("C:/Data/FEH_Catchment_384200_458200.xml")}
+#' @return A list with two elements, each a data frame with columns; parameters and associated Values
+#' The first data frame is for the catchment average parameters (these still require an ARF adjustment where appropriate) and the second for the 1km2 grid point parameters.
+#' @author Anthony Hammond
+DDF99Pars <- function(x) {
+  xmlx <- xml2::read_xml(x)
+  ListXML <- xml2::as_list(xmlx)
+  Par <- c("c", "d1", "d2", "d3", "e", "f")
+  if(attributes(ListXML)$names == "FEHDescriptors") {
+    Value <- as.numeric(c(ListXML$FEHDescriptors$CatchmentAverageDDFValues$c,
+                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d1,
+                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d2,
+                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d3,
+                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$e,
+                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$f))
+    CatchmentAverage <- data.frame(Par, Value)
+
+    Value <- as.numeric(c(ListXML$FEHDescriptors$PointDDFValues$c_1_km,
+                          ListXML$FEHDescriptors$PointDDFValues$d1_1_km,
+                          ListXML$FEHDescriptors$PointDDFValues$d2_1_km,
+                          ListXML$FEHDescriptors$PointDDFValues$d3_1_km,
+                          ListXML$FEHDescriptors$PointDDFValues$e_1_km,
+                          ListXML$FEHDescriptors$PointDDFValues$f_1_km))
+    Point <- data.frame(Par, Value)}
+  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+    Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$c,
+                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d1,
+                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d2,
+                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d3,
+                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$e,
+                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$f))
+    CatchmentAverage <- data.frame(Par, Value)
+
+    Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$PointDDFValues$c_1_km,
+                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d1_1_km,
+                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d2_1_km,
+                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d3_1_km,
+                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$e_1_km,
+                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$f_1_km))
+    Point <- data.frame(Par, Value)}
+  Result <- list(CatchmentAverage, Point)
+  names(Result) <- c("CatchmentAverage", "Point")
+  return(Result)
+}
+
+
+
 #' FEH99 depth duration frequency precipitation model
 #'
 #' Estimation of design rainfall depths, and the rarity of observed rainfall
 #'
 #' The depth duration frequency rainfall model is detailed in the Flood Estimation Handbook (1999), volume 2.
 #' A note about the discretisation: The user can choose between "daily" or "hourly" for the sliding duration to fixed duration conversion. If the 'Depth' argument is used, it overrides the return period (RP) argument and provides RP as a function of depth. However, if both the 'Depth' and the 'disc' arguments are used, the sliding duration depth is provided as a function of the user input depth. This resulting depth can then be used without the 'disc' argument to determine the sliding duration RP.
-#' @param D numeric. The duration of interest (in hours)
+#' @param Duration numeric. The duration of interest (in hours)
 #' @param RP return period
 #' @param pars a numeric vector of length six. The six catchment parameters for the DDF model in the order of: c, d1, d2, d3, e, f
 #' @param disc converts from the sliding duration to fixed duration estimate. Choices are "hourly" or "daily"
@@ -4014,15 +4513,15 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 #' #Examples from FEH volume 2
 #' #The parameters for these examples are from FEH v2
 #' #What is the 2-day rainfall with return period 100-years for Norwich.
-#' DDF99(D = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
+#' DDF99(Duration = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
 #' #What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment
-#' DDF99(D = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
+#' DDF99(Duration = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
 #' #How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
-#' DDF99(D = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
+#' DDF99(Duration = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
 #' @return the rainfall depth or rainfall return period
 #' @author Anthony Hammond
 
-DDF99 <- function(D, RP, pars, Depth = NULL, disc = NULL) {
+DDF99 <- function(Duration, RP, pars, Depth = NULL, disc = NULL) {
   if(is.null(Depth) == TRUE) {y <- -log(-log(1-(1/RP)))}
   c <- pars[1]
   d1 <- pars[2]
@@ -4030,6 +4529,7 @@ DDF99 <- function(D, RP, pars, Depth = NULL, disc = NULL) {
   d3 <- pars[4]
   e <- pars[5]
   f <- pars[6]
+  D <- Duration
   if(D > 192|D < 1) stop ("Duration outside calibration range")
   if(is.null(Depth) == FALSE){
     if(D <= 12) {Y <- (log(Depth)-f-d1*log(D))/(c*log(D)+e)}
@@ -4117,20 +4617,50 @@ ARF <- function(Depth, Area, D){
 #' SCF(1981, 6.5)
 #' @return A data.frame of one row and two columns: SCFSummer and SCFWinter.
 #' @author Anthony Hammond
-SCF <- function(SAAR, duration) {
-  if(duration < 1) {duration <- 1} else {duration <- duration}
-  if(duration > 24) {duration <- 24} else {duration <- duration}
-  alphaMod <- function(x) {7.353e-06*log(x) + 1.857e-05*log(x)^2 + -7.267e-06*log(x)^3 - 8.030e-05}
-  betaMod <- function(x) {-0.012813*log(x) - 0.004378*log(x)^2 + 0.002958*log(x)^3 + 1.040000}
-  phiMod <- function(x) {2.776e-04*log(x) + 2.515e-05*log(x)^2 - 1.359e-05*log(x)^3 + 4.000e-04}
-  psiMod <- function(x) {0.09750*log(x) - 0.05416*log(x)^2 + 0.01154*log(x)^3 + 0.40000}
+SCF <- function (SAAR, duration)
+{
+  if (duration < 1) {
+    duration <- 1
+  }
+  if (duration > 24) {
+    duration <- 24
+  }
+  alphaMod <- function(x) {
+    if(duration >=1 & duration <= 2) {alpha <- 1.16e-05*duration - 9.19e-05}
+    if(duration > 2 & duration < 6) {alpha <- 4.85e-06*duration - 7.84e-05}
+    if(duration >= 6 & duration <= 24){alpha <- -2.961e-06*duration - 3.153e-05}
+    return(alpha)
+  }
+  betaMod <- function(x) {
+    if(duration >= 1 & duration <= 2) {beta <- -0.01*duration + 1.05}
+    if(duration > 2 & duration < 6) {beta <--0.0025*duration + 1.0350}
+    if(duration >= 6 & duration <= 24){beta <- 0.001667*duration + 1.010000}
+    return(beta)
+  }
+  phiMod <- function(x) {
+    if(duration >= 1 & duration <= 2) {phi <- 2e-04*duration + 2e-04}
+    if(duration > 2 & duration < 6) {phi <- 7.5e-05*duration + 4.5e-04}
+    if(duration >= 6 & duration <= 24){phi <- 1.111e-05*duration + 8.333e-04}
+    return(phi)
+  }
+  psiMod <- function(x) {
+    if(duration >= 1 & duration <= 2) {psi <- 0.0454*duration + 0.3546}
+    if(duration > 2 & duration < 6) {psi <- 0.00545*duration + 0.43450}
+    if(duration >= 6 & duration <= 24){psi <- 0.003672*duration + 0.445167}
+    return(psi)
+  }
   alpha <- alphaMod(duration)
   beta <- betaMod(duration)
   phi <- phiMod(duration)
   psi <- psiMod(duration)
-  if(SAAR == 500) {SCFSummer <- 1} else {SCFSummer <- alpha*SAAR+beta}
-  SCFWinter <- (1-exp(-phi*SAAR))^psi
-  ResDF <- data.frame(SCFSummer, SCFWinter)
+  if (SAAR == 500) {
+    SCFSummer <- 1
+  }
+  else {
+    SCFSummer <- alpha * SAAR + beta
+  }
+  SCFWinter <- (1 - exp(-phi * SAAR))^psi
+  ResDF <- round(data.frame(SCFSummer, SCFWinter), 3)
   return(ResDF)
 }
 
@@ -4188,7 +4718,7 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #' @author Anthony Hammond
 
 TrendTest <- function(x, method = "kendall"){
-  if(class(x) == "numeric" | class(x) == "integer") {
+  if(is(x, "numeric") == TRUE | is(x, "integer") == TRUE) {
     Res <- suppressWarnings(cor.test(x, seq(1, length(x)), method = method))} else {DayDiffs <- NULL
     for(i in 1:length(x[,1])) {DayDiffs[i] <- as.numeric(x[,1][i]-x[,1][1])}
     YrDiffs <- DayDiffs/365.25
@@ -4241,14 +4771,14 @@ NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
 #'@author Anthony Hammond
 BFI <- function(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot", Plot = TRUE) {
   if(is.numeric(Q) == FALSE) {stop("Q must be a numeric vector")}
-  LenNA <- length(Q[Q == "NA"])
-  if(LenNA > 0) {print("There is missing data. The associated days have been removed")}
+  LenNA <- length(is.na(Q)[is.na(Q) == TRUE])
+  if(LenNA > 0) {print("There is missing data. The associated days have been removed. This may compromise results")}
   if(LenNA > 0) {Q <- Q[-which(is.na(Q) == TRUE)]}
   SplitLength <- floor(length(Q)/5)
   Q <- Q[1:(SplitLength*5)]
   Mat <- matrix(Q, nrow = 5, ncol = SplitLength)
   MinInd <- NULL
-  for(i in 1:SplitLength) {suppressWarnings(MinInd[i] <- which(Mat[,i] == min(Mat[,i], na.rm = TRUE)))}
+  for(i in 1:ncol(Mat)) {suppressWarnings(MinInd[i] <- which(Mat[,i] == min(Mat[,i], na.rm = TRUE)))}
   Mins <- apply(Mat, 2, min, na.rm = TRUE)
   TPLogic <- NULL #TurningPoints
   for(i in 2:(length(Mins)-1)){TPLogic[i] <-
@@ -4405,3 +4935,5 @@ LRatioChange <- function(x, SiteID, lcv, lskew) {
   NewPool[Ind,c(16, 17)] <- c(lcv, lskew)
   return(NewPool)
 }
+
+

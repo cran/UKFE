@@ -4,7 +4,7 @@
 \alias{UncSS}
 \title{Uncertainty for the single site}
 \usage{
-UncSS(x, func, conf = 0.95, RP = FALSE)
+UncSS(x, func, conf = 0.95, RP = NULL)
 }
 \arguments{
 \item{x}{a numeric vector. The sample of interest}

@@ -4,26 +4,40 @@
 \alias{AMextract}
 \title{Annual maximum extraction}
 \usage{
-AMextract(x, Plot = TRUE)
+AMextract(
+  x,
+  func = NULL,
+  Plot = TRUE,
+  Title = "Hydrological annual maximum sequence",
+  Ylabel = "Annual maximum quantiles"
+)
 }
 \arguments{
 \item{x}{a data.frame with dates (or POSIXct) in the first column and variable in the second}
 
+\item{func}{A user chosen function to extract statistics other than maximums.}
+
 \item{Plot}{a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted}
+
+\item{Title}{Title of the plot when. Default is "Hydrological annual maximum sequence"}
+
+\item{Ylabel}{Label for the y axis. Default is "Annual maximum quantiles"}
 }
 \value{
 a data.frame with columns; WaterYear and AM
 }
 \description{
-Extracts the annual maximum peaks from a data.frame which has dates in the first column and variable in the second.
+Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 }
 \details{
-The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year.
+The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
 }
 \examples{
 #Extract the Thames AMAX daily mean flow and display the first six rows
 ThamesAM <- AMextract(ThamesPQ[,c(1,3)])
 head(ThamesAM)
+#Extract the annual rainfall totals and change the plot labels accordingly
+ThamesAnnualP <- AMextract(ThamesPQ[,1:2], func = sum, Title = "", Ylab = "Rainfall (mm)")
 }
 \author{
 Anthony Hammond

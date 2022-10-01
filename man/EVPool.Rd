@@ -30,7 +30,7 @@ EVPool(
 
 \item{UrbAdj}{a logical argument with a default of FALSE. If TRUE and urban adjustment is applied to the pooled growth curve}
 
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs. Only necessary if UrbAdj is TRUE}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML. Only necessary if UrbAdj is TRUE}
 }
 \value{
 An extreme value plot for gauged or ungauged pooling groups

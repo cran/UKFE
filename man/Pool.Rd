@@ -17,7 +17,7 @@ Pool(
 )
 }
 \arguments{
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
 \item{AREA}{catchment area in km2}
 
@@ -36,13 +36,13 @@ Pool(
 \item{DeUrb}{logical argument with a default of FALSE. If true, the Lcv and LSkew of the top site in the pooling group will be de-urbanised}
 }
 \value{
-A data.frame of the pooling group with site refence row names and 24 columns each providing catchment & gauge details for the sites in the pooling group.
+A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
 }
 \description{
 Function to develop a pooling group based on catchment descriptors
 }
 \details{
-A pooling group is created from a CDs object, derived from GetCDs or ImportCDs, or specifically with the catchment descriptors AREA, SAAR, FARL, & FPEXT (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a parcticular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
+A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
 }
 \examples{
 #Get some catchment descriptors
@@ -58,8 +58,8 @@ PoolGroup <- Pool(AREA = 1000, SAAR = 800, FARL = 1, FPEXT = 0.01)
 CDs.39001 <- GetCDs(39001)
 Pool.39001 <- Pool(CDs.39001, iug = TRUE, DeUrb = TRUE)
 #Change the Lcv and LSkew of the top site in the pooling group to 0.19 & 0.18,
-#respectively. Lcv and Lskew are in columns 16 & 17.
-Pool.39001[1,c(16, 17)] <- c(0.19, 0.18)
+#respectively.
+PoolUpdate <- LRatioChange(Pool.39001, SiteID = 39001, 0.19, 0.18)
 }
 \author{
 Anthony Hammond

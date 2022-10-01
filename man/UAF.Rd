@@ -7,7 +7,7 @@
 UAF(CDs = NULL, URBEXT2000, BFIHOST)
 }
 \arguments{
-\item{CDs}{catchment descriptors derived from either GetCDs or ImportCDs}
+\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
 \item{URBEXT2000}{quantification of catchment urbanisation (used when CDs is not)}
 

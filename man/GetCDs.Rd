@@ -2,7 +2,7 @@
 % Please edit documentation in R/All.R
 \name{GetCDs}
 \alias{GetCDs}
-\title{Get catchment descriptors from the National River Flow Archive sites considered suitable for median annual maximum flow estimation (QMED).}
+\title{Get catchment descriptors from the National River Flow Archive sites considered suitable for median annual maximum flow estimation (QMED) and pooling.}
 \usage{
 GetCDs(x)
 }
@@ -13,7 +13,7 @@ GetCDs(x)
 A data.frame with columns; Descriptor and Value.
 }
 \description{
-Extracts the catchment descriptors for a site of interest from those suitable for QMED.
+Extracts the catchment descriptors for a site of interest from those suitable for QMED and pooling.
 }
 \examples{
 #Get CDs and display in the console

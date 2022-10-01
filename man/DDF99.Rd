@@ -4,10 +4,10 @@
 \alias{DDF99}
 \title{FEH99 depth duration frequency precipitation model}
 \usage{
-DDF99(D, RP, pars, Depth = NULL, disc = NULL)
+DDF99(Duration, RP, pars, Depth = NULL, disc = NULL)
 }
 \arguments{
-\item{D}{numeric. The duration of interest (in hours)}
+\item{Duration}{numeric. The duration of interest (in hours)}
 
 \item{RP}{return period}
 
@@ -31,11 +31,11 @@ A note about the discretisation: The user can choose between "daily" or "hourly"
 #Examples from FEH volume 2
 #The parameters for these examples are from FEH v2
 #What is the 2-day rainfall with return period 100-years for Norwich.
-DDF99(D = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
+DDF99(Duration = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
 #What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment
-DDF99(D = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
+DDF99(Duration = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
 #How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
-DDF99(D = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
+DDF99(Duration = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
 }
 \author{
 Anthony Hammond
