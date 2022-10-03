@@ -4128,13 +4128,13 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
   if(is.null(CDs) == TRUE & is.null(Depth) == TRUE) {Depth <- sum(Rain)}
   if(is.null(CDs) == TRUE & is.null(duration) == TRUE) {duration <- length(Rain)}
   Params <- function(x, season, D = NULL, cini = NULL) {
-    PROPWET <- x[11,2]
-    DPLBAR <- x[6,2]
-    URBEXT1990 <- x[23,2]
-    DPSBAR <- x[7,2]
-    SAAR <- x[15,2]
-    BFIHOST <- x[5,2]
-    AREA <- x[1,2]
+    PROPWET <- x[which(x$Descriptor == "PROPWET"),2]
+    DPLBAR <- x[which(x$Descriptor == "DPLBAR"),2]
+    URBEXT1990 <- x[which(x$Descriptor == "URBEXT1990"),2]
+    DPSBAR <- x[which(x$Descriptor == "DPSBAR"),2]
+    SAAR <- x[which(x$Descriptor == "SAAR"),2]
+    BFIHOST <- x[which(x$Descriptor == "BFIHOST19"),2]
+    AREA <- x[which(x$Descriptor == "AREA"),2]
     TP <- 1.56*PROPWET^-1.09*DPLBAR^0.6*(1+URBEXT1990)^-3.34*DPSBAR^-0.28
     if(is.null(D) == TRUE) {D <- TP*(1+(SAAR/1000))} else {D <- D}
     BL <- 25.5*BFIHOST^0.47*DPLBAR^0.21*PROPWET^-0.53*(1+URBEXT1990)^-3.01
@@ -4355,6 +4355,11 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
+  if(length(ListXML$FEHDescriptors) == 4) {
+    print("No DDF13 results available in the xml file")
+    Depth <- NA
+    return(Depth)
+  }
   if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
     Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
     RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
