@@ -17,7 +17,7 @@ DDF13(x, duration, RP = 100)
 A DDF13 estimate of rainfall depth (mm)
 }
 \description{
-Extracts results from a data frame imported using the DDF99Import function
+Extracts results from a data frame imported using the DDF13Import function
 }
 \details{
 The .xml files only provide a set number of durations and return periods for DDF13.

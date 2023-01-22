@@ -1536,7 +1536,7 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, AREA, SAA
     Site <- DonSite
     Donors <- DonAdj(CDs = CDs, rows = 500)
     Rw <- which(rownames(Donors) == DonSite)
-    Result <- Donors[Rw, 27]
+    Result <- Donors$QMED.adj[Rw]
     return(Result)
   }
   Donor2 <- function(CDs, Sites) {
@@ -1709,6 +1709,10 @@ DonAdj <- function(CDs = NULL, x,y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 
     QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
     return(QMEDs.adj)
   }
+  if(is.null(d2) == FALSE) {
+    if(length(d2) < 2) stop("d2 must be NULL or a vector of length 2")
+  }
+  if(is.null(QMEDscd) == TRUE & is.null(CDs) == TRUE) stop("The QMED estimate must be an input, either automatically using CDs, or the QMEDscd argument")
   if(is.null(QMEDscd) == TRUE) {QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)} else {QMEDscd <- QMEDscd}
   suppressWarnings(if(is.null(CDs) == TRUE) {
     NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
@@ -2074,28 +2078,38 @@ AMImport <- function(x)
 #'
 #' Extracts independent peaks over a threshold from a sample
 #'
-#'  If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be time-stamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours with no rain, are independent). For sub-daily rainfall, further work would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. Alternatively, the data could be aggregated (extracting max rain) to the daily scale first (or any scale necessary to ensure independence) and then the function applied. When plotted, the blue line is the threshold, and the green line is the independence line (div).
+#'  If the x argument is a numeric vector, the peaks will be extracted with no time information.
+#'  x can instead be a data.frame with dates in the first column and the numeric vector in the second.
+#'  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
+#'  The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
+#'  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
+#'  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be adjusted.
+#'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks. For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
+#'  In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall. When plotted, the blue line is the threshold, and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
-#' @param div user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
+#' @param div numeric value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
+#' @param TimeDiv Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicablee for data.frames.
 #' @param thresh user chosen threshold. Default is 0.975
 #' @param Plot logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted
+#' @param ylab Label for the plot yaxis. Default is "Magnitude"
+#' @param main Title for the plot. Default is "Peaks over threshold"
 #' @examples
 #' #Extract POT data from Thames mean daily flow 1970-10-01 to 2015-09-25 with
 #' #div = mean and threshold = 0.95. Then display the first six rows
-#' ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.90)
+#' ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
 #' head(ThamesQPOT)
 #' #Extract Thames POT from only the numeric vector of flows and display the
 #' #first six rows
-#' ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.90)
-#' ThamesQPOT
-#' #Extract the Thames POT precipitation with a div of 0 and the default
-#' #threshold. Then display the first six rows
-#' ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0)
+#' ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.9)
+#' head(ThamesQPOT)
+#' #Extract the Thames POT precipitation with a div of 0, the default
+#' #threshold, and 5 timesteps (days) either side of the peak. Then display the first six rows
+#' ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0, TimeDiv = 5)
 #' head(ThamesPPOT)
 #' @return Prints the number of peaks per year and returns a data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the hydrological variable is input.
 #' @author Anthony Hammond
 
-POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
+POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRUE, ylab = "Magnitude", main = "Peaks over threshold")
 {
   Low.Func <- function(TS)
   {
@@ -2127,18 +2141,28 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
     if(maxll == -Inf) {maxll <- j} else {maxll <- maxll}
     minlr <-   suppressWarnings(min(which(lows[j:length(lows)] <= mu), na.rm = T))
     if(minlr == Inf) {minlr <- j} else {minlr <- j+(minlr-1)}
-    if(peaks[j] == max(peaks[maxll:minlr], na.rm = T)) {vp <- peaks[j]} else {vp <- NA}
+    MaxMin <- peaks[maxll:minlr]
+    MaxInds <- which(MaxMin == max(MaxMin, na.rm = TRUE))
+    MaxInds <- (maxll-1) + MaxInds
+    if(peaks[j] == max(MaxMin, na.rm = T) & j == MaxInds[1]) {vp <- peaks[j]} else {vp <- NA}
+    #IndPeakInEvent <- j - maxll
+    #Max1 <- which.max(peaks[maxll:minlr])
+    #if(IndPeakInEvent > Max1[1]) {vp <- NA} else {vp = peaks[j]}
     return(vp)
   }
+
   NAs <- FALSE
   if(is(x, "data.frame") == FALSE) {
+    if(is.null(div) == FALSE) {
+      if(div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
     if(is.null(div)) {mu <- mean(x,na.rm = TRUE)} else {mu <- div}
     if(mu >= quantile(x,thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
-    QThresh <- as.numeric(quantile(x, thresh, na.rm = TRUE))
+    if(is.null(TimeDiv) == FALSE) print("Warning: TimeDiv isn't currently set up for vectors. The TimeDiv element entered has no impact on the result")
+    QThresh <- as.numeric(quantile(x[x > 0], thresh, na.rm = TRUE))
     MinMuP <- min(which(x <= mu))
     MaxMuP <- max(which(x <= mu))
-    PkBegin <- max(x[1:MinMuP])
-    PkEnd <- max(x[MaxMuP:length(x)])
+    PkBegin <- max(x[1:MinMuP])[1]
+    PkEnd <- max(x[MaxMuP:length(x)])[1]
     x <- x[MinMuP:MaxMuP]
     lows <- Low.Func(x)
     peaks <- P.Func(x)
@@ -2153,18 +2177,29 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
     if(PkEnd > QThresh) {POT <- append(POT, PkEnd)}
     if(NAs == TRUE) {POT <- POT} else {POT <- POT[which(is.na(POT) == FALSE)]}
     return(POT)}
-  else {
+  if(is(x, "data.frame") == TRUE) {
+    if(ncol(x) >2) stop("x must be a data.frame with two columns.")
+    if(is.null(div) == FALSE) {
+      if(div < min(x[,2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
+    if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
     if(is.null(div)) {mu <- mean(x[,2],na.rm = TRUE)} else {mu <- div}
     if(mu >= quantile(x[,2],thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
-    QThresh <- as.numeric(quantile(x[,2], thresh, na.rm = TRUE))
+    QThresh <- as.numeric(quantile(x[,2][x[,2] >0], thresh, na.rm = TRUE))
     MinMuP <- min(which(x[,2] <= mu), na.rm = TRUE)
     MaxMuP <- max(which(x[,2] <= mu), na.rm = TRUE)
-    PkBegin <- which(x[1:MinMuP,2] == max(x[1:MinMuP,2], na.rm = TRUE))
-    PkEnd <- which(x[MaxMuP:length(x[,2]),2] == max(x[MaxMuP:length(x[,2]),2], na.rm = TRUE))
-    DBegin <- x[PkBegin,]
-    DEnd <- x[((MaxMuP-1)+PkEnd),]
-    colnames(DBegin) <- c("Date", "peak")
-    colnames(DEnd) <- c("Date", "peak")
+    PkBegin <- which(x[1:MinMuP,2] == max(x[1:MinMuP,2], na.rm = TRUE))[1]
+    PkEnd <- which(x[MaxMuP:length(x[,2]),2] == max(x[MaxMuP:length(x[,2]),2], na.rm = TRUE))[1]
+    if(is.null(TimeDiv) == FALSE) {
+      DBegin <- data.frame(x[PkBegin,], PkBegin)
+      DEnd <-   data.frame(x[((MaxMuP-1)+PkEnd),], PkEnd)
+      colnames(DBegin) <- c("Date", "peak", "Index")
+      colnames(DEnd) <- c("Date", "peak", "Index")
+    }
+    if(is.null(TimeDiv) == TRUE){
+      DBegin <- x[PkBegin,]
+      DEnd <- x[((MaxMuP-1)+PkEnd),]
+      colnames(DBegin) <- c("Date", "peak")
+      colnames(DEnd) <- c("Date", "peak")}
     xUse <- x[MinMuP:MaxMuP,]
     lows <- Low.Func(xUse[,2])
     peaks <- P.Func(xUse[,2])
@@ -2174,16 +2209,45 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
     POT <- NULL
     {for (i in 1:L) {POT[i] <- VP(pt.ind[i], mu)}}
     POT.Dates <- (xUse[,1][pt.ind])+1
-    res <- data.frame(POT.Dates, POT)
-    colnames(res) <- c("Date", "peak")
+    if(is.null(TimeDiv) == FALSE){
+      res <- data.frame(POT.Dates, POT, pt.ind)
+      colnames(res) <- c("Date", "peak", "Index")}
+    if(is.null(TimeDiv) == TRUE){
+      res <- data.frame(POT.Dates, POT)
+      colnames(res) <- c("Date", "peak")
+    }
     if(DBegin$peak > QThresh) {res <- rbind(DBegin, res)}
     if(DEnd$peak > QThresh) {res <- rbind(res, DEnd)}
     rownames(res) <- seq(1, length(res[,2]))
     if(NAs == TRUE) {res <- res} else {res <- res[which(is.na(res$peak) == FALSE), ]}
-    if(Plot == TRUE) {plot(x, type = "l", main = "Peaks over threshold", ylab = "Quantile", xlab= "Date")
-      abline(h = quantile(x[,2], thresh, na.rm = TRUE), col = "blue")
-      points(res, col = "red")}
-    abline(h = mu, col = rgb(0, 0.7, 0.3))
+    if(is.null(TimeDiv) == FALSE) {
+      ev.start <- res$Index - TimeDiv
+      ev.end <- res$Index + TimeDiv
+      res <- data.frame(res, ev.start, ev.end)
+      RMInd <- function(ind) {
+        if(res$Index[ind] <= res$ev.end[ind-1]) {
+          MaxInd <- which.max(res$peak[(ind-1):ind])
+          if(MaxInd == 1) {Ind <- ind}
+          if(MaxInd == 2) {Ind <- ind-1}
+        }
+        if(res$Index[ind] > res$ev.end[ind-1]){
+          Ind <- NA
+        }
+        return(Ind)
+      }
+      while(any(res$Index[2:nrow(res)] - res$ev.end[1:(nrow(res)-1)] < 0)) {
+        RMInds <- NULL
+        for(i in 2:nrow(res)){RMInds[i] <- RMInd(i)}
+        RMInds <- RMInds[is.na(RMInds) == FALSE]
+        res <- res[-RMInds, ]
+      }
+      res <- res[,-c(3,4,5)]}
+    if(Plot == TRUE) {
+      if(mu == 0){plot(x, main = main, ylab = ylab, xlab= "Date", type = "h")}
+      if(mu > 0){plot(x, main = main, ylab = ylab, xlab= "Date", type = "l")}
+      abline(h = QThresh, col = "blue")
+      points(res[,1:2], col = "red")
+      abline(h = mu, col = rgb(0, 0.7, 0.3))}
     Years <- as.numeric((x[length(x[,1]),1]-x[1,1])/365.25)
     PPY <- length(res[,1])/Years
     print(paste("Peaks per year:", format(PPY, trim = TRUE), sep = " "))
@@ -2195,9 +2259,11 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
 #'
 #' Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 #'
-#'  The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
+#'  The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (none full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
 #' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
 #' @param func A user chosen function to extract statistics other than maximums.
+#' @param Calendar logical. If FALSE, the hydrological year maximums are returned. If TRUE, the calendar year maximums are returned.
+#' @param Trunc logical with a default of TRUE. When true the beginning and end of the data.frame are first truncated so that it starts and ends at the start and end of the hydrological year (or Calendar year if Calendar = TRUE).
 #' @param Plot a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted
 #' @param Title Title of the plot when. Default is "Hydrological annual maximum sequence"
 #' @param Ylabel Label for the y axis. Default is "Annual maximum quantiles"
@@ -2207,11 +2273,32 @@ POTextract <- function(x, div = NULL, thresh = 0.975, Plot = TRUE)
 #' head(ThamesAM)
 #' #Extract the annual rainfall totals and change the plot labels accordingly
 #' ThamesAnnualP <- AMextract(ThamesPQ[,1:2], func = sum, Title = "", Ylab = "Rainfall (mm)")
-#' @return a data.frame with columns; WaterYear and AM
+#' @return a data.frame with columns; WaterYear and AM. By default AM is the annual maximum sample, but will be any statistic used as the func argument.
 #' @author Anthony Hammond
-AMextract <- function (x, func = NULL, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Annual maximum quantiles")
+AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Magnitude")
 {
+  if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
   if(is.null(func) == TRUE) {func <- max} else {func <- func}
+  if(Trunc == TRUE) {
+    if(Calendar == FALSE) {
+      POSlt <- as.POSIXlt(x[,1])
+      Mons <- (POSlt$mon)+1
+      Oct1Ind <- min(which(Mons == 10))
+      Sep30Ind <- max(which(Mons == 9))
+      if(Oct1Ind == Inf | Oct1Ind == -Inf) stop("Truncation is looking for October 1st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
+      if(Sep30Ind == Inf | Sep30Ind == -Inf) stop("Truncation is looking for September 30th which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
+      x <- x[Oct1Ind:Sep30Ind,]
+    }
+    if(Calendar == TRUE) {
+      POSlt <- as.POSIXlt(x[,1])
+      Mons <- (POSlt$mon)+1
+      Jan1Ind <- min(which(Mons == 1))
+      Dec31Ind <- max(which(Mons == 12))
+      if(Jan1Ind == Inf | Jan1Ind == -Inf) stop("Truncation is looking for January 1st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
+      if(Dec31Ind == Inf | Dec31Ind == -Inf) stop("Truncation is looking for December 31st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
+      x <- x[Jan1Ind:Dec31Ind,]
+    }}
+  if(anyNA(x[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may compromise the calculated statistics")}
   Dates <- as.Date(x[, 1])
   x <- data.frame(Dates, x[, 2])
   Date1 <- x[1, 1]
@@ -2221,48 +2308,62 @@ AMextract <- function (x, func = NULL, Plot = TRUE, Title = "Hydrological annual
     mnth <- as.POSIXlt(d)$mon + 1
     return(c(yr, mnth))
   }
-  Date1.ext <- DateExtract(Date1)
-  DateLst.ext <- DateExtract(DateLst)
-  if (Date1.ext[2] < 10) {
-    WY <- Date1.ext[1] - 1
+  if(Calendar == FALSE){
+    Date1.ext <- DateExtract(Date1)
+    DateLst.ext <- DateExtract(DateLst)
+    if (Date1.ext[2] < 10) {
+      WY <- Date1.ext[1] - 1
+    }
+    else {
+      WY <- Date1.ext[1]
+    }
+    if (DateLst.ext[2] < 10) {
+      WYend <- DateLst.ext[1] - 1
+    }
+    else {
+      WYend <- DateLst.ext[1]
+    }
+
+    WYrSt <- as.Date(paste(WY, "10", "01", sep = "-"))
+    WYrSt.to <- as.Date(paste(WYend, "10", "01",
+                              sep = "-"))
+    YrStarts <- seq(WYrSt, WYrSt.to, by = "year")
+    WYendst <- as.Date(paste(WY + 1, "09", "30",
+                             sep = "-"))
+    YrEnds <- seq(WYendst, length.out = length(YrStarts), by = "year")
+    AM <- NULL
+    for (i in 1:length(YrStarts)) {
+      AM[i] <- suppressWarnings(func(x[, 2][x[, 1] >= YrStarts[i] &
+                                              x[, 1] <= YrEnds[i]], na.rm = TRUE))
+    }
+    WaterYear <- seq(WY, WYend)
+    AMDF <- data.frame(WaterYear, AM)
   }
-  else {
-    WY <- Date1.ext[1]
+  if(Calendar == TRUE) {
+    Years <- as.POSIXlt(x[,1])$year + 1900
+    x <- data.frame(x, Years)
+    Year <- unique(Years)
+    AM <- NULL
+    for(i in 1:length(Year)) {AM[i] <- func(x[which(x$Years == Year[i]),2], na.rm = TRUE)}
+    AMDF <- data.frame(Year, AM)
   }
-  if (DateLst.ext[2] < 10) {
-    WYend <- DateLst.ext[1] - 1
-  }
-  else {
-    WYend <- DateLst.ext[1]
-  }
-  WYrSt <- as.Date(paste(WY, "10", "01", sep = "-"))
-  WYrSt.to <- as.Date(paste(WYend, "10", "01",
-                            sep = "-"))
-  YrStarts <- seq(WYrSt, WYrSt.to, by = "year")
-  WYendst <- as.Date(paste(WY + 1, "09", "30",
-                           sep = "-"))
-  YrEnds <- seq(WYendst, length.out = length(YrStarts), by = "year")
-  AM <- NULL
-  for (i in 1:length(YrStarts)) {
-    AM[i] <- suppressWarnings(func(x[, 2][x[, 1] >= YrStarts[i] &
-                                            x[, 1] <= YrEnds[i]], na.rm = TRUE))
-  }
-  WaterYear <- seq(WY, WYend)
-  AMDF <- data.frame(WaterYear, AM)
+
   InfInd <- which(AMDF$AM == -Inf)
   if (length(InfInd) > 0) {
-    AMDF <- AMDF[-InfInd, ]
+    AMDF[InfInd,2] <- NA
   }
   else {
     AMDF <- AMDF
   }
   if (length(InfInd) > 0) {
-    print("Warning: at least one year had no data and returned -inf. The year/s in question have been removed")
+    print("Warning: at least one year had no data and returned -inf. The year/s in question is/are returned as NA")
   }
   if (Plot == TRUE) {
-    plot(WaterYear, AM, type = "h", col = rgb(0, 0.3,
-                                              0.7), main = Title,
-         ylab = Ylabel)
+    if(Calendar == FALSE){
+      plot(WaterYear, AM, type = "h", col = rgb(0,0.3,0.7), main = Title, ylab = Ylabel)
+    }
+    if(Calendar == TRUE){
+      plot(Year, AM, type = "h", col = rgb(0,0.3,0.7), main = Title, ylab = Ylabel)}
   }
   return(AMDF)
 }
@@ -4406,7 +4507,7 @@ DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
 
 #' DDF13 results from a DDF13Import object
 #'
-#' Extracts results from a data frame imported using the DDF99Import function
+#' Extracts results from a data frame imported using the DDF13Import function
 #'
 #' The .xml files only provide a set number of durations and return periods for DDF13.
 #' This function optimises the GEV distribution on the results in order to interpolate
@@ -4449,7 +4550,7 @@ DDF13 <- function(x, duration, RP = 100) {
 #'
 #' Imports the FEH 1999 depth duration frequency parameters from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' The xml files downloaded from the FEH webserver are formatted differently from the xml files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' This function is coded to import DDF99 parameters from xml files from the NRFA or the FEH web-server. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the xml file path
 #' @examples
 #' #Import DDF99 parameters from a NRFA peakflows xml file and display in console
@@ -4487,7 +4588,7 @@ DDF99Pars <- function(x) {
                           ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d3,
                           ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$e,
                           ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$f))
-    CatchmentAverage <- data.frame(Par, Value)
+    CatchmentTypicalPoint <- data.frame(Par, Value)
 
     Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$PointDDFValues$c_1_km,
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d1_1_km,
@@ -4496,8 +4597,8 @@ DDF99Pars <- function(x) {
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$e_1_km,
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$f_1_km))
     Point <- data.frame(Par, Value)}
-  Result <- list(CatchmentAverage, Point)
-  names(Result) <- c("CatchmentAverage", "Point")
+  Result <- list(CatchmentTypicalPoint, Point)
+  names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
   return(Result)
 }
 
@@ -4710,8 +4811,10 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #' A hypothesis test for the correlation between the variable of interest and time
 #'
 #'  The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
+#'  The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater". And for negative trend, set it to "less"
 #' @param x a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.
 #' @param method a choice of test method. Choices are "pearson", "spearman", and "kendall"
+#' @param alternative the alternative hypothesis. The default is "two.sided".
 #' @examples
 #' #Get AMAX sample and apply a trend test with the default kendall test.
 #' AM.27083 <- GetAM(27083)
@@ -4722,12 +4825,13 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #' @return A data.frame with columns and associated values: P_value, correlation coefficient, and method specific statistic.
 #' @author Anthony Hammond
 
-TrendTest <- function(x, method = "kendall"){
+TrendTest <- function(x, method = "kendall", alternative = "two.sided"){
   if(is(x, "numeric") == TRUE | is(x, "integer") == TRUE) {
-    Res <- suppressWarnings(cor.test(x, seq(1, length(x)), method = method))} else {DayDiffs <- NULL
+    Res <- suppressWarnings(cor.test(x, seq(1, length(x)), method = method, alternative = alternative))} else
+    {DayDiffs <- NULL
     for(i in 1:length(x[,1])) {DayDiffs[i] <- as.numeric(x[,1][i]-x[,1][1])}
     YrDiffs <- DayDiffs/365.25
-    Res <- suppressWarnings(cor.test(x[,2], YrDiffs, method = method))}
+    Res <- suppressWarnings(cor.test(x[,2], YrDiffs, method = method, alternative = alternative))}
   P_value <- Res[3]$p.value
   CorCoef <- Res[4]$estimate
   Statistic <- Res[1]$statistic
@@ -4941,4 +5045,219 @@ LRatioChange <- function(x, SiteID, lcv, lskew) {
   return(NewPool)
 }
 
+
+# UEF ---------------------------------------------------
+
+#' Urban expansion factor
+#'
+#'@description This function provides a coefficient to multiply by URBEXT2000 to adjust it to a given year
+#'@details The urban expansion factor is detailed in Bayliss, A. Black, K. Fava-Verde, A. Kjeldsen, T. (2006). URBEXT2000 - A new FEH catchment descriptor: Calculation, dissemination and application. R&D Technical Report FD1919/TR, DEFRA, CEH Wallingford
+#'@param Year The year for consideration. Numeric
+#'@examples
+#'# Get an expansion factor for the year 2023
+#' UEF(2023)
+#'@return A numeric urban expansion factor.
+#'@author Anthony Hammond
+UEF <- function(Year) {
+  0.7851 + 0.2124*atan(((Year-1967.5)/20.32))
+}
+
+
+
+# MonthlyStat ---------------------------------------------------
+
+#' Monthly Statistics
+#'
+#'@description Derives monthly statistics from a data.frame with Dates or POSIXct in the first column and variable of interest in the second
+#'@details The statistic of interest for each month is calculated for each calendar year in the data.frame. An aggregated result is also calculated for each month using an aggregating statistic (the mean by default). The data.frame is first truncated at the first occurrence of January 1st and last occurrence of December 31st.
+#'@param x a data.frame with Dates or POSIXct in the first column and numeric vector in the second.
+#'@param stat the function of interest. mean or sum for example.
+#'@param AggStat the aggregating statistic. The default is mean. See details
+#'@param Plot logical argument with a default of TRUE. If TRUE the monthly statistics are plotted.
+#'@param ylab A label for the y axis of the plot. The default is "Magnitude"
+#'@param main A title for the plot. The default is "Monthly Statistics"
+#'@examples
+#'# Get the mean flows for each month for the Thames at Kingston
+#' QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], stat = mean,
+#' ylab = "Discharge (m3/s)", main = "Thames at Kingston monthly mean flow")
+#' # Get the monthly sums of rainfall for the Thames at Kingston
+#' PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], stat = sum,
+#' ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall")
+#'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12. The second element is a dataframe with year in the first column and the aggregated statistic in the second
+#'@author Anthony Hammond
+MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude", main = "Monthly Statistics") {
+  if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
+  MonthInd <- function(x) {
+    POSlt <- as.POSIXlt(x)
+    Mons <- (POSlt$mon)+1
+    Jan <- which(Mons == 1)
+    Feb <- which(Mons == 2)
+    Mar <- which(Mons == 3)
+    Apr <- which(Mons == 4)
+    May <- which(Mons == 5)
+    Jun <- which(Mons == 6)
+    Jul <- which(Mons == 7)
+    Aug <- which(Mons == 8)
+    Sep <- which(Mons == 9)
+    Oct <- which(Mons == 10)
+    Nov <- which(Mons == 11)
+    Dec <- which(Mons == 12)
+    MonInd <- list(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+    names(MonInd) <- month.abb
+    return(MonInd)}
+  POSlt <- as.POSIXlt(x[,1])
+  Mons <- (POSlt$mon)+1
+  Jan1Ind <- min(which(Mons == 1))
+  Dec31Ind <- max(which(Mons == 12))
+  x <- x[Jan1Ind:Dec31Ind,]
+  MonInd <- MonthInd(x[,1])
+  ListMons <- list()
+  for(i in 1:12) {ListMons[[i]] <- x[MonInd[[i]],]}
+  AnnStats <- list()
+  for(i in 1:12) {AnnStats[[i]] <- AMextract(ListMons[[i]], func = stat, Plot = FALSE, Calendar = TRUE, Trunc = FALSE)}
+  names(AnnStats) <- month.abb
+  Nrows <- NULL
+  for(i in 1:12) {Nrows[i] <- nrow(AnnStats[[i]])}
+  if(is.null(AggStat) == TRUE) {AggStat <- mean} else {AggStat <- AggStat}
+  if(length(unique(Nrows)) == 1) {
+    MonDF <- AnnStats$Jan
+    for(i in 2:12) {MonDF <- cbind(MonDF, AnnStats[[i]][,2])}
+    colnames(MonDF) <- c("Year", month.abb)
+    Means <- apply(MonDF[,2:13], 2, AggStat)
+  }
+  if(length(unique(Nrows)) >1) {
+    for(i in 1:12) {colnames(AnnStats[[i]])[2] <- "Stat"}
+    Means <- NULL
+    for(i in 1:12) {Means[i] <- AggStat(AnnStats[[i]][,2])}
+  }
+  ResDF <- data.frame(Month = month.abb,
+                      Statistic = Means)
+  if(length(unique(Nrows)) == 1) {ResList <- list(MonDF, ResDF)}
+  if(length(unique(Nrows)) > 1) {ResList <- list(AnnStats, ResDF)}
+  names(ResList) <- c("AnnualMonths", "Aggregated")
+  barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
+          xlab = "Month", ylab = ylab, main = main)
+  return(ResList)
+}
+
+
+# BivarSim ---------------------------------------------------
+
+#' Bivariate extremes simulation
+#'
+#'@description Simulates bivariate extremes using a threshold Gaussian copula
+#'@details The simulation process is as follows. Extract POT data for the x variable and find concurrent peaks for the y variable
+#' (over a user defined event window). Simulate the x and y concurrent peaks over the threshold assuming a bivariate normal distribution.
+#' Having estimated Generalised Pareto distribution parameters for both x and y, calculate GPD quantiles from the bivariate normal simulated cumulative probabilities.
+#' The joint exceedance return periods are calculated by ranking x and y (descending), then summing the ranks and ranking those (ascending).
+#' The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)).
+#' x and y don't have to be the same length, the function will truncate to a concurrent timeframe based on the Date or POSIXct column.
+#'@param x The x variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
+#'@param y The y variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
+#'@param thresh Numeric. The threshold for extracting the POT. The default is 0.95.
+#'@param div Numeric. A lower value to de-cluster the POT. For this Bivarsim function the default is the mean, the other option is zero (zero being a useful option for rainfall).
+#'@param TimeDiv Numeric. An additional time based de-clustering option. At the scale of the data time-step. See POTextract for more details
+#'@param n Numeric. The sample size of the bivariate simulation.
+#'@param EW Numeric. The event window (based on timestep of x and y). The peak of y is extracted from the y values EW prior to and after the x peak.
+#'@param ylab Character. The y label for the plot
+#'@param xlab Character. The x label for the plot
+#'@examples
+#'# Simulate the bivariate extremes for the daily flow on the Thames at Kingston
+#'#and on the Hogsmill at Kingston.
+#' SimExample <- BivarSim(ThamesPQ[,c(1,3)], ThamesPQ[,c(1,4)],
+#' thresh = 0.9, n = 10000)
+#' #Subset the simulated data so that the Hogsmill (y variable) is approximately
+#' #at the 50-year return level
+#' subset(SimExample$Simulation, yRP > 48 & yRP < 52)
+#' #Subset the simulated data so that the joint annual exceedance return period
+#' #is approximately 50
+#' subset(SimExample$Simulation, WeibullRP > 48 & WeibullRP < 52)
+#'@return A list with four elements. The first element is a data.frame of the concurrent events above the threshold.
+#' The second and third are the extracted POT data for x and y. The fourth is a data.frame of simulated results.
+#' The simulated results has six columns: x, y, RP of x, RP of y, Weibull joint annual exceedance RP, and Gringorten joint annual exceedance RP
+#'@author Anthony Hammond
+
+BivarSim <- function(x, y, thresh = 0.95, div = NULL, TimeDiv = NULL, n = 1000, EW = 1, ylab = "y", xlab = "x") {
+  ConcurrentsEW <- function(x,y, EventWindow = 1)
+  {
+    Index1 <- x$Date %in% y$Date
+    Index2 <- y$Date %in% x$Date
+    IndexTRUE <- which(Index2 == TRUE)
+    Index2.st <- IndexTRUE - EventWindow
+    Index2.end <- IndexTRUE + EventWindow
+    EventWindowDF <- data.frame(Index2.st, Index2.end)
+    x.Var <- x[Index1, ]
+    y.Var <- NULL
+    for(i in 1:nrow(EventWindowDF)) {y.Var[i] <- max(y[Index2.st[i]:Index2.end[i],2])}
+    Comb <- data.frame(x.Var, y.Var)
+    colnames(Comb) <- c("Date", "x", "y")
+    return(Comb)
+  }
+  if(is(x, "data.frame") == FALSE) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
+  if(is(y, "data.frame") == FALSE) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
+  if(ncol(x) > 2) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
+  if(ncol(y) > 2) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
+  QPOTx <- POTextract(x, thresh = thresh, div = div, TimeDiv = TimeDiv, Plot = FALSE)
+  QPOTy <- POTextract(y, thresh = thresh, div = div, TimeDiv = TimeDiv, Plot = FALSE)
+  YrsX <- as.numeric(x[nrow(x),1] - x[1,1])/365.25
+  YrsY <- as.numeric(y[nrow(y),1] - y[1,1])/365.25
+  ppyx <- nrow(QPOTx)/YrsX
+  ppyy <- nrow(QPOTy)/YrsY
+  TestMatch <- match(x[,1], y[,1])
+  N.Overlap <- nrow(x) - length(which(is.na(TestMatch) == TRUE))
+  if(N.Overlap == 0) stop("There are no conurrent values of x and y")
+  if(N.Overlap < 1000) print("Warning: there are less than 1000 concurrent values, the concurrent extremes are limited")
+  xyPOT <- ConcurrentsEW(QPOTx, y, EventWindow = EW)
+  xyPOT <- xyPOT[complete.cases(xyPOT),]
+  CorCoeff <- cor(xyPOT[,2], xyPOT[,3])
+  yThresh <- quantile(y[,2][y[,2] > 0], thresh)
+  xThresh <- quantile(x[,2][x[,2] > 0], thresh)
+  xGPDPars <- as.numeric(GenParetoPars(QPOTx[,2]))
+  yGPDPars <- as.numeric(GenParetoPars(QPOTy[,2]))
+  x.mu <- mean(xyPOT[,2], na.rm = TRUE)
+  y.mu <- mean(xyPOT[,3], na.rm = TRUE)
+  x.sd <- sd(xyPOT[,2], na.rm = TRUE)
+  y.sd <- sd(xyPOT[,3], na.rm = TRUE)
+  SDyOfx <- y.sd*sqrt(1-CorCoeff^2)
+  xSim <- rnorm(n, x.mu, x.sd)
+  ymuofx <- y.mu + CorCoeff*(y.sd/x.sd)*(xSim-x.mu)
+  ySim <- rnorm(n = n, mean = ymuofx, sd = SDyOfx)
+  xyPOT <- subset(xyPOT, y > as.numeric(yThresh))
+  ResNormDF <- data.frame(xSim, ySim)
+  xProbs <- 1-pnorm(ResNormDF[,1], x.mu, x.sd)
+  yProbs <- 1-pnorm(ResNormDF[,2], y.mu, y.sd)
+  xGPD <- GenParetoEst(xGPDPars[1], xGPDPars[2], xGPDPars[3], RP = 1/xProbs)
+  yGPD <- GenParetoEst(yGPDPars[1], yGPDPars[2], yGPDPars[3], RP = 1/yProbs)
+  ResDF <- data.frame(x = xGPD, y = yGPD)
+  xRP <- GenParetoEst(xGPDPars[1], xGPDPars[2], xGPDPars[3], q = xGPD, ppy = ppyx)
+  yRP <- GenParetoEst(yGPDPars[1], yGPDPars[2], yGPDPars[3], q = yGPD, ppy = ppyy)
+  ResDF <- data.frame(ResDF, xRP, yRP)
+  ymax <- max(c(max(yGPD, na.rm = TRUE), max(y[,2], na.rm = TRUE)))
+  xmax <- max(c(max(xGPD, na.rm = TRUE), max(x[,2], na.rm = TRUE)))
+  ymin <- min(c(min(yGPD, na.rm = TRUE), min(y[,2], na.rm = TRUE)))
+  xmin <- min(c(min(xGPD, na.rm = TRUE), min(x[,2], na.rm = TRUE)))
+  ConcQ <- ConcurrentsEW(x, y, EventWindow = 0)
+  NPOT <- nrow(xyPOT)
+  Yrs <- as.numeric((ConcQ[nrow(ConcQ),1] - ConcQ[1,1])/365.25)
+  PPY <- NPOT/Yrs
+  plot(ConcQ[,2:3], pch = 16, col = "grey",
+       xlim = c(xmin, xmax), ylim = c(ymin, ymax), cex = 0.5, ylab = ylab, xlab = xlab)
+  points(ResDF, pch = 16, col = rgb(0,0.3,0.7,0.5), cex = 0.5)
+  points(ConcQ[,2:3], pch = 16, col = "grey", cex = 0.5)
+  points(xyPOT[,2:3], pch = 16, col = "black", cex = 0.5)
+  abline(h = min(ResDF[,2]), lty = 3, lwd = 2)
+  abline(v = min(ResDF[,1]), lty = 3, lwd = 2)
+  legend("topleft", legend = c("Simulated", "Observed", "Independent events"), pch = 16, col = c(rgb(0,0.3,0.7,0.5), "grey", "black"), bty = "n", x.intersp = 0.7, cex = 0.7, y.intersp = 0.7)
+  Ranksx <- rank(-ResDF$x)
+  Ranksy <- rank(-ResDF$y)
+  SumRanks <- Ranksx + Ranksy
+  RanksXY <- rank(SumRanks)
+  WeibullRP <- 1/(RanksXY/(n+1))
+  GringortenRP <- (n+0.12)/(RanksXY-0.44)
+  ResDF <- data.frame(ResDF, WeibullRP, GringortenRP)
+  ResDF <- ResDF[order(ResDF$WeibullRP, decreasing = TRUE),]
+  ResList <- list(xyPOT, QPOTx, QPOTy, ResDF)
+  names(ResList) <- c("ConcurrentEvents", "POTx", "POTy", "Simulation")
+  return(ResList)
+}
 

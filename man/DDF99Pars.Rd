@@ -17,7 +17,7 @@ The first data frame is for the catchment average parameters (these still requir
 Imports the FEH 1999 depth duration frequency parameters from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 }
 \details{
-The xml files downloaded from the FEH webserver are formatted differently from the xml files of the peak flows dataset, this function is coded to import either, given the correct file path. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+This function is coded to import DDF99 parameters from xml files from the NRFA or the FEH web-server. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
 \examples{
 #Import DDF99 parameters from a NRFA peakflows xml file and display in console

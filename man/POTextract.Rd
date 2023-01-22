@@ -4,16 +4,30 @@
 \alias{POTextract}
 \title{Peaks over threshold (POT) data extraction}
 \usage{
-POTextract(x, div = NULL, thresh = 0.975, Plot = TRUE)
+POTextract(
+  x,
+  div = NULL,
+  TimeDiv = NULL,
+  thresh = 0.975,
+  Plot = TRUE,
+  ylab = "Magnitude",
+  main = "Peaks over threshold"
+)
 }
 \arguments{
 \item{x}{either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second}
 
-\item{div}{user chosen value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample}
+\item{div}{numeric value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample}
+
+\item{TimeDiv}{Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicablee for data.frames.}
 
 \item{thresh}{user chosen threshold. Default is 0.975}
 
 \item{Plot}{logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted}
+
+\item{ylab}{Label for the plot yaxis. Default is "Magnitude"}
+
+\item{main}{Title for the plot. Default is "Peaks over threshold"}
 }
 \value{
 Prints the number of peaks per year and returns a data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the hydrological variable is input.
@@ -22,20 +36,27 @@ Prints the number of peaks per year and returns a data.frame with columns; Date 
 Extracts independent peaks over a threshold from a sample
 }
 \details{
-If the x argument is a numeric vector, the peaks will be extracted with no time information. x can instead be a data.frame with dates in the first column and the numeric vector in the second. In this latter case, the peaks will be time-stamped and a hydrograph including POT will be plotted by default. The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent. For example, if two peaks above the chosen threshold are separated by the daily mean flow, they could be considered independent, but not if flow hasn't returned to daily mean at any time between the peaks. Daily mean flow may not always be appropriate, in which case the 'div' argument can be adjusted. The function was coded primarily for river flow but for extracting daily duration POT rainfall a div of zero could be used (making the assumption that rainfall events separated by a period of 24 hours with no rain, are independent). For sub-daily rainfall, further work would be necessary. For example, a div of zero could be used, and if two peaks are extracted but not separated by more than 24 hours, the lower of the two could be discarded. For this approach a data.frame with dates would be required. Alternatively, the data could be aggregated (extracting max rain) to the daily scale first (or any scale necessary to ensure independence) and then the function applied. When plotted, the blue line is the threshold, and the green line is the independence line (div).
+If the x argument is a numeric vector, the peaks will be extracted with no time information.
+ x can instead be a data.frame with dates in the first column and the numeric vector in the second.
+ In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
+ The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
+ For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
+ but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be adjusted.
+ The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks. For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
+ In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall. When plotted, the blue line is the threshold, and the green line is the independence line (div).
 }
 \examples{
 #Extract POT data from Thames mean daily flow 1970-10-01 to 2015-09-25 with
 #div = mean and threshold = 0.95. Then display the first six rows
-ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.90)
+ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
 head(ThamesQPOT)
 #Extract Thames POT from only the numeric vector of flows and display the
 #first six rows
-ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.90)
-ThamesQPOT
-#Extract the Thames POT precipitation with a div of 0 and the default
-#threshold. Then display the first six rows
-ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0)
+ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.9)
+head(ThamesQPOT)
+#Extract the Thames POT precipitation with a div of 0, the default
+#threshold, and 5 timesteps (days) either side of the peak. Then display the first six rows
+ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0, TimeDiv = 5)
 head(ThamesPPOT)
 }
 \author{

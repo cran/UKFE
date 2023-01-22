@@ -7,15 +7,21 @@
 AMextract(
   x,
   func = NULL,
+  Calendar = FALSE,
+  Trunc = TRUE,
   Plot = TRUE,
   Title = "Hydrological annual maximum sequence",
-  Ylabel = "Annual maximum quantiles"
+  Ylabel = "Magnitude"
 )
 }
 \arguments{
 \item{x}{a data.frame with dates (or POSIXct) in the first column and variable in the second}
 
 \item{func}{A user chosen function to extract statistics other than maximums.}
+
+\item{Calendar}{logical. If FALSE, the hydrological year maximums are returned. If TRUE, the calendar year maximums are returned.}
+
+\item{Trunc}{logical with a default of TRUE. When true the beginning and end of the data.frame are first truncated so that it starts and ends at the start and end of the hydrological year (or Calendar year if Calendar = TRUE).}
 
 \item{Plot}{a logical argument with a default of TRUE. If TRUE the extracted annual maximum is plotted}
 
@@ -24,13 +30,13 @@ AMextract(
 \item{Ylabel}{Label for the y axis. Default is "Annual maximum quantiles"}
 }
 \value{
-a data.frame with columns; WaterYear and AM
+a data.frame with columns; WaterYear and AM. By default AM is the annual maximum sample, but will be any statistic used as the func argument.
 }
 \description{
 Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 }
 \details{
-The peaks are extracted based on the UK hydrological year, which starts October 1st and ends September 30th. If there are partial years (years with missing data) the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
+The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (none full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
 }
 \examples{
 #Extract the Thames AMAX daily mean flow and display the first six rows

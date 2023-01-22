@@ -4,12 +4,14 @@
 \alias{TrendTest}
 \title{Trend hypothesis test}
 \usage{
-TrendTest(x, method = "kendall")
+TrendTest(x, method = "kendall", alternative = "two.sided")
 }
 \arguments{
 \item{x}{a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.}
 
 \item{method}{a choice of test method. Choices are "pearson", "spearman", and "kendall"}
+
+\item{alternative}{the alternative hypothesis. The default is "two.sided".}
 }
 \value{
 A data.frame with columns and associated values: P_value, correlation coefficient, and method specific statistic.
@@ -19,6 +21,7 @@ A hypothesis test for the correlation between the variable of interest and time
 }
 \details{
 The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
+ The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater". And for negative trend, set it to "less"
 }
 \examples{
 #Get AMAX sample and apply a trend test with the default kendall test.
