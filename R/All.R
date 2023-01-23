@@ -2083,11 +2083,13 @@ AMImport <- function(x)
 #'  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
 #'  The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
 #'  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
-#'  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be adjusted.
-#'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks. For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
-#'  In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall. When plotted, the blue line is the threshold, and the green line is the independence line (div).
+#'  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
+#'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks.
+#'  For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
+#'  In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall.
+#'  When plotted, the blue line is the threshold, and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
-#' @param div numeric value, either side of which two peaks over the threshold are considered independent. Default is the mean of the sample
+#' @param div numeric  percentile (between 0 and thres), either side of which two peaks over the threshold are considered independent. Default is the mean of the sample.
 #' @param TimeDiv Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicablee for data.frames.
 #' @param thresh user chosen threshold. Default is 0.975
 #' @param Plot logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted
@@ -2154,6 +2156,8 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
   NAs <- FALSE
   if(is(x, "data.frame") == FALSE) {
     if(is.null(div) == FALSE) {
+      if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      div <- quantile(x, div, na.rm = TRUE)
       if(div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
     if(is.null(div)) {mu <- mean(x,na.rm = TRUE)} else {mu <- div}
     if(mu >= quantile(x,thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
@@ -2180,6 +2184,8 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
   if(is(x, "data.frame") == TRUE) {
     if(ncol(x) >2) stop("x must be a data.frame with two columns.")
     if(is.null(div) == FALSE) {
+      if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      div <- quantile(x[,2], div, na.rm = TRUE)
       if(div < min(x[,2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
     if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
     if(is.null(div)) {mu <- mean(x[,2],na.rm = TRUE)} else {mu <- div}
@@ -5150,12 +5156,15 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
 #' (over a user defined event window). Simulate the x and y concurrent peaks over the threshold assuming a bivariate normal distribution.
 #' Having estimated Generalised Pareto distribution parameters for both x and y, calculate GPD quantiles from the bivariate normal simulated cumulative probabilities.
 #' The joint exceedance return periods are calculated by ranking x and y (descending), then summing the ranks and ranking those (ascending).
-#' The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)).
+#' The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)) - and divided by the number of concurrent peaks above the threshold per year.
+#' It's recommended that the variable with the fewest peaks per year be used as x.
+#' Return periods for x and y are determined by the GPD including the peaks per year.
+#' Therefore the variable with fewer peaks per year will likely have shorter return periods on average for a given simulation.
 #' x and y don't have to be the same length, the function will truncate to a concurrent timeframe based on the Date or POSIXct column.
 #'@param x The x variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
 #'@param y The y variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
 #'@param thresh Numeric. The threshold for extracting the POT. The default is 0.95.
-#'@param div Numeric. A lower value to de-cluster the POT. For this Bivarsim function the default is the mean, the other option is zero (zero being a useful option for rainfall).
+#'@param div Numeric value (percentile). A lower value to de-cluster the POT. Default is the mean.
 #'@param TimeDiv Numeric. An additional time based de-clustering option. At the scale of the data time-step. See POTextract for more details
 #'@param n Numeric. The sample size of the bivariate simulation.
 #'@param EW Numeric. The event window (based on timestep of x and y). The peak of y is extracted from the y values EW prior to and after the x peak.
@@ -5252,8 +5261,8 @@ BivarSim <- function(x, y, thresh = 0.95, div = NULL, TimeDiv = NULL, n = 1000, 
   Ranksy <- rank(-ResDF$y)
   SumRanks <- Ranksx + Ranksy
   RanksXY <- rank(SumRanks)
-  WeibullRP <- 1/(RanksXY/(n+1))
-  GringortenRP <- (n+0.12)/(RanksXY-0.44)
+  WeibullRP <- ((n+1)/(RanksXY))/PPY
+  GringortenRP <- ((n+0.12)/(RanksXY-0.44))/PPY
   ResDF <- data.frame(ResDF, WeibullRP, GringortenRP)
   ResDF <- ResDF[order(ResDF$WeibullRP, decreasing = TRUE),]
   ResList <- list(xyPOT, QPOTx, QPOTy, ResDF)

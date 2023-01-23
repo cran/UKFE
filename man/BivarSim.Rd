@@ -23,7 +23,7 @@ BivarSim(
 
 \item{thresh}{Numeric. The threshold for extracting the POT. The default is 0.95.}
 
-\item{div}{Numeric. A lower value to de-cluster the POT. For this Bivarsim function the default is the mean, the other option is zero (zero being a useful option for rainfall).}
+\item{div}{Numeric value (percentile). A lower value to de-cluster the POT. Default is the mean.}
 
 \item{TimeDiv}{Numeric. An additional time based de-clustering option. At the scale of the data time-step. See POTextract for more details}
 
@@ -48,7 +48,10 @@ The simulation process is as follows. Extract POT data for the x variable and fi
 (over a user defined event window). Simulate the x and y concurrent peaks over the threshold assuming a bivariate normal distribution.
 Having estimated Generalised Pareto distribution parameters for both x and y, calculate GPD quantiles from the bivariate normal simulated cumulative probabilities.
 The joint exceedance return periods are calculated by ranking x and y (descending), then summing the ranks and ranking those (ascending).
-The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)).
+The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)) - and divided by the number of concurrent peaks above the threshold per year.
+It's recommended that the variable with the fewest peaks per year be used as x.
+Return periods for x and y are determined by the GPD including the peaks per year.
+Therefore the variable with fewer peaks per year will likely have shorter return periods on average for a given simulation.
 x and y don't have to be the same length, the function will truncate to a concurrent timeframe based on the Date or POSIXct column.
 }
 \examples{
