@@ -10,7 +10,6 @@ A data frame with 5478 rows and 4 columns:
   \item{Date}{Date}
   \item{P}{Precipitation, in mm}
   \item{Q}{Daily mean discharge, in m3/s}
-  \item{QHogsmill}{Daily mean discharge, in m3/s}
 }
 }
 \source{
@@ -21,6 +20,5 @@ ThamesPQ
 }
 \description{
 A data.frame of four columns; Date, Precipitation (P), & daily mean flow (Q)
-As well as river Hogsmill daily discharge for the same period.
 }
 \keyword{datasets}

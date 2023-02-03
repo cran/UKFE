@@ -2157,10 +2157,10 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
   if(is(x, "data.frame") == FALSE) {
     if(is.null(div) == FALSE) {
       if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
-      div <- quantile(x, div, na.rm = TRUE)
+      div <- quantile(x[x >0], div, na.rm = TRUE)
       if(div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
-    if(is.null(div)) {mu <- mean(x,na.rm = TRUE)} else {mu <- div}
-    if(mu >= quantile(x,thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
+    if(is.null(div)) {mu <- mean(x[x >0],na.rm = TRUE)} else {mu <- div}
+    if(mu > quantile(x[x >0],thresh, na.rm = TRUE)) stop("The event division (div) must be equal to or lower than the event threshold")
     if(is.null(TimeDiv) == FALSE) print("Warning: TimeDiv isn't currently set up for vectors. The TimeDiv element entered has no impact on the result")
     QThresh <- as.numeric(quantile(x[x > 0], thresh, na.rm = TRUE))
     MinMuP <- min(which(x <= mu))
@@ -2185,11 +2185,11 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
     if(ncol(x) >2) stop("x must be a data.frame with two columns.")
     if(is.null(div) == FALSE) {
       if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
-      div <- quantile(x[,2], div, na.rm = TRUE)
+      div <- as.numeric(quantile(x[,2][x[,2] >0], div, na.rm = TRUE))
       if(div < min(x[,2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
     if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
-    if(is.null(div)) {mu <- mean(x[,2],na.rm = TRUE)} else {mu <- div}
-    if(mu >= quantile(x[,2],thresh, na.rm = TRUE)) stop("The event division must be significantly lower than the event threshold")
+    if(is.null(div)) {mu <- mean(x[,2][x[,2] >0],na.rm = TRUE)} else {mu <- div}
+    if(mu > quantile(x[,2][x[,2] >0],thresh, na.rm = TRUE)) stop("The event division (div) must be significantly lower than the event threshold")
     QThresh <- as.numeric(quantile(x[,2][x[,2] >0], thresh, na.rm = TRUE))
     MinMuP <- min(which(x[,2] <= mu), na.rm = TRUE)
     MaxMuP <- max(which(x[,2] <= mu), na.rm = TRUE)
@@ -5147,126 +5147,5 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
 }
 
 
-# BivarSim ---------------------------------------------------
 
-#' Bivariate extremes simulation
-#'
-#'@description Simulates bivariate extremes using a threshold Gaussian copula
-#'@details The simulation process is as follows. Extract POT data for the x variable and find concurrent peaks for the y variable
-#' (over a user defined event window). Simulate the x and y concurrent peaks over the threshold assuming a bivariate normal distribution.
-#' Having estimated Generalised Pareto distribution parameters for both x and y, calculate GPD quantiles from the bivariate normal simulated cumulative probabilities.
-#' The joint exceedance return periods are calculated by ranking x and y (descending), then summing the ranks and ranking those (ascending).
-#' The reciprocal of the Weibull formula (rank/(n+1)) and Gringorten are then applied ((Rank-0.44)/(n+0.12)) - and divided by the number of concurrent peaks above the threshold per year.
-#' It's recommended that the variable with the fewest peaks per year be used as x.
-#' Return periods for x and y are determined by the GPD including the peaks per year.
-#' Therefore the variable with fewer peaks per year will likely have shorter return periods on average for a given simulation.
-#' x and y don't have to be the same length, the function will truncate to a concurrent timeframe based on the Date or POSIXct column.
-#'@param x The x variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
-#'@param y The y variable as a data.frame, with date or POSIXct in the first column and numeric vector in the second
-#'@param thresh Numeric. The threshold for extracting the POT. The default is 0.95.
-#'@param div Numeric value (percentile). A lower value to de-cluster the POT. Default is the mean.
-#'@param TimeDiv Numeric. An additional time based de-clustering option. At the scale of the data time-step. See POTextract for more details
-#'@param n Numeric. The sample size of the bivariate simulation.
-#'@param EW Numeric. The event window (based on timestep of x and y). The peak of y is extracted from the y values EW prior to and after the x peak.
-#'@param ylab Character. The y label for the plot
-#'@param xlab Character. The x label for the plot
-#'@examples
-#'# Simulate the bivariate extremes for the daily flow on the Thames at Kingston
-#'#and on the Hogsmill at Kingston.
-#' SimExample <- BivarSim(ThamesPQ[,c(1,3)], ThamesPQ[,c(1,4)],
-#' thresh = 0.9, n = 10000)
-#' #Subset the simulated data so that the Hogsmill (y variable) is approximately
-#' #at the 50-year return level
-#' subset(SimExample$Simulation, yRP > 48 & yRP < 52)
-#' #Subset the simulated data so that the joint annual exceedance return period
-#' #is approximately 50
-#' subset(SimExample$Simulation, WeibullRP > 48 & WeibullRP < 52)
-#'@return A list with four elements. The first element is a data.frame of the concurrent events above the threshold.
-#' The second and third are the extracted POT data for x and y. The fourth is a data.frame of simulated results.
-#' The simulated results has six columns: x, y, RP of x, RP of y, Weibull joint annual exceedance RP, and Gringorten joint annual exceedance RP
-#'@author Anthony Hammond
-
-BivarSim <- function(x, y, thresh = 0.95, div = NULL, TimeDiv = NULL, n = 1000, EW = 1, ylab = "y", xlab = "x") {
-  ConcurrentsEW <- function(x,y, EventWindow = 1)
-  {
-    Index1 <- x$Date %in% y$Date
-    Index2 <- y$Date %in% x$Date
-    IndexTRUE <- which(Index2 == TRUE)
-    Index2.st <- IndexTRUE - EventWindow
-    Index2.end <- IndexTRUE + EventWindow
-    EventWindowDF <- data.frame(Index2.st, Index2.end)
-    x.Var <- x[Index1, ]
-    y.Var <- NULL
-    for(i in 1:nrow(EventWindowDF)) {y.Var[i] <- max(y[Index2.st[i]:Index2.end[i],2])}
-    Comb <- data.frame(x.Var, y.Var)
-    colnames(Comb) <- c("Date", "x", "y")
-    return(Comb)
-  }
-  if(is(x, "data.frame") == FALSE) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
-  if(is(y, "data.frame") == FALSE) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
-  if(ncol(x) > 2) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
-  if(ncol(y) > 2) stop("x & y must be data.frames with two columns, the first a Date or POSIXct class, the second a numeric variable")
-  QPOTx <- POTextract(x, thresh = thresh, div = div, TimeDiv = TimeDiv, Plot = FALSE)
-  QPOTy <- POTextract(y, thresh = thresh, div = div, TimeDiv = TimeDiv, Plot = FALSE)
-  YrsX <- as.numeric(x[nrow(x),1] - x[1,1])/365.25
-  YrsY <- as.numeric(y[nrow(y),1] - y[1,1])/365.25
-  ppyx <- nrow(QPOTx)/YrsX
-  ppyy <- nrow(QPOTy)/YrsY
-  TestMatch <- match(x[,1], y[,1])
-  N.Overlap <- nrow(x) - length(which(is.na(TestMatch) == TRUE))
-  if(N.Overlap == 0) stop("There are no conurrent values of x and y")
-  if(N.Overlap < 1000) print("Warning: there are less than 1000 concurrent values, the concurrent extremes are limited")
-  xyPOT <- ConcurrentsEW(QPOTx, y, EventWindow = EW)
-  xyPOT <- xyPOT[complete.cases(xyPOT),]
-  CorCoeff <- cor(xyPOT[,2], xyPOT[,3])
-  yThresh <- quantile(y[,2][y[,2] > 0], thresh)
-  xThresh <- quantile(x[,2][x[,2] > 0], thresh)
-  xGPDPars <- as.numeric(GenParetoPars(QPOTx[,2]))
-  yGPDPars <- as.numeric(GenParetoPars(QPOTy[,2]))
-  x.mu <- mean(xyPOT[,2], na.rm = TRUE)
-  y.mu <- mean(xyPOT[,3], na.rm = TRUE)
-  x.sd <- sd(xyPOT[,2], na.rm = TRUE)
-  y.sd <- sd(xyPOT[,3], na.rm = TRUE)
-  SDyOfx <- y.sd*sqrt(1-CorCoeff^2)
-  xSim <- rnorm(n, x.mu, x.sd)
-  ymuofx <- y.mu + CorCoeff*(y.sd/x.sd)*(xSim-x.mu)
-  ySim <- rnorm(n = n, mean = ymuofx, sd = SDyOfx)
-  xyPOT <- subset(xyPOT, y > as.numeric(yThresh))
-  ResNormDF <- data.frame(xSim, ySim)
-  xProbs <- 1-pnorm(ResNormDF[,1], x.mu, x.sd)
-  yProbs <- 1-pnorm(ResNormDF[,2], y.mu, y.sd)
-  xGPD <- GenParetoEst(xGPDPars[1], xGPDPars[2], xGPDPars[3], RP = 1/xProbs)
-  yGPD <- GenParetoEst(yGPDPars[1], yGPDPars[2], yGPDPars[3], RP = 1/yProbs)
-  ResDF <- data.frame(x = xGPD, y = yGPD)
-  xRP <- GenParetoEst(xGPDPars[1], xGPDPars[2], xGPDPars[3], q = xGPD, ppy = ppyx)
-  yRP <- GenParetoEst(yGPDPars[1], yGPDPars[2], yGPDPars[3], q = yGPD, ppy = ppyy)
-  ResDF <- data.frame(ResDF, xRP, yRP)
-  ymax <- max(c(max(yGPD, na.rm = TRUE), max(y[,2], na.rm = TRUE)))
-  xmax <- max(c(max(xGPD, na.rm = TRUE), max(x[,2], na.rm = TRUE)))
-  ymin <- min(c(min(yGPD, na.rm = TRUE), min(y[,2], na.rm = TRUE)))
-  xmin <- min(c(min(xGPD, na.rm = TRUE), min(x[,2], na.rm = TRUE)))
-  ConcQ <- ConcurrentsEW(x, y, EventWindow = 0)
-  NPOT <- nrow(xyPOT)
-  Yrs <- as.numeric((ConcQ[nrow(ConcQ),1] - ConcQ[1,1])/365.25)
-  PPY <- NPOT/Yrs
-  plot(ConcQ[,2:3], pch = 16, col = "grey",
-       xlim = c(xmin, xmax), ylim = c(ymin, ymax), cex = 0.5, ylab = ylab, xlab = xlab)
-  points(ResDF, pch = 16, col = rgb(0,0.3,0.7,0.5), cex = 0.5)
-  points(ConcQ[,2:3], pch = 16, col = "grey", cex = 0.5)
-  points(xyPOT[,2:3], pch = 16, col = "black", cex = 0.5)
-  abline(h = min(ResDF[,2]), lty = 3, lwd = 2)
-  abline(v = min(ResDF[,1]), lty = 3, lwd = 2)
-  legend("topleft", legend = c("Simulated", "Observed", "Independent events"), pch = 16, col = c(rgb(0,0.3,0.7,0.5), "grey", "black"), bty = "n", x.intersp = 0.7, cex = 0.7, y.intersp = 0.7)
-  Ranksx <- rank(-ResDF$x)
-  Ranksy <- rank(-ResDF$y)
-  SumRanks <- Ranksx + Ranksy
-  RanksXY <- rank(SumRanks)
-  WeibullRP <- ((n+1)/(RanksXY))/PPY
-  GringortenRP <- ((n+0.12)/(RanksXY-0.44))/PPY
-  ResDF <- data.frame(ResDF, WeibullRP, GringortenRP)
-  ResDF <- ResDF[order(ResDF$WeibullRP, decreasing = TRUE),]
-  ResList <- list(xyPOT, QPOTx, QPOTy, ResDF)
-  names(ResList) <- c("ConcurrentEvents", "POTx", "POTy", "Simulation")
-  return(ResList)
-}
 
