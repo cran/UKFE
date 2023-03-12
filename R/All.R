@@ -241,7 +241,7 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
 #'
 #' Function to develop a pooling group based on catchment descriptors
 #'
-#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default and this can be adjusted with UrbMax. If a gauged assessment is required and the site of interest is > UrbMax it can be included by setting iug = TRUE. De-urbanise the Lcv and Lskew (L-moment ratios) for sites with URBEXT2000 > UrbMax by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
 #'@param CDs catchment descriptors derived from either GetCDs or CDsXML
 #'@param AREA catchment area in km2
 #'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
@@ -249,8 +249,9 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
 #'@param FPEXT catchment floodplain extent. The proportion of the catchment that is estimated to be inundated by a 100-year flood
 #'@param N minimum Number of total gauged record years for the pooling group
 #'@param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
-#'@param iug iug stands for 'include urban gauge'. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space to the CDs provided if it has URBEXT2000 >= 0.03
-#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of the top site in the pooling group will be de-urbanised
+#'@param iug iug stands for 'include urban gauge' - which refers to a gauged subject site if it's > UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
+#'@param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
+#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
 #'@examples
 #'#Get some catchment descriptors
 #'CDs.73005 <- GetCDs(73005)
@@ -269,7 +270,7 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
 #'PoolUpdate <- LRatioChange(Pool.39001, SiteID = 39001, 0.19, 0.18)
 #'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
 #'@author Anthony Hammond
-Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, DeUrb = FALSE){
+Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, UrbMax = 0.03, DeUrb = FALSE){
   if(is.null(exclude) == FALSE) {
     Site.id <- match(exclude, row.names(NRFAData))
     if(any(is.na(Site.id)) == TRUE) stop ("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")}
@@ -298,10 +299,10 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index,22]
-    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
     if(iug == FALSE) {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd > 0.03) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd <= 0.03) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")}
+    if(iug == TRUE & UrbUrbInd > UrbMax) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
+    if(iug == TRUE & UrbUrbInd <= UrbMax) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <UrbMax. Group formed as if iug = FALSE")}
     SDM <- SDMs(Site.NRFA,AREA, SAAR, FARL, FPEXT)
     Site.NRFA <- cbind(Site.NRFA, SDM)
     Cum.N <- NULL
@@ -332,11 +333,14 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
     LskewCol <- which(colnames(Site.NRFA) == "LSkew")
     UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-    DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1, UrbCol], DeUrb = TRUE)
-    DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol], Site.NRFA[1, UrbCol], DeUrb = TRUE)
-    Site.NRFA[1,LcvCol] <- DeUrbesLCV
-    Site.NRFA[1,LskewCol] <- DeUrbesLSKEW
-    if(Site.NRFA[1,14] < 0.03) {print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03. The sites' Lcv & lskew have been adjusted as if it were urban" )}
+    UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
+    if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+    DeUrbesLCV <- NULL
+    for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+    DeUrbesLSKEW <- NULL
+    for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+    Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
+    Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   } else {
@@ -363,10 +367,10 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) == "URBEXT2000")]
-    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
     if(iug == FALSE) {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd > 0.03) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd <= 0.03) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")}
+    if(iug == TRUE & UrbUrbInd > UrbMax) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
+    if(iug == TRUE & UrbUrbInd <= UrbMax) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 < UrbMax. Group formed as if iug = FALSE")}
     SDM <- SDMs(Site.NRFA,CDs[1,2], CDs[15,2], CDs[8,2], CDs[9,2])
     Site.NRFA <- cbind(Site.NRFA, SDM)
     Cum.N <- NULL
@@ -397,15 +401,19 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
     LskewCol <- which(colnames(Site.NRFA) == "LSkew")
     UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-    DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1, UrbCol], DeUrb = TRUE)
-    DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol], Site.NRFA[1, UrbCol], DeUrb = TRUE)
-    Site.NRFA[1,LcvCol] <- DeUrbesLCV
-    Site.NRFA[1,LskewCol] <- DeUrbesLSKEW
-    if(Site.NRFA[1,14] < 0.03) {print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03")}
+    UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
+    if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+    DeUrbesLCV <- NULL
+    for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+    DeUrbesLSKEW <- NULL
+    for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+    Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
+    Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   } )
 }
+
 
 
 # Pool Small catchments--------------------------------------------------------------------
@@ -414,14 +422,15 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'
 #' Function to develop a small catchments pooling group based on catchment descriptors
 #'
-#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the necessary catchment descriptors (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default. If a gauged assessment is required and the site of interest is urban it can be included by setting iug = TRUE. In which case the user may wish to de-urbanise the subject site's Lcv and Lskew (L-moment ratios) by setting DeUrb = TRUE. If the user has more data available for a partcicular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised.
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the necessary catchment descriptors (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default and this can be adjusted with the UrbMax argument. If a gauged assessment is required and the site of interest is > UrbMax it can be included by setting iug = TRUE. De-urbanise the Lcv and Lskew (L-moment ratios) of sites with URBEXT2000 > 0.03 by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised.
 #'@param CDs catchment descriptors derived from either GetCDs or CDsXML
 #'@param AREA catchment area in km2
 #'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
 #'@param N minimum Number of total gauged record years for the pooling group
 #'@param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
-#'@param iug iug stands for 'include urban gauge'. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space to the CDs provided if it has URBEXT2000 >= 0.03
-#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of the top site in the pooling group will be de-urbanised
+#'@param iug iug stands for 'include urban gauge' - which refers to a gauged subject site if it's > UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
+#'@param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
+#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
 #'@examples
 #'#Get some catchment descriptors
 #'CDs.21001 <- GetCDs(21001)
@@ -434,7 +443,7 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
 #'@author Anthony Hammond
 PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
-                       iug = FALSE, DeUrb = FALSE)
+                       iug = FALSE, UrbMax = 0.03, DeUrb = FALSE)
 {
   if (is.null(exclude) == FALSE) {
     Site.id <- match(exclude, row.names(NRFAData))
@@ -466,18 +475,18 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index, 22]
-    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
     if (iug == FALSE) {
       Site.NRFA <- Site.NRFA
     }
-    if (iug == TRUE & UrbUrbInd > 0.03) {
+    if (iug == TRUE & UrbUrbInd > UrbMax) {
       Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
     }
     else {
       Site.NRFA <- Site.NRFA
     }
-    if (iug == TRUE & UrbUrbInd <= 0.03) {
-      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")
+    if (iug == TRUE & UrbUrbInd <= UrbMax) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 < UrbMax. Group formed as if iug = FALSE")
     }
     SDM <- SDMs(Site.NRFA, AREA, SAAR)
     Site.NRFA <- cbind(Site.NRFA, SDM)
@@ -524,15 +533,14 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
       LcvCol <- which(colnames(Site.NRFA) == "Lcv")
       LskewCol <- which(colnames(Site.NRFA) == "LSkew")
       UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-      DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1,
-                                                           UrbCol], DeUrb = TRUE)
-      DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol],
-                               Site.NRFA[1, UrbCol], DeUrb = TRUE)
-      Site.NRFA[1, LcvCol] <- DeUrbesLCV
-      Site.NRFA[1, LskewCol] <- DeUrbesLSKEW
-      if (Site.NRFA[1, 14] < 0.03) {
-        print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03. The sites' Lcv & lskew have been adjusted as if it were urban")
-      }
+      UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
+      if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+      DeUrbesLCV <- NULL
+      for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      DeUrbesLSKEW <- NULL
+      for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   }
@@ -562,18 +570,18 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) ==
                                             "URBEXT2000")]
-    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= 0.03)
+    Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
     if (iug == FALSE) {
       Site.NRFA <- Site.NRFA
     }
-    if (iug == TRUE & UrbUrbInd > 0.03) {
+    if (iug == TRUE & UrbUrbInd > UrbMax) {
       Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
     }
     else {
       Site.NRFA <- Site.NRFA
     }
-    if (iug == TRUE & UrbUrbInd <= 0.03) {
-      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <0.03. Group formed as if iug = FALSE")
+    if (iug == TRUE & UrbUrbInd <= UrbMax) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 < UrbMax. Group formed as if iug = FALSE")
     }
     SDM <- SDMs(Site.NRFA, CDs[1, 2], CDs[15, 2])
     Site.NRFA <- cbind(Site.NRFA, SDM)
@@ -620,15 +628,14 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
       LcvCol <- which(colnames(Site.NRFA) == "Lcv")
       LskewCol <- which(colnames(Site.NRFA) == "LSkew")
       UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-      DeUrbesLCV <- LcvUrb(Site.NRFA[1, LcvCol], Site.NRFA[1,
-                                                           UrbCol], DeUrb = TRUE)
-      DeUrbesLSKEW <- LSkewUrb(Site.NRFA[1, LskewCol],
-                               Site.NRFA[1, UrbCol], DeUrb = TRUE)
-      Site.NRFA[1, LcvCol] <- DeUrbesLCV
-      Site.NRFA[1, LskewCol] <- DeUrbesLSKEW
-      if (Site.NRFA[1, 14] < 0.03) {
-        print("Warning: DeUrb = TRUE and the top site in the group has URBEXT2000 < 0.03")
-      }
+      UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
+      if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+      DeUrbesLCV <- NULL
+      for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      DeUrbesLSKEW <- NULL
+      for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   })
@@ -1510,7 +1517,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #'
 #'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
-#' @param Don1 numeric site reference for the a signle donor (for donor candidates see DonAdj function)
+#' @param Don1 numeric site reference for the a single donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
 #' @param UrbAdj logical argument with a default of FALSE. True applies an urban adjustment
 #' @param AREA catchment area in km2
@@ -4443,14 +4450,15 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 
 # Precipitation -----------------------------------------------------------
 
-#' DDF13 results from .xml files
+#' DDF13 or DDF22 results from .xml files
 #'
-#' Imports the depth duration frequency 2013 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
+#' Imports the depth duration frequency 2013 or 2022 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' This function returns a data-frame of results. For further durations and return periods the DDF13 function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' This function returns a data-frame of results. For further durations and return periods the DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the xml file path
 #' @param ARF logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied
 #' @param Plot logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods
+#' @param DDFVersion Version of the DDF model (numeric). either 22, or 13. The default is 22.
 #' @examples
 #' #Import DDF13 results from a NRFA peakflows xml file and display in console
 #' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
@@ -4459,28 +4467,50 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 #' \dontrun{DDF13.MySite <- DDF13Import("C:/Data/FEH_Catchment_384200_458200.xml")}
 #' @return A data frame of DDF13 results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned
 #' @author Anthony Hammond
-DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
+DDFImport <- function(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
   if(length(ListXML$FEHDescriptors) == 4) {
-    print("No DDF13 results available in the xml file")
+    print("No DDF results available in the xml file")
     Depth <- NA
     return(Depth)
   }
-  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
-    Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-    RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
-    Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
-    for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
-    AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
+  if(DDFVersion != 22 & DDFVersion !=13) stop("DDFVersion must be 22 or 13")
+
+  if(DDFVersion == 13) {
+
+    if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+      Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+      RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
+      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+      AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
+    }
+    if(attributes(ListXML)$names == "FEHDescriptors") {
+      Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+      RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
+      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+      AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
+    }}
+  if(DDFVersion == 22) {
+    if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+      Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+      RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]),2)
+      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]),2))}
+      AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
+    }
+    if(attributes(ListXML)$names == "FEHDescriptors") {
+      Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
+      RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]),2)
+      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]),2))}
+      AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
+    }
+
   }
-  if(attributes(ListXML)$names == "FEHDescriptors") {
-    Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-    RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
-    Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
-    for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
-    AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
-  }
+
 
   if(ARF == TRUE){
     DepthsARF <- ARF(Depth[,1], Area = AREA, D = Hrs[1])
@@ -4511,11 +4541,11 @@ DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
 }
 
 
-#' DDF13 results from a DDF13Import object
+#' DDF results from a DDFImport object
 #'
-#' Extracts results from a data frame imported using the DDF13Import function
+#' Extracts results from a data frame imported using the DDFImport function
 #'
-#' The .xml files only provide a set number of durations and return periods for DDF13.
+#' The .xml files only provide a set number of durations and return periods for DDF13 and DDF22.
 #' This function optimises the GEV distribution on the results in order to interpolate
 #' across return periods. A linear interpolation is used between durations.
 #' The interpolation method may provide results that differ from the FEH webserver in the region of 0.1mm.
@@ -4525,12 +4555,12 @@ DDF13Import <- function(x, ARF = FALSE, Plot = TRUE) {
 #' @param RP the return period (years) for which a rainfall depth estimate is required
 #' @examples
 #' #Get DDF13 results from a the DDF
-#' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml")}
+#' \dontrun{DDF13.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml")}
 #' #Estimate the 20-year, 5 hour depth
-#' \dontrun{DDF13(DDF13.4003, duration = 5, RP = 20)}
-#' @return A DDF13 estimate of rainfall depth (mm)
+#' \dontrun{DDF(DDF13.4003, duration = 5, RP = 20)}
+#' @return A DDF13 or DDF22 estimate of rainfall depth (mm)
 #' @author Anthony Hammond
-DDF13 <- function(x, duration, RP = 100) {
+DDF <- function(x, duration, RP = 100) {
   if(duration > 240 | duration < 0.25) stop("Duration outside range (0.25 to 240 hours)")
   if(RP < 2 | RP > 1000) stop("RP outside range (2 to 1000)")
   Hrs <- as.numeric(colnames(x))

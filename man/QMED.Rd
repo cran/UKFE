@@ -19,7 +19,7 @@ QMED(
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{Don1}{numeric site reference for the a signle donor (for donor candidates see DonAdj function)}
+\item{Don1}{numeric site reference for the a single donor (for donor candidates see DonAdj function)}
 
 \item{Don2}{vector of two site references for two donors (for donor candidates see DonAdj function)}
 
