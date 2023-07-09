@@ -13,7 +13,7 @@ DDFImport(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22)
 
 \item{Plot}{logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods}
 
-\item{DDFVersion}{Version of the DDF model (numeric). either 22, or 13. The default is 22.}
+\item{DDFVersion}{Version of the DDF model (numeric). either 22 or 13. The default is 22.}
 }
 \value{
 A data frame of DDF13 results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned

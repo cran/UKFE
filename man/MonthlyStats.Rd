@@ -10,7 +10,8 @@ MonthlyStats(
   AggStat = NULL,
   Plot = TRUE,
   ylab = "Magnitude",
-  main = "Monthly Statistics"
+  main = "Monthly Statistics",
+  col = "grey"
 )
 }
 \arguments{
@@ -25,9 +26,11 @@ MonthlyStats(
 \item{ylab}{A label for the y axis of the plot. The default is "Magnitude"}
 
 \item{main}{A title for the plot. The default is "Monthly Statistics"}
+
+\item{col}{A choice of colour for the bar plot. A single colour or a vector (a colour for each bar).}
 }
 \value{
-A list with two elements. The first element is a data.frame with year in the first column and months in the next 12. The second element is a dataframe with year in the first column and the aggregated statistic in the second
+A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided.
 }
 \description{
 Derives monthly statistics from a data.frame with Dates or POSIXct in the first column and variable of interest in the second

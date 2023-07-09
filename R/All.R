@@ -1515,11 +1515,12 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #'
 #'Estimated median annual maximum flow from catchment descriptors and donor sites
 #'
-#'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
+#'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that the subject catchment is rural, and the donor is urban, the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param Don1 numeric site reference for the a single donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
 #' @param UrbAdj logical argument with a default of FALSE. True applies an urban adjustment
+#' @param DonUrbAdj logical argument with a defailt of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.
 #' @param AREA catchment area in km2
 #' @param SAAR standard average annual rainfall (mm)
 #' @param FARL flood attenuation from reservoirs and lakes
@@ -1537,13 +1538,28 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' QMED(CDs.27083, UrbAdj = TRUE)
 #' @return An estimate of QMED from catchment descriptors
 #' @author Anthony Hammond
-QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL){
+QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL){
+  if(is.null(Don1) == FALSE) {
+    if(length(Don1) != 1) stop("The Don1 argument has length that is not 1")
+  }
+  if(is.null(Don2) == FALSE) {
+    if(length(Don2) != 2) stop("The Don2 argument has length that is not 2")
+  }
+
   Donor1 <- function(CDs, DonSite){
     QMED.cd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
     Site <- DonSite
     Donors <- DonAdj(CDs = CDs, rows = 500)
     Rw <- which(rownames(Donors) == DonSite)
-    Result <- Donors$QMED.adj[Rw]
+    DonCDs <- GetCDs(rownames(Donors)[Rw])
+    if(DonUrbAdj == TRUE) {
+      DonQMEDcdUrb <- as.numeric(UAF(CDs = DonCDs)[2]) * Donors$QMEDcd[Rw]
+      Result <- QMEDDonEq(CDs[1,2], CDs[15,2], CDs[8,2], CDs[5,2], Donors$QMED[Rw], DonQMEDcdUrb,
+                          xSI = CDs[19,2], ySI = CDs[20,2], xDon = DonCDs[19,2],
+                          yDon = DonCDs[20,2], alpha = TRUE)
+    }
+    if(DonUrbAdj == FALSE) {
+      Result <- Donors$QMED.adj[Rw]}
     return(Result)
   }
   Donor2 <- function(CDs, Sites) {
@@ -1564,6 +1580,10 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, AREA, SAA
     QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
     QMED1cd <- 8.3062*CDs.Site1[1,2]^0.8510*0.1536^(1000/CDs.Site1[15,2])*CDs.Site1[8,2]^3.4451*0.0460^(CDs.Site1[5,2]^2)
     QMED2cd <- 8.3062*CDs.Site2[1,2]^0.8510*0.1536^(1000/CDs.Site2[15,2])*CDs.Site2[8,2]^3.4451*0.0460^(CDs.Site2[5,2]^2)
+    if(DonUrbAdj == TRUE) {
+      QMED1cd <- as.numeric(UAF(CDs = CDs.Site1)[2]) * QMED1cd
+      QMED2cd <- as.numeric(UAF(CDs = CDs.Site2)[2]) * QMED2cd
+    }
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) == Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) == Site2)]
     QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
@@ -1589,6 +1609,7 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, AREA, SAA
     return(QMED)
   }
 }
+
 
 #' Empirical estimate of QMED from peaks over threshold (POT) data
 #'
@@ -2272,7 +2293,7 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 #'
 #' Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 #'
-#'  The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (none full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
+#'  The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (non-full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
 #' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
 #' @param func A user chosen function to extract statistics other than maximums.
 #' @param Calendar logical. If FALSE, the hydrological year maximums are returned. If TRUE, the calendar year maximums are returned.
@@ -2313,6 +2334,7 @@ AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRU
     }}
   if(anyNA(x[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may compromise the calculated statistics")}
   Dates <- as.Date(x[, 1])
+  if(Dates[1] - Dates[2] != 0) {Dates[1] <- Dates[2]}
   x <- data.frame(Dates, x[, 2])
   Date1 <- x[1, 1]
   DateLst <- x[length(x[, 1]), 1]
@@ -4458,7 +4480,7 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 #' @param x the xml file path
 #' @param ARF logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied
 #' @param Plot logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods
-#' @param DDFVersion Version of the DDF model (numeric). either 22, or 13. The default is 22.
+#' @param DDFVersion Version of the DDF model (numeric). either 22 or 13. The default is 22.
 #' @examples
 #' #Import DDF13 results from a NRFA peakflows xml file and display in console
 #' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
@@ -4616,7 +4638,10 @@ DDF99Pars <- function(x) {
                           ListXML$FEHDescriptors$PointDDFValues$d3_1_km,
                           ListXML$FEHDescriptors$PointDDFValues$e_1_km,
                           ListXML$FEHDescriptors$PointDDFValues$f_1_km))
-    Point <- data.frame(Par, Value)}
+    Point <- data.frame(Par, Value)
+    Result <- list(CatchmentAverage, Point)
+    names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
+  }
   if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
     Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$c,
                           ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d1,
@@ -4632,9 +4657,10 @@ DDF99Pars <- function(x) {
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d3_1_km,
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$e_1_km,
                           ListXML$FEHCDROMExportedDescriptors$PointDDFValues$f_1_km))
-    Point <- data.frame(Par, Value)}
-  Result <- list(CatchmentTypicalPoint, Point)
-  names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
+    Point <- data.frame(Par, Value)
+    Result <- list(CatchmentTypicalPoint, Point)
+    names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
+  }
   return(Result)
 }
 
@@ -4850,7 +4876,7 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #'  The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater". And for negative trend, set it to "less"
 #' @param x a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.
 #' @param method a choice of test method. Choices are "pearson", "spearman", and "kendall"
-#' @param alternative the alternative hypothesis. The default is "two.sided".
+#' @param alternative the alternative hypothesis. The default is "two.sided". See details for other options
 #' @examples
 #' #Get AMAX sample and apply a trend test with the default kendall test.
 #' AM.27083 <- GetAM(27083)
@@ -5015,21 +5041,20 @@ Rating <- function(x, a = NULL) {
 
 
 
-# PermAdj ---------------------------------------------------
+# NonFloodAdj ---------------------------------------------------
 
-#' Permeable Adjustment
+#' Non-flood adjustment
 #'
 #'@description Adjusts the linear coefficient of variation (Lcv) and the linear skewness to account for non-flood years
-#'@details The permeable adjustment method is detailed in chapter 19, volume three, of the Flood Estimation Handbook, 1999. The method makes no difference for sites where there are no annual maximums (AM) in the sample that are < median(AM)/2. Once applied the results can be used with the LRatioChange function to update the associated member of a pooling group. Or can be applied directly with the growth factor functions for a single site estimate.
+#'@details The method is the “permeable adjustment method” detailed in chapter 19, volume three of the Flood Estimation Handbook, 1999. The method makes no difference for sites where there are no annual maximums (AM) in the sample that are < median(AM)/2. Once applied the results can be used with the LRatioChange function to update the associated member of a pooling group. There is also the NonFloodAdjPool() function which can be used for multiple sites in a pooling group.
 #'@param x The annual maximum sample. Numeric vector
 #'@examples
 #'# Get an anuual maximum sample with a BFIHOST above 0.65 and with some
 #'# annual maximums lower than median(AM)/2. And then apply the function.
-#' AM.39001 <- GetAM(39001)
-#'PermAdj(AM.39001$Flow)
-#'@return A dataframe with one row and two columns. Lcv in the first column and Lskew in the second
+#' NonFloodAdj(GetAM(44013)[,2])
+#'@return A list is returned. The first element of the list is a dataframe with one row and two columns. Lcv in the first column and Lskew in the second. The second element of the list is another dataframe with one row and three columns. Number of non-flood years in the first column, sample size in the second and the percent of non-flood year in the third.
 #'@author Anthony Hammond
-PermAdj <- function(x) {
+NonFloodAdj <- function(x) {
   if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
   NonFlood <- length(x[x < (median(x)/2)])
   w <- (length(x)-NonFlood)/length(x)
@@ -5048,9 +5073,59 @@ PermAdj <- function(x) {
   L_cv <- (BetaStar*KStar^2*pi)/((BetaStar+KStar)*sin(KStar*pi) - BetaStar*KStar*pi)
   DF <- data.frame(L_cv, LSkewness)
   colnames(DF) <- c("Lcv", "LSkew")
-  return(DF)
+  PercentNonFlood <- (NonFlood / length(x)) * 100
+  DFNonFlood <- data.frame(No.NonFlood = NonFlood, N = length(x), PercentNonFlood = PercentNonFlood)
+  Result <- list(DF, DFNonFlood)
+  return(Result)
 }
 
+
+# NonFloodAdjPool ---------------------------------------------------
+
+#' Non-flood adjustment for pooling groups
+#'
+#'@description Applies the NonFloodAdj function to adjust the LCV and LSKEW of one or more sites in a pooling group.
+#'@details For more details of the method for individual sites see the details section of the NonFloodAdj function. As a default this function applies NonFloodAdj to every member of the pooling group. Index can be supplied which is the row name/s of the members you wish to adjust. Or AutoP can be applied and is a percentage. Any member with a greater percentage of non-flood years than AutoP is then adjusted.
+#'@param x A pooling group, derived from the Pool() or PoolSmall() functions.
+#'@param Index An vector of indices (row numbers) of sites to be adjusted. If Index = NULL (the default) the function is applied to all sites.
+#'@param AutoP A percentage of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that you don't need to specify Index.
+#'@examples
+#'# Set up a pooling group for site 44013. Then apply the function.
+#' Pool44013 <- Pool(GetCDs(44013))
+#' PoolNF <- NonFloodAdjPool(Pool44013)
+#'@return The pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL). No difference will be seen for sites with no AMAX < 0.5QMED.
+#'@author Anthony Hammond
+NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL) {
+  if(class(x) != class(NRFAData)) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
+  if(ncol(x) != 24) stop("x must be a pooling group formed using Pool or PoolSmall functions")
+  if(is.null(Index) == FALSE & is.null(AutoP) == FALSE) stop("Warning: Either Index or AutoP should be applied. Not both")
+  if(is.null(AutoP) == FALSE) {
+    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[,2])[[2]]
+    for(i in 2:nrow(x)) {IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[,2])[[2]])}
+    Index <- which(IndNF[,3] > AutoP)
+  }
+  if(is.null(Index) == TRUE) {
+    Index <- seq(1, nrow(x))
+  }
+  AMID <- unique(AMSP$id)
+  IndexTest <- NULL
+  for(i in 1:length(Index)) {IndexTest[i] <- which(AMID == rownames(x)[Index[i]])}
+  if(anyNA(IndexTest)) stop("One or more sites is not suitable for pooling
+                            and the AMAX can't be extracted automatically for the adjustment procedure.
+                            You could try using the Index option and exclude the sites that aren't suitable.
+                            Another option is to use the LRatioChange option to make changes for individually sites")
+
+
+  NFAdjs <- NonFloodAdj(GetAM(rownames(x[Index[1],]))[,2])[[1]]
+  if(length(Index) > 1) {
+    for(i in 2:nrow(x[Index,])) {
+      NFAdjs <- rbind(NFAdjs, NonFloodAdj(GetAM(rownames(x[Index[i],]))[,2])[[1]])
+    }
+  }
+  x$Lcv[Index] <- NFAdjs$Lcv
+  x$LSkew[Index] <- NFAdjs$LSkew
+  return(x)
+}
 
 
 # LRatioChange ---------------------------------------------------
@@ -5112,6 +5187,7 @@ UEF <- function(Year) {
 #'@param Plot logical argument with a default of TRUE. If TRUE the monthly statistics are plotted.
 #'@param ylab A label for the y axis of the plot. The default is "Magnitude"
 #'@param main A title for the plot. The default is "Monthly Statistics"
+#'@param col A choice of colour for the bar plot. A single colour or a vector (a colour for each bar).
 #'@examples
 #'# Get the mean flows for each month for the Thames at Kingston
 #' QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], stat = mean,
@@ -5119,9 +5195,9 @@ UEF <- function(Year) {
 #' # Get the monthly sums of rainfall for the Thames at Kingston
 #' PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], stat = sum,
 #' ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall")
-#'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12. The second element is a dataframe with year in the first column and the aggregated statistic in the second
+#'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided.
 #'@author Anthony Hammond
-MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude", main = "Monthly Statistics") {
+MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude", main = "Monthly Statistics", col = "grey") {
   if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
   MonthInd <- function(x) {
     POSlt <- as.POSIXlt(x)
@@ -5171,8 +5247,13 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
   if(length(unique(Nrows)) == 1) {ResList <- list(MonDF, ResDF)}
   if(length(unique(Nrows)) > 1) {ResList <- list(AnnStats, ResDF)}
   names(ResList) <- c("AnnualMonths", "Aggregated")
-  barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
-          xlab = "Month", ylab = ylab, main = main)
+  if(Plot == TRUE) {
+    barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
+            xlab = "Month", ylab = ylab, main = main,
+            ylim = c(min(ResList$Aggregated[,2])*0.9925, max(ResList$Aggregated[,2])),
+            col = col, xpd = FALSE)
+    #abline(h = min(ResList$Aggregated[,2]))*0.999
+  }
   return(ResList)
 }
 

@@ -9,6 +9,7 @@ QMED(
   Don1 = NULL,
   Don2 = NULL,
   UrbAdj = FALSE,
+  DonUrbAdj = FALSE,
   AREA,
   SAAR,
   FARL,
@@ -24,6 +25,8 @@ QMED(
 \item{Don2}{vector of two site references for two donors (for donor candidates see DonAdj function)}
 
 \item{UrbAdj}{logical argument with a default of FALSE. True applies an urban adjustment}
+
+\item{DonUrbAdj}{logical argument with a defailt of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.}
 
 \item{AREA}{catchment area in km2}
 
@@ -42,7 +45,7 @@ An estimate of QMED from catchment descriptors
 Estimated median annual maximum flow from catchment descriptors and donor sites
 }
 \details{
-QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
+QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that the subject catchment is rural, and the donor is urban, the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
 }
 \examples{
 #Get some catchment descriptors and calculate QMED as if it was ungauged, with

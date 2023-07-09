@@ -11,7 +11,7 @@ TrendTest(x, method = "kendall", alternative = "two.sided")
 
 \item{method}{a choice of test method. Choices are "pearson", "spearman", and "kendall"}
 
-\item{alternative}{the alternative hypothesis. The default is "two.sided".}
+\item{alternative}{the alternative hypothesis. The default is "two.sided". See details for other options}
 }
 \value{
 A data.frame with columns and associated values: P_value, correlation coefficient, and method specific statistic.

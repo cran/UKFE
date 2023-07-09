@@ -1,7 +1,7 @@
-a859ffacf8a1e7a54c994f389b664e82 *DESCRIPTION
+ce186cca621a79bda7935ea375417311 *DESCRIPTION
 51f3ac94745d7a3d7c2648313ec77f7b *NAMESPACE
 d92f9f1c6d5f89b9d12af111d266c7eb *R/AMSP.R
-73121fe7694efa0f3157efbf763846b8 *R/All.R
+9f4a6fda43452222ef88dd7cc0af4a58 *R/All.R
 82d357fee6b3f77fc5803f42629408df *R/NRFAData.R
 64272dfd11e091bc0141b13112e11b1e *R/QMEDData.R
 4bc33106e6ee441b285c9bdef5f787df *R/ThamesPQ.R
@@ -13,7 +13,7 @@ d3f5dc69a073b37d273d6c7fb60d82bc *data/NRFAData.rda
 d66c4df1ba078e83711b21710565f3d6 *data/UKOutline.rda
 0fbd492e0ea07ac7f8f295eb95b6052e *man/AMImport.Rd
 cd071d01d1d0c3a3a472e86eef8528c8 *man/AMSP.Rd
-bd53cafe18741c947a7639c84611d7b7 *man/AMextract.Rd
+a0e3dbdaac2c8569af29d1c6a9865c5f *man/AMextract.Rd
 838ed2d6e946aa633563dbc98f2e47fd *man/AMplot.Rd
 e6094f3502558400a83416cc9d23d329 *man/ARF.Rd
 d3a0063e6e01d1054efa6f9c9aa3fe8e *man/BFI.Rd
@@ -21,7 +21,7 @@ d3a0063e6e01d1054efa6f9c9aa3fe8e *man/BFI.Rd
 240e1cbeda6f51695a675b70b42ab0d8 *man/DDF.Rd
 ff5f0e3f7ac504b3247e0cdcf257d1c6 *man/DDF99.Rd
 db1f13f08322187343f59d968e08fe8a *man/DDF99Pars.Rd
-0cf4281fe0143e0f2fb72200f44f534f *man/DDFImport.Rd
+542266c37c6582d2948ce2144ed02eee *man/DDFImport.Rd
 9331b21f1f8eacb1c99d8532a79c3845 *man/DeTrend.Rd
 401e85a50be77d6cf0d3e5cf1489ff3e *man/DesHydro.Rd
 2bf958abec505fdc901c8c6ed3a2a1dc *man/DiagPlots.Rd
@@ -62,16 +62,17 @@ a543e93d90156f407be4ffff9665b604 *man/LSkewUrb.Rd
 0f28cb64284b79001f21817ba3403357 *man/Lcv.Rd
 c31abe39961febe8fe0fba4acdd194fe *man/LcvUrb.Rd
 07f34551175ab970c487b20517648c0a *man/Lmoms.Rd
-f2e72885f8546228f4ff36d711871d25 *man/MonthlyStats.Rd
+452821d540f198d232fb188e7e4ce371 *man/MonthlyStats.Rd
 a6511d9bf9bd0d70ec0c1a1f00637ca1 *man/NGRDist.Rd
 612d3d4ae90c90aee10b5b7fe2f5f277 *man/NRFAData.Rd
+f7bed58162b8802b2b95bfd8ffd12b87 *man/NonFloodAdj.Rd
+f0afee70ad59e156be39215bc7dec90e *man/NonFloodAdjPool.Rd
 a5ddfc6eaabd06c753ed4bd1ed0136b9 *man/OptimPars.Rd
 d644a1e9b4fd155676d8b8db3ee8311b *man/POTextract.Rd
-73fc0f89b8eba7cb4cd0971e41c4f903 *man/PermAdj.Rd
 bc56fd93c4f511a61765b85c4b96c39b *man/Pool.Rd
 30be97beb4c06c2988077b1d1706e614 *man/PoolEst.Rd
 a93fbbccd84dae87d2a68cb8b15179b7 *man/PoolSmall.Rd
-a4202b416bcc544f277bd1eca0707191 *man/QMED.Rd
+43dba998540d58eb941fef6db3d12343 *man/QMED.Rd
 e00ce8c1ac3d64ea535b03f60799c83f *man/QMEDData.Rd
 2488e832a16c6ed066fc04cea702880e *man/QMEDDonEq.Rd
 bd4456d3d235a2e719ec5ba6c226cf8e *man/QMEDLink.Rd
@@ -83,7 +84,7 @@ c07968130a5987aed460f052aab8082f *man/Rating.Rd
 de1fc5e954d2cd8943f5d156870cf6f0 *man/SCF.Rd
 b868d1520f6c030a3685574316902457 *man/SimData.Rd
 36c157177e69b6c4214ff492814f8a5a *man/ThamesPQ.Rd
-0e7c6da08e96bf4ff6611b0d463c3468 *man/TrendTest.Rd
+50a90a369e895fb449206067f4f12060 *man/TrendTest.Rd
 49595290b9b214dd3074c5e63c0921fd *man/UAF.Rd
 5fece4c94a9b47b70126e1dd9b396b4d *man/UEF.Rd
 0547015321bbcffcd90726beea556520 *man/UKOutline.Rd
