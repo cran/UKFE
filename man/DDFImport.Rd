@@ -16,20 +16,20 @@ DDFImport(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22)
 \item{DDFVersion}{Version of the DDF model (numeric). either 22 or 13. The default is 22.}
 }
 \value{
-A data frame of DDF13 results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned
+A data frame of DDF results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned.
 }
 \description{
 Imports the depth duration frequency 2013 or 2022 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 }
 \details{
-This function returns a data-frame of results. For further durations and return periods the DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+This function returns a data-frame of results. For further durations and return periods the separate DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
 \examples{
-#Import DDF13 results from a NRFA peakflows xml file and display in console
-\dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
-\dontrun{DDF13.4003}
-#Import DDF13 results from a FEH webserver xml file and display in the console
-\dontrun{DDF13.MySite <- DDF13Import("C:/Data/FEH_Catchment_384200_458200.xml")}
+#Import DDF22 results from a NRFA peakflows xml file and display in console
+\dontrun{DDF22.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
+\dontrun{DDF22.4003}
+#Import DDF22 results from a FEH webserver xml file and display in the console
+\dontrun{DDF22.MySite <- DDFImport("C:/Data/FEH_Catchment_384200_458200.xml")}
 }
 \author{
 Anthony Hammond

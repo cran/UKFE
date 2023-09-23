@@ -2311,6 +2311,7 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 #' @author Anthony Hammond
 AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Magnitude")
 {
+  if(is(x, "data.frame") == FALSE) stop("x must be a data.frame")
   if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
   if(is.null(func) == TRUE) {func <- max} else {func <- func}
   if(Trunc == TRUE) {
@@ -2321,7 +2322,7 @@ AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRU
       Sep30Ind <- max(which(Mons == 9))
       if(Oct1Ind == Inf | Oct1Ind == -Inf) stop("Truncation is looking for October 1st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
       if(Sep30Ind == Inf | Sep30Ind == -Inf) stop("Truncation is looking for September 30th which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
-      x <- x[Oct1Ind:Sep30Ind,]
+      xTrunc <- x[Oct1Ind:Sep30Ind,]
     }
     if(Calendar == TRUE) {
       POSlt <- as.POSIXlt(x[,1])
@@ -2330,14 +2331,14 @@ AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRU
       Dec31Ind <- max(which(Mons == 12))
       if(Jan1Ind == Inf | Jan1Ind == -Inf) stop("Truncation is looking for January 1st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
       if(Dec31Ind == Inf | Dec31Ind == -Inf) stop("Truncation is looking for December 31st which isn't in the vector of Dates. Check dates or set Trunc to FALSE")
-      x <- x[Jan1Ind:Dec31Ind,]
+      xTrunc <- x[Jan1Ind:Dec31Ind,]
     }}
-  if(anyNA(x[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may compromise the calculated statistics")}
-  Dates <- as.Date(x[, 1])
-  if(Dates[1] - Dates[2] != 0) {Dates[1] <- Dates[2]}
-  x <- data.frame(Dates, x[, 2])
-  Date1 <- x[1, 1]
-  DateLst <- x[length(x[, 1]), 1]
+  if(Trunc == FALSE) {xTrunc <- x}
+  if(anyNA(xTrunc[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may compromise the calculated statistics")}
+  Dates <- as.Date(xTrunc[, 1], tz = "Europe/London")
+  xTrunc <- data.frame(Dates, xTrunc[, 2])
+  Date1 <- xTrunc[1, 1]
+  DateLst <- xTrunc[length(xTrunc[, 1]), 1]
   DateExtract <- function(d) {
     yr <- as.POSIXlt(d)$year + 1900
     mnth <- as.POSIXlt(d)$mon + 1
@@ -2368,18 +2369,18 @@ AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRU
     YrEnds <- seq(WYendst, length.out = length(YrStarts), by = "year")
     AM <- NULL
     for (i in 1:length(YrStarts)) {
-      AM[i] <- suppressWarnings(func(x[, 2][x[, 1] >= YrStarts[i] &
-                                              x[, 1] <= YrEnds[i]], na.rm = TRUE))
+      AM[i] <- suppressWarnings(func(xTrunc[, 2][xTrunc[, 1] >= YrStarts[i] &
+                                                   xTrunc[, 1] <= YrEnds[i]], na.rm = TRUE))
     }
     WaterYear <- seq(WY, WYend)
     AMDF <- data.frame(WaterYear, AM)
   }
   if(Calendar == TRUE) {
-    Years <- as.POSIXlt(x[,1])$year + 1900
-    x <- data.frame(x, Years)
+    Years <- as.POSIXlt(xTrunc[,1])$year + 1900
+    xTrunc <- data.frame(xTrunc, Years)
     Year <- unique(Years)
     AM <- NULL
-    for(i in 1:length(Year)) {AM[i] <- func(x[which(x$Years == Year[i]),2], na.rm = TRUE)}
+    for(i in 1:length(Year)) {AM[i] <- func(xTrunc[which(xTrunc$Years == Year[i]),2], na.rm = TRUE)}
     AMDF <- data.frame(Year, AM)
   }
 
@@ -4476,18 +4477,19 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 #'
 #' Imports the depth duration frequency 2013 or 2022 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' This function returns a data-frame of results. For further durations and return periods the DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' This function returns a data-frame of results. For further durations and return periods the separate DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the xml file path
 #' @param ARF logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied
 #' @param Plot logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods
 #' @param DDFVersion Version of the DDF model (numeric). either 22 or 13. The default is 22.
 #' @examples
-#' #Import DDF13 results from a NRFA peakflows xml file and display in console
-#' \dontrun{DDF13.4003 <- DDF13Import("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
-#' \dontrun{DDF13.4003}
-#' #Import DDF13 results from a FEH webserver xml file and display in the console
-#' \dontrun{DDF13.MySite <- DDF13Import("C:/Data/FEH_Catchment_384200_458200.xml")}
-#' @return A data frame of DDF13 results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned
+#' #Import DDF22 results from a NRFA peakflows xml file and display in console
+#' \dontrun{DDF22.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
+#' \dontrun{DDF22.4003}
+#' #Import DDF22 results from a FEH webserver xml file and display in the console
+#' \dontrun{DDF22.MySite <- DDFImport("C:/Data/FEH_Catchment_384200_458200.xml")}
+#' @return A data frame of DDF results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned.
+#'
 #' @author Anthony Hammond
 DDFImport <- function(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22) {
   xmlx <- xml2::read_xml(x)
@@ -5259,4 +5261,105 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
 
 
 
+# AggDayHour ---------------------------------------------------
 
+#' Aggregate a time series
+#'
+#'@description Aggregates time series data, creating hourly data from 15 minute data for example.
+#'@details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
+#'@param x a data.frame with POSIXct in the first column and numeric vector in the second.
+#'@param func the function used for aggregation; mean, max, or sum, for example.
+#'@param Freq Choices are "Day", or "Hour", or a numeric value representing the number of hours for aggregation.
+#'@param hour An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.
+#'@examples
+#'#Create a data.frame with a normally distributed variable at
+#'#a 15 minute sampling rate.
+#'TS <- seq(as.POSIXct("2000-01-01 00:00:00",
+#'tz = "Europe/London"), as.POSIXct("2001-01-01 00:00:00", tz = "Europe/London"), by = 60*15)
+#'TS <- data.frame(DateTime = TS, Var = rnorm(length(TS), 10, 2))
+#'#use the function to aggregate to an hourly sampling rate, taking the maximum of each hour
+#'Hourly <- AggDayHour(TS, func = max, Freq = "Hour")
+#'#now aggregate with the mean at a daily scale
+#'Daily <- AggDayHour(TS, func = mean, Freq = "Day")
+#'#now aggregate with the sum at a 48 hour scale
+#'Hr48 <- AggDayHour(TS, func = sum, Freq = 48)
+#'#now aggregate with the sum at a 6 hour scale
+#'Hr6 <- AggDayHour(TS, func = sum, Freq = 6)
+#'@return A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
+#'@author Anthony Hammond
+
+AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
+  if(anyNA(x[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may have compromised the aggregation")}
+  if(is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
+  if(is(x[,1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
+  if(Freq == "Day") {
+    if(hour < 0 | hour > 23) stop("hour must be an integer >= 0 and <= 23")
+    POSlt <- as.POSIXlt(x[,1])
+    NineInd <- which(POSlt$hour == hour & POSlt$min == 0 & POSlt$sec == 0)
+    Date <- as.Date(x[NineInd,1])
+    LLoop <- length(NineInd)
+    IndMin1 <- NineInd - 1
+    NineInd <- NineInd[-LLoop]
+    IndMin1 <- IndMin1[-1]
+    StatRain <- NULL
+    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
+    if(hour == 0) {Date <- Date[2:LLoop]} else {Date <- Date[-LLoop]}
+    DF <- data.frame(Date, StatRain)
+    colnames(DF)[2] <-  ("Var")
+    LengthInf <- length(DF$Var[DF$Var == -Inf])
+    if(length(LengthInf) < 1) {DF <- DF} else {
+      InfInd <- which(DF$Var == -Inf)
+      DF$Var[InfInd] <- NA
+    }
+    return(DF) }
+
+  if(Freq == "Hour"){
+    POSlt <- as.POSIXlt(x[,1])
+    NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
+    DateTime <- as.POSIXct(x[NineInd,1])
+    LLoop <- length(NineInd)
+    IndMin1 <- NineInd - 1
+    NineInd <- NineInd[-LLoop]
+    IndMin1 <- IndMin1[-1]
+    StatRain <- NULL
+    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
+    DateTime <- DateTime[-LLoop]
+    DF <- data.frame(DateTime, StatRain)
+    colnames(DF)[2] <-  ("Var")
+    LengthInf <- length(DF$Var[DF$Var == -Inf])
+    if(length(LengthInf) < 1) {DF <- DF} else {
+      InfInd <- which(DF$Var == -Inf)
+      DF$Var[InfInd] <- NA
+    }
+    return(DF)
+  }
+  if(is.numeric(Freq) == TRUE) {
+    POSlt <- as.POSIXlt(x[,1])
+    NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
+    DateTime <- as.POSIXct(x[NineInd,1])
+    LLoop <- length(NineInd)
+    IndMin1 <- NineInd - 1
+    NineInd <- NineInd[-LLoop]
+    IndMin1 <- IndMin1[-1]
+    StatRain <- NULL
+    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
+    DateTime <- DateTime[-LLoop]
+    DF <- data.frame(DateTime, StatRain)
+    colnames(DF)[2] <-  ("Var")
+    LengthInf <- length(DF$Var[DF$Var == -Inf])
+    if(length(LengthInf) < 1) {DF <- DF} else {
+      InfInd <- which(DF$Var == -Inf)
+      DF$Var[InfInd] <- NA
+    }
+    Nx <- nrow(DF)
+    N <- Freq
+    RatioN <- round(Nx/N)
+    xRow <- RatioN*N
+    Mat <- matrix(DF[1:xRow, 2], nrow = N, ncol = RatioN)
+    Var <- apply(Mat, 2, func)
+    DateTime <- seq(as.POSIXct(DF[1,1]), length.out = length(Var), by = N*60*60)
+    DFHour <- data.frame(DateTime, Var)
+    return(DFHour)
+  }
+
+}
