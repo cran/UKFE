@@ -7,7 +7,7 @@
 DDF(x, duration, RP = 100)
 }
 \arguments{
-\item{x}{A data frame of DDF13 results imported using the DDF13Import functions}
+\item{x}{A data frame of DDF13 or DDF22 results imported using the DDFImport function}
 
 \item{duration}{the duration (hrs) for which a rainfall depth estimate is required}
 

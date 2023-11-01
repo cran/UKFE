@@ -1,7 +1,7 @@
-e0af62067d4bea23b736c144e20072ec *DESCRIPTION
+5cda541632676063605539c787914cf5 *DESCRIPTION
 51f3ac94745d7a3d7c2648313ec77f7b *NAMESPACE
 1bd761bd878e2543e5f726237a5be872 *R/AMSP.R
-9acf92ac263702b357b3a96966f2872b *R/All.R
+fb4fbeb158d4b54864bdc82830d39f1c *R/All.R
 41060eb92f37428714aeea727915286c *R/NRFAData.R
 31d91140d0cb6b0691ea0acd0a0b812d *R/QMEDData.R
 4bc33106e6ee441b285c9bdef5f787df *R/ThamesPQ.R
@@ -13,13 +13,13 @@ e007f6e0ac8cf7abdfd8b040c27be38c *data/QMEDData.rda
 d66c4df1ba078e83711b21710565f3d6 *data/UKOutline.rda
 0fbd492e0ea07ac7f8f295eb95b6052e *man/AMImport.Rd
 9b1ab2763ef811a572378981f36396e8 *man/AMSP.Rd
-a0e3dbdaac2c8569af29d1c6a9865c5f *man/AMextract.Rd
+11d1d8907c3b4a21d48580fc6dcbaf85 *man/AMextract.Rd
 838ed2d6e946aa633563dbc98f2e47fd *man/AMplot.Rd
 e6094f3502558400a83416cc9d23d329 *man/ARF.Rd
 e5f578876bb6470c0b4464d09c18ec2f *man/AggDayHour.Rd
 d3a0063e6e01d1054efa6f9c9aa3fe8e *man/BFI.Rd
 2ff388f33b4a163854f8807751542af9 *man/CDsXML.Rd
-240e1cbeda6f51695a675b70b42ab0d8 *man/DDF.Rd
+1f5e281bb8f52e968eb8d63a23f96240 *man/DDF.Rd
 ff5f0e3f7ac504b3247e0cdcf257d1c6 *man/DDF99.Rd
 db1f13f08322187343f59d968e08fe8a *man/DDF99Pars.Rd
 03ed68eb665bf3b1d61a2eab305aa0be *man/DDFImport.Rd
@@ -67,7 +67,7 @@ c31abe39961febe8fe0fba4acdd194fe *man/LcvUrb.Rd
 a6511d9bf9bd0d70ec0c1a1f00637ca1 *man/NGRDist.Rd
 e086be0f4cceb9169611b03a7cacac58 *man/NRFAData.Rd
 f7bed58162b8802b2b95bfd8ffd12b87 *man/NonFloodAdj.Rd
-f0afee70ad59e156be39215bc7dec90e *man/NonFloodAdjPool.Rd
+145fc413381b3c69e1691778aa258cf4 *man/NonFloodAdjPool.Rd
 a5ddfc6eaabd06c753ed4bd1ed0136b9 *man/OptimPars.Rd
 d644a1e9b4fd155676d8b8db3ee8311b *man/POTextract.Rd
 bc56fd93c4f511a61765b85c4b96c39b *man/Pool.Rd

@@ -4,17 +4,19 @@
 \alias{NonFloodAdjPool}
 \title{Non-flood adjustment for pooling groups}
 \usage{
-NonFloodAdjPool(x, Index = NULL, AutoP = NULL)
+NonFloodAdjPool(x, Index = NULL, AutoP = NULL, ReturnStats = FALSE)
 }
 \arguments{
 \item{x}{A pooling group, derived from the Pool() or PoolSmall() functions.}
 
 \item{Index}{An vector of indices (row numbers) of sites to be adjusted. If Index = NULL (the default) the function is applied to all sites.}
 
-\item{AutoP}{A percentage of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that you don't need to specify Index.}
+\item{AutoP}{A percentage (numeric) of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that the user doesn't need to specify Index. If no sites are above AutoP, the function is applied to all sites.}
+
+\item{ReturnStats}{Logical with a default of FALSE. If set to TRUE, a dataframe of non-flood year stats is returned (see 'Value' section below) instead of the adjusted Pooling group.}
 }
 \value{
-The pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL). No difference will be seen for sites with no AMAX < 0.5QMED.
+By default the pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL), or all sites with percentage of non-flood years above AutoP. No difference will be seen for sites with no AMAX < 0.5QMED. If ReturnStats is set to TRUE, a dataframe with Non-flood year stats is returned. The dataframe has a row for each site in the pooling group and three columns. The forst the number of non-flood years, the second is the number of years, and the third is the associated percentage.
 }
 \description{
 Applies the NonFloodAdj function to adjust the LCV and LSKEW of one or more sites in a pooling group.
@@ -26,6 +28,8 @@ For more details of the method for individual sites see the details section of t
 # Set up a pooling group for site 44013. Then apply the function.
 Pool44013 <- Pool(GetCDs(44013))
 PoolNF <- NonFloodAdjPool(Pool44013)
+#return the non flood stats for the pooling group
+NonFloodAdjPool(Pool44013, ReturnStats = TRUE)
 }
 \author{
 Anthony Hammond

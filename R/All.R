@@ -1910,7 +1910,7 @@ UAF <- function(CDs = NULL, URBEXT2000, BFIHOST) {
 
 GetAM <- function(ref) {
   Test <- which(AMSP$id == ref)
-  if(length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use ImportAM to get sites not suitable for pooling")
+  if(length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use AMImport to get sites not suitable for pooling")
   AM <- subset(AMSP, id == ref)
   rws <- seq(1, length(AM$Flow))
   Date <- as.Date(AM[,1])
@@ -2293,7 +2293,7 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 #'
 #' Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 #'
-#'  The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (non-full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
+#'  The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (non-full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example). Note that if the data has a sub-daily resolution, it is first aggregated to a daily resolution (with a 09:00 start) before the extraction. For example, the maximum for each day is extracted, then the annual maximums are extracted.
 #' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
 #' @param func A user chosen function to extract statistics other than maximums.
 #' @param Calendar logical. If FALSE, the hydrological year maximums are returned. If TRUE, the calendar year maximums are returned.
@@ -2309,11 +2309,18 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 #' ThamesAnnualP <- AMextract(ThamesPQ[,1:2], func = sum, Title = "", Ylab = "Rainfall (mm)")
 #' @return a data.frame with columns; WaterYear and AM. By default AM is the annual maximum sample, but will be any statistic used as the func argument.
 #' @author Anthony Hammond
-AMextract <- function (x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Magnitude")
+AMextract <- function(x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Magnitude")
 {
   if(is(x, "data.frame") == FALSE) stop("x must be a data.frame")
   if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
   if(is.null(func) == TRUE) {func <- max} else {func <- func}
+  if(class(x[,1])[1] == "POSIXct") {x <- AggDayHour(x, func = func)}
+  DayDiffs <- as.numeric(diff(x$Date))
+  IndDiff <- which(DayDiffs > 1)
+  LengthDiff <- length(IndDiff)
+  if(LengthDiff >= 1) {MaxDiff <- max(DayDiffs) - 1}
+  if(LengthDiff >= 1) {print(paste("Warning:", as.character(LengthDiff), "periods of data are missing.", "The maximum consecutive period of missing data is", as.character(MaxDiff), "days", sep = " "))}
+
   if(Trunc == TRUE) {
     if(Calendar == FALSE) {
       POSlt <- as.POSIXlt(x[,1])
@@ -4574,7 +4581,7 @@ DDFImport <- function(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22) {
 #' across return periods. A linear interpolation is used between durations.
 #' The interpolation method may provide results that differ from the FEH webserver in the region of 0.1mm.
 #' The result is then rounded to an integer.
-#' @param x A data frame of DDF13 results imported using the DDF13Import functions
+#' @param x A data frame of DDF13 or DDF22 results imported using the DDFImport function
 #' @param duration the duration (hrs) for which a rainfall depth estimate is required
 #' @param RP the return period (years) for which a rainfall depth estimate is required
 #' @examples
@@ -5090,25 +5097,28 @@ NonFloodAdj <- function(x) {
 #'@details For more details of the method for individual sites see the details section of the NonFloodAdj function. As a default this function applies NonFloodAdj to every member of the pooling group. Index can be supplied which is the row name/s of the members you wish to adjust. Or AutoP can be applied and is a percentage. Any member with a greater percentage of non-flood years than AutoP is then adjusted.
 #'@param x A pooling group, derived from the Pool() or PoolSmall() functions.
 #'@param Index An vector of indices (row numbers) of sites to be adjusted. If Index = NULL (the default) the function is applied to all sites.
-#'@param AutoP A percentage of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that you don't need to specify Index.
+#'@param AutoP A percentage (numeric) of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that the user doesn't need to specify Index. If no sites are above AutoP, the function is applied to all sites.
+#'@param ReturnStats Logical with a default of FALSE. If set to TRUE, a dataframe of non-flood year stats is returned (see 'Value' section below) instead of the adjusted Pooling group.
 #'@examples
 #'# Set up a pooling group for site 44013. Then apply the function.
 #' Pool44013 <- Pool(GetCDs(44013))
 #' PoolNF <- NonFloodAdjPool(Pool44013)
-#'@return The pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL). No difference will be seen for sites with no AMAX < 0.5QMED.
+#' #return the non flood stats for the pooling group
+#' NonFloodAdjPool(Pool44013, ReturnStats = TRUE)
+#'@return By default the pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL), or all sites with percentage of non-flood years above AutoP. No difference will be seen for sites with no AMAX < 0.5QMED. If ReturnStats is set to TRUE, a dataframe with Non-flood year stats is returned. The dataframe has a row for each site in the pooling group and three columns. The forst the number of non-flood years, the second is the number of years, and the third is the associated percentage.
 #'@author Anthony Hammond
-NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL) {
+NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL, ReturnStats = FALSE) {
   if(class(x) != class(NRFAData)) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
   if(ncol(x) != 24) stop("x must be a pooling group formed using Pool or PoolSmall functions")
   if(is.null(Index) == FALSE & is.null(AutoP) == FALSE) stop("Warning: Either Index or AutoP should be applied. Not both")
   if(is.null(AutoP) == FALSE) {
     IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[,2])[[2]]
     for(i in 2:nrow(x)) {IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[,2])[[2]])}
+    if(max(IndNF[,3]) <= AutoP) warning("None of the AMAX samples have greater than the AutoP percentage of non-flood years. The resulting pooling group is the same as the input pooling groups")
     Index <- which(IndNF[,3] > AutoP)
+    if(length(Index) < 1) {Index <- seq(1, nrow(x), by = 1)}
   }
-  if(is.null(Index) == TRUE) {
-    Index <- seq(1, nrow(x))
-  }
+  if(is.null(Index) == TRUE & is.null(AutoP) == TRUE) {Index <- seq(1, nrow(x), by = 1)}
   AMID <- unique(AMSP$id)
   IndexTest <- NULL
   for(i in 1:length(Index)) {IndexTest[i] <- which(AMID == rownames(x)[Index[i]])}
@@ -5126,6 +5136,12 @@ NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL) {
   }
   x$Lcv[Index] <- NFAdjs$Lcv
   x$LSkew[Index] <- NFAdjs$LSkew
+  if(ReturnStats == TRUE) {
+    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[,2])[[2]]
+    for(i in 2:nrow(x)) {IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[,2])[[2]])}
+    IndNF <- data.frame(ID = rownames(x), IndNF)
+    return(IndNF)
+  }
   return(x)
 }
 

@@ -36,7 +36,7 @@ a data.frame with columns; WaterYear and AM. By default AM is the annual maximum
 Extracts the annual maximum peaks (with other options) from a data.frame which has dates (or POSIXct) in the first column and variable in the second.
 }
 \details{
-The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (non-full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example).
+The peaks are extracted based on the UK hydrological year (unless Calendar = TRUE), which starts October 1st and ends September 30th. If Trunc = TRUE, partial years (non-full years from the beginning and end) are removed, otherwise the maximum value may not be the true annual maximum of the year. If there are NAs for full years in the data, an -Inf or NA will be returned for that year. The default is to extract maximums but the user can use the func argument to choose other statistics (mean or sum for example). Note that if the data has a sub-daily resolution, it is first aggregated to a daily resolution (with a 09:00 start) before the extraction. For example, the maximum for each day is extracted, then the annual maximums are extracted.
 }
 \examples{
 #Extract the Thames AMAX daily mean flow and display the first six rows
