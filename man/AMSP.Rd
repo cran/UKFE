@@ -19,6 +19,6 @@ A data frame with 26203 rows and 3 columns
 AMSP
 }
 \description{
-A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 12
+A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 12.1
 }
 \keyword{datasets}
