@@ -36,7 +36,7 @@ PoolEst(
 \item{fseQMED}{factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46}
 }
 \value{
-A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew.
+A list of length 4. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve.
 }
 \description{
 Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.

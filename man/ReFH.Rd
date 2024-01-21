@@ -60,7 +60,7 @@ ReFH(
 \item{Rain}{numeric. User input rainfall (hourly). A numeric vector}
 }
 \value{
-A print out of parameters, a results data.frame, and a plot. First is a print of the parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
+A list with two elements, and a plot. First element of the list is a data.frame of  parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
 }
 \description{
 Provides outputs of the ReFH model from catchment descriptors or user defined inputs

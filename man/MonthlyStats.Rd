@@ -8,7 +8,7 @@ MonthlyStats(
   x,
   stat,
   AggStat = NULL,
-  Plot = TRUE,
+  Plot = FALSE,
   ylab = "Magnitude",
   main = "Monthly Statistics",
   col = "grey"

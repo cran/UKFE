@@ -39,7 +39,7 @@ QMED(
 \item{URBEXT2000}{measure of catchment urbanisation}
 }
 \value{
-An estimate of QMED from catchment descriptors
+An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned
 }
 \description{
 Estimated median annual maximum flow from catchment descriptors and donor sites

@@ -672,9 +672,10 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
 #'PoolG.27083 <- PoolG.27083 <- Pool(CDs.27083, iug = TRUE, DeUrb = TRUE)
 #'PoolEst(PoolG.27083, QMED = 12.5, UrbAdj = TRUE, CDs = CDs.27083)
 #'
-#'@return A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew.
+#'@return A list of length 4. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve.
 #'@author Anthony Hammond
 PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,50,75,100,200,500,1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, fseQMED = 1.46) {
+  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel") stop("dist must equal one of the following, GEV, GenLog, Gumbel. Other growth curve functions such as Kappa3GF can be applied separately to the resulting LCV and LSKEW")
   if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
   if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
   if(UrbAdj == TRUE) {
@@ -717,7 +718,11 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
   }
   #res <- data.frame(RP, Q, GF)
   Pars <- cbind(PooledLcv, PooledLSkew)
-  return(list(res, Pars))
+  ResLocScaSha <- OptimPars(res[,c(1,3)], dist = dist)
+  ResLocScaSha <- signif(ResLocScaSha[1,],3)
+  ResLocScaShaDist <- OptimPars(res[,c(1,2)], dist = dist)
+  ResLocScaShaDist <- signif(ResLocScaShaDist[1,],3)
+  return(list(res, Pars, ResLocScaSha, ResLocScaShaDist))
 }
 
 
@@ -1536,7 +1541,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' #Get CDs for urban gauge and calculate QMED with urban adjustment
 #' CDs.27083 <- GetCDs(27083)
 #' QMED(CDs.27083, UrbAdj = TRUE)
-#' @return An estimate of QMED from catchment descriptors
+#' @return An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned
 #' @author Anthony Hammond
 QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL){
   if(is.null(Don1) == FALSE) {
@@ -1549,7 +1554,7 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
   Donor1 <- function(CDs, DonSite){
     QMED.cd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
     Site <- DonSite
-    Donors <- DonAdj(CDs = CDs, rows = 500)
+    Donors <- DonAdj(CDs = CDs, rows = nrow(QMEDData))
     Rw <- which(rownames(Donors) == DonSite)
     DonCDs <- GetCDs(rownames(Donors)[Rw])
     if(DonUrbAdj == TRUE) {
@@ -1562,7 +1567,7 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
       Result <- Donors$QMED.adj[Rw]}
     return(Result)
   }
-  Donor2 <- function(CDs, Sites) {
+  Donor2 <- function(CDs, Sites, DonUrbAdj = FALSE) {
     rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
     NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
     Site1 <- Sites[1]
@@ -1587,7 +1592,8 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) == Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) == Site2)]
     QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
-    return(QMEDs.adj)
+    ResultDF <- data.frame(QMEDs.adj, a1, a2)
+    return(ResultDF)
   }
   if(is.null(CDs) == TRUE) {
     QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
@@ -1714,7 +1720,7 @@ QMEDDonEq <- function(AREA, SAAR, FARL, BFIHOST, QMEDgObs, QMEDgCds, xSI, ySI, x
 #' @author Anthony Hammond
 
 DonAdj <- function(CDs = NULL, x,y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 = NULL){
-  Donor2 <- function(CDs, Sites) {
+  Donor2 <- function(CDs, Sites, DonUrbAdj = FALSE) {
     rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
     NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
     Site1 <- Sites[1]
@@ -1732,10 +1738,15 @@ DonAdj <- function(CDs = NULL, x,y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 
     QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
     QMED1cd <- 8.3062*CDs.Site1[1,2]^0.8510*0.1536^(1000/CDs.Site1[15,2])*CDs.Site1[8,2]^3.4451*0.0460^(CDs.Site1[5,2]^2)
     QMED2cd <- 8.3062*CDs.Site2[1,2]^0.8510*0.1536^(1000/CDs.Site2[15,2])*CDs.Site2[8,2]^3.4451*0.0460^(CDs.Site2[5,2]^2)
+    if(DonUrbAdj == TRUE) {
+      QMED1cd <- as.numeric(UAF(CDs = CDs.Site1)[2]) * QMED1cd
+      QMED2cd <- as.numeric(UAF(CDs = CDs.Site2)[2]) * QMED2cd
+    }
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) == Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) == Site2)]
     QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
-    return(QMEDs.adj)
+    ResultDF <- data.frame(QMEDs.adj, a1, a2)
+    return(ResultDF)
   }
   if(is.null(d2) == FALSE) {
     if(length(d2) < 2) stop("d2 must be NULL or a vector of length 2")
@@ -2314,12 +2325,14 @@ AMextract <- function(x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE
   if(is(x, "data.frame") == FALSE) stop("x must be a data.frame")
   if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
   if(is.null(func) == TRUE) {func <- max} else {func <- func}
-  if(class(x[,1])[1] == "POSIXct") {x <- AggDayHour(x, func = func)}
+  if(class(x[,1])[1] == "POSIXct") {x <- suppressWarnings(AggDayHour(x, func = func))}
   DayDiffs <- as.numeric(diff(x$Date))
   IndDiff <- which(DayDiffs > 1)
   LengthDiff <- length(IndDiff)
   if(LengthDiff >= 1) {MaxDiff <- max(DayDiffs) - 1}
-  if(LengthDiff >= 1) {print(paste("Warning:", as.character(LengthDiff), "periods of data are missing.", "The maximum consecutive period of missing data is", as.character(MaxDiff), "days", sep = " "))}
+  if(LengthDiff >= 1) {
+    WarnText <- paste("Warning:", as.character(LengthDiff), "periods of data are missing.", "The maximum consecutive period of missing data is", as.character(MaxDiff), "days", sep = " ")
+    warning(WarnText)}
 
   if(Trunc == TRUE) {
     if(Calendar == FALSE) {
@@ -2341,7 +2354,10 @@ AMextract <- function(x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE
       xTrunc <- x[Jan1Ind:Dec31Ind,]
     }}
   if(Trunc == FALSE) {xTrunc <- x}
-  if(anyNA(xTrunc[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may compromise the calculated statistics")}
+  if(anyNA(xTrunc[,2]) == TRUE) {
+    WarnTextNA <- "Warning: There is at least one missing value in the time series, this may compromise the calculated statistics"
+    warning(WarnTextNA)
+  }
   Dates <- as.Date(xTrunc[, 1], tz = "Europe/London")
   xTrunc <- data.frame(Dates, xTrunc[, 2])
   Date1 <- xTrunc[1, 1]
@@ -2399,7 +2415,8 @@ AMextract <- function(x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE
     AMDF <- AMDF
   }
   if (length(InfInd) > 0) {
-    print("Warning: at least one year had no data and returned -inf. The year/s in question is/are returned as NA")
+    WarnText2 <- "Warning: at least one year had no data and returned -inf. The year/s in question is/are returned as NA"
+    warning(WarnText2)
   }
   if (Plot == TRUE) {
     if(Calendar == FALSE){
@@ -4258,7 +4275,7 @@ LKurt <- function(x) {
 #' ReFH(CDs.203018, scaled = 182, PlotTitle = "100-Year Design Hydrograph - Site 203018")
 #' #Apply the ReFH function with a user defined initial baseflow
 #' ReFH(CDs.203018, BFini = 6)
-#' @return A print out of parameters, a results data.frame, and a plot. First is a print of the parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
+#' @return A list with two elements, and a plot. First element of the list is a data.frame of  parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
 #' @author Anthony Hammond
 
 ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, scaled = NULL, PlotTitle = NULL, RPa = NULL, alpha = TRUE, season = NULL, AREA = NULL, TP = NULL, BR = NULL, BL = NULL, Cmax = NULL, Cini = NULL, BFini = NULL, Rain = NULL) {
@@ -4410,7 +4427,7 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
   ParInd <- which(is.na(ParsNull[1,]) == FALSE)
   if(is.null(CDs) == TRUE & length(ParInd) < 8) stop ("If no CDs are provided the following arguments are required: AREA, TP, BL, duration, BR, Cmax, Cini, BFini, Depth, RPa and/or alpha, and season")
   if(length(ParInd) > 0) {Pars[ParInd] <- ParsNull[ParInd]}
-  print(Pars)
+  #print(Pars)
   if(is.null(Rain) == FALSE) {duration <- length(Rain)}  else {duration <- Pars$D}
   if(duration < Pars$TP) warning ("duration shorter than time to peak")
   if(duration >= 4.5*Pars$TP) warning ("This is an event based model; duration > 4.5TP and is on the high side")
@@ -4473,8 +4490,10 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
     plot(res2, main = titleScaled, ylab = "Discharge (m3/s)", xlab = TimeLab, type = "l", lwd = 2)}
   NetRain <- append(EffRain, NAs)
   Output <- round(data.frame(Rain, NetRain, Runoff, Baseflow, TotalFlow), 2)
-  if(is.null(scaled) == TRUE) {return(Output)}
-  if(is.null(scaled) == FALSE) {return(res2)}
+  if(is.null(scaled) == TRUE) {Results <- Output}
+  if(is.null(scaled) == FALSE) {Results <- res2}
+  Results <- list(Pars, Results)
+  return(Results)
 }
 
 
@@ -5215,8 +5234,13 @@ UEF <- function(Year) {
 #' ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall")
 #'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided.
 #'@author Anthony Hammond
-MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude", main = "Monthly Statistics", col = "grey") {
+MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitude", main = "Monthly Statistics", col = "grey") {
   if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
+  if(anyNA(x[,2]) == TRUE) {
+    WarnTextNA <- "Warning: One or more missing values have been detected and the associated time periods have been removed"
+    warning(WarnTextNA)
+    x <- x[complete.cases(x),]
+  }
   MonthInd <- function(x) {
     POSlt <- as.POSIXlt(x)
     Mons <- (POSlt$mon)+1
@@ -5244,7 +5268,7 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
   ListMons <- list()
   for(i in 1:12) {ListMons[[i]] <- x[MonInd[[i]],]}
   AnnStats <- list()
-  for(i in 1:12) {AnnStats[[i]] <- AMextract(ListMons[[i]], func = stat, Plot = FALSE, Calendar = TRUE, Trunc = FALSE)}
+  for(i in 1:12) {AnnStats[[i]] <- suppressWarnings(AMextract(ListMons[[i]], func = stat, Plot = FALSE, Calendar = TRUE, Trunc = FALSE))}
   names(AnnStats) <- month.abb
   Nrows <- NULL
   for(i in 1:12) {Nrows[i] <- nrow(AnnStats[[i]])}
@@ -5253,12 +5277,12 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
     MonDF <- AnnStats$Jan
     for(i in 2:12) {MonDF <- cbind(MonDF, AnnStats[[i]][,2])}
     colnames(MonDF) <- c("Year", month.abb)
-    Means <- apply(MonDF[,2:13], 2, AggStat)
+    Means <- as.numeric(apply(MonDF[,2:13], 2, AggStat))
   }
   if(length(unique(Nrows)) >1) {
     for(i in 1:12) {colnames(AnnStats[[i]])[2] <- "Stat"}
     Means <- NULL
-    for(i in 1:12) {Means[i] <- AggStat(AnnStats[[i]][,2])}
+    for(i in 1:12) {Means[i] <- as.numeric(AggStat(AnnStats[[i]][,2]))}
   }
   ResDF <- data.frame(Month = month.abb,
                       Statistic = Means)
@@ -5305,7 +5329,10 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = TRUE, ylab = "Magnitude
 #'@author Anthony Hammond
 
 AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
-  if(anyNA(x[,2]) == TRUE) {print("Warning: There is at least one missing value in the time series, this may have compromised the aggregation")}
+  if(anyNA(x[,2]) == TRUE) {
+    NAWarning <- "Warning: There is at least one missing value in the time series, this may have compromised the aggregation"
+    warning(NAWarning)
+  }
   if(is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
   if(is(x[,1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
   if(Freq == "Day") {
