@@ -323,7 +323,10 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     crit.vs <- c(1.333, 1.648, 1.917, 2.140, 2.329, 2.491, 2.632, 2.757, 2.869, 2.971, 3)
     xd <- seq(5,15)
     Crit.frame <- data.frame(xd, crit.vs)
-    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
+    Nsize <- nrow(Site.NRFA)
+    CritInd <- which.min(abs(Nsize - Crit.frame$xd))
+    C.V <- Crit.frame$crit.vs[CritInd]
+    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
@@ -391,7 +394,10 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     crit.vs <- c(1.333, 1.648, 1.917, 2.140, 2.329, 2.491, 2.632, 2.757, 2.869, 2.971, 3)
     xd <- seq(5,15)
     Crit.frame <- data.frame(xd, crit.vs)
-    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
+    Nsize <- nrow(Site.NRFA)
+    CritInd <- which.min(abs(Nsize - Crit.frame$xd))
+    C.V <- Crit.frame$crit.vs[CritInd]
+    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
@@ -517,8 +523,10 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
                  2.632, 2.757, 2.869, 2.971, 3)
     xd <- seq(5, 15)
     Crit.frame <- data.frame(xd, crit.vs)
-    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),
-                      2]
+    Nsize <- nrow(Site.NRFA)
+    CritInd <- which.min(abs(Nsize - Crit.frame$xd))
+    C.V <- Crit.frame$crit.vs[CritInd]
+    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {
       Discordant[i] <- isTRUE(Discordancy[i] > C.V)
@@ -2817,170 +2825,61 @@ GoTFPool <- function(x) {
 
 #' Zdist Goodness of fit measure for pooling groups
 #'
-#' Calculates the goodness of fit score for pooling groups with the method outlined in the Flood Estimation Hanbook (1999), volume 3.
+#' Calculates the goodness of fit score for pooling groups.
 #'
-#'   The goodness of fit measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: an approach based on LMoments (1997), as well as Flood Estimation Handbook volume 3.
+#'   The goodness of fit measure is detailed in "Improving the FEH statistical procedures for flood frequency estimation", Environment Agency (2008, ISBN: 978 1 84432 920 5).
 #' @param x pooling group derived from the Pool() function
 #' @examples
 #' #Get CDs, form a pooling group and calculate the Zdist
 #' CDs.203018 <- GetCDs(203018)
 #' Pool.203018 <- Pool(CDs.203018)
 #' Zdists(Pool.203018)
-#' @return A list with the first element a data.frame of three GoF scores related to the columns; "GEV, "GenLog", and "Gumebl. The second element is a character stating which has the best fit.
+#' @return A list with the first element a data.frame of three GoF scores related to the columns; "GEV" & "GenLog". The second element is a character stating which has the best fit.
 #' @author Anthony Hammond
 
-Zdists <- function(x){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  tR4 <- mean(x$LKurt)
-  tR3 <- mean(x$LSkew)
-  Pool.Kap.pars <- function(x)
-  {
-    l1 <- 1
-    l2 <- mean(x$Lcv)
-    lskew <- mean(x$LSkew)
-    lkurt <- mean(x$LKurt)
-    pars <- c(l1,l2,lskew, lkurt)
-    return(pars)
-  }
-  Lcv <- function(x)
-  {
-    Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
-    b0 <- mean(x)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x)
-    b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x)
-    b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x)
-    L1 <- b0
-    L2 <- 2*b1-b0
-    Lcv <- L2/L1
-    return(Lcv)
-  }
-  LSkew <- function(x)
-  {
-    Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
-    b0 <- mean(x)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x)
-    b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x)
-    b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x)
-    L1 <- b0
-    L2 <- 2*b1-b0
-    L3 <- 6*b2-6*b1+b0
-    LSkew <- L3/L2
-    return(LSkew)
-  }
-
-  LKurt <- function(x)
-  {
-    Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
-    b0 <- mean(x)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x)
-    b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x)
-    b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x)
-    L2 <- 2*b1-b0
-    L4 <- 20*b3-30*b2+12*b1-b0
-    LKurt <- L4/L2
-    return(LKurt)
-  }
-
-  Kap.pars <- function(L1, L2, LSkew, LKurt)
-  {
-
-    Kap.opt <- function(LSkew,LKurt)
-    {
-      min.SSR <- function(par)
-      {
-
-        if (par[2]>0)
-        {
-          g1 <- (1*gamma(1+par[1])*gamma(1/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+1/par[2]))
-          g2 <- (2*gamma(1+par[1])*gamma(2/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+2/par[2]))
-          g3 <- (3*gamma(1+par[1])*gamma(3/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+3/par[2]))
-          g4 <- (4*gamma(1+par[1])*gamma(4/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+4/par[2]))
-        }
-        else
-        {
-          g1 <- (1*gamma(1+par[1])*gamma(-par[1]-1/par[2]))/((-par[2])^(1+par[1])*gamma(1-1/par[2]))
-          g2 <- (2*gamma(1+par[1])*gamma(-par[1]-2/par[2]))/((-par[2])^(1+par[1])*gamma(1-2/par[2]))
-          g3 <- (3*gamma(1+par[1])*gamma(-par[1]-3/par[2]))/((-par[2])^(1+par[1])*gamma(1-3/par[2]))
-          g4 <- (4*gamma(1+par[1])*gamma(-par[1]-4/par[2]))/((-par[2])^(1+par[1])*gamma(1-4/par[2]))
-        }
-        t3.kap <- (-g1+3*g2-2*g3)/(g1-g2)
-        t4.kap <- (g1 - 6*g2 + 10*g3 -5*g4)/(g1-g2)
-        ss <- sum((t3.kap - LSkew)^2)+((t4.kap-LKurt)^2)
-      }
-      Op <- suppressWarnings(optim(par = c(0.01, -0.4), fn = min.SSR))
-      return(Op)
-
-    }
-
-    Kap.kh <- Kap.opt(LSkew, LKurt)$par
-    K <- Kap.kh[1]
-    H <- Kap.kh[2]
-
-    gr <- function(k, h)
-    {
-      if (h>0)
-      {
-        g1 <- (1*gamma(1+k)*gamma(1/h))/(h^(1+k)*gamma(1+k+1/h))
-        g2 <- (2*gamma(1+k)*gamma(2/h))/(h^(1+k)*gamma(1+k+2/h))
-        g3 <- (3*gamma(1+k)*gamma(3/h))/(h^(1+k)*gamma(1+k+3/h))
-
-      }
-      else
-      {
-        g1 <- (1*gamma(1+k)*gamma(-k-1/h))/((-h)^(1+k)*gamma(1-1/h))
-        g2 <- (2*gamma(1+k)*gamma(-k-2/h))/((-h)^(1+k)*gamma(1-2/h))
-        g3 <- (3*gamma(1+k)*gamma(-k-3/h))/((-h)^(1+k)*gamma(1-3/h))
-      }
-      vec <- c(g1,g2)
-      return(vec)
-    }
-    g12 <- gr(k = K,h = H)
-    G1 <- g12[1]
-    G2 <- g12[2]
-
-    a <- L2/((G1-G2)/K)
-    loc <- L1 - a*(1-G1)/K
-    pars <- c(loc, a, K, H)
-    return(pars)
-  }
-
-  Qt.kap <- function(loc, scale, k, h, T = 100) {loc + (scale/k)*((1-((1-(1-(1/T))^h)/h)^k))}
-  Ls <- Pool.Kap.pars(x)
-  Pars <- Kap.pars(Ls[1],Ls[2], Ls[3], Ls[4])
-  LK.Sim <- function(x)
-  {
-    LKurt.sim <- NULL
-    for (i in 1:nrow(x)) {LKurt.sim[i] <- LKurt(Qt.kap(Pars[1],Pars[2],Pars[3],Pars[4], T = 1/runif(x$N[i])))}
-    t4m <- mean(LKurt.sim)
-    return(t4m)
-  }
-  LK.vec <- NULL
-  for (i in 1:500) {LK.vec[i] <- LK.Sim(x)}
-  B4 <- mean(LK.vec - tR4)
-  sig4 <- ((500-1)^-1 * (sum(LK.vec - tR4)^2 - 500*B4^2))^0.5
+Zdists <- function(x) {
+  Weights <- x$N / sum(x$N)
+  tR4 <- sum(x$LKurt * Weights)
+  tR3 <- sum(x$LSkew * Weights)
+  tR2 <- sum(x$Lcv * Weights)
   t4.GEV <- function(k) {(5*(1-4^-k)-10*(1-3^-k)+6*(1-2^-k))/(1-2^-k)}
   t4.GLO <- function(k) {(1+5*k^2)/6}
-  t4.LN3 <- function(k) {1.2260172*10^-1+k^2*((1.8756590*10^-1+(-2.5353147*10^-3)*k^2+2.6995102*10^-4*k^4+(-1.8446680*10^-6)*k^6)/(1+8.2325617*10^-2*k^2+4.26814448*10^-3*k^4+1.1653690*10^-4*k^6))}
-  t4.gum <- 0.150375
-  Z.GEV <- (t4.GEV(tR3)-tR4 + B4)/sig4
-  Z.GLO <- (t4.GLO(tR3)-tR4 + B4)/sig4
-  #Z.LN3 <- (t4.LN3(tR3)-tR4 + B4)/sig4
-  #Z.gum <- (t4.gum-tR4 + B4)/sig4
-  #Z.frame <- data.frame(Z.GEV, Z.GLO, Z.LN3, Z.gum)
-  Z.frame <- data.frame(Z.GEV, Z.GLO)
-  bestInd <- which(abs(Z.frame[1,]) == min(abs(Z.frame)))
-  #colnames(Z.frame) <- c("GEV", "GL", "LN3", "Gumbel")
-  colnames(Z.frame) <- c("GEV", "GenLog")
-  if (bestInd == 1) {Result <- "GEV has the best fit"}
-  if (bestInd == 2) {Result <- "GenLog has the best fit"}
-  #if (bestInd == 3) {Result <- "Gumbel has the best fit"}
-  #if (bestInd == 4) {Result <- "LN3 has the best fit"}
-  return(list(Z.frame, Result))
+
+  SimPool <- function(xi, Dist = "GEV"){
+    CumN <- append(1, cumsum(x$N))
+    AMList <- list()
+    for(i in 1:(length(CumN) - 1)) {AMList[[i]] <- xi[CumN[i] : CumN[i+1]] }
+    Kurts <- sapply(AMList, LKurt)
+    Skews <- sapply(AMList, LSkew)
+    KurtRes <- sum(Kurts * Weights)
+    SkewRes <- sum(Skews * Weights)
+    if(Dist == "GEV") {Result <- KurtRes - t4.GEV(SkewRes)}
+    if(Dist == "GLO") {Result <- KurtRes - t4.GLO(SkewRes)}
+    return(Result)
+  }
+
+  GEVSim <- SimData(n = sum(x$N)*500, dist = "GEV", GF = c(tR2, tR3, 1))
+  GEVMat <- matrix(GEVSim, ncol = 500, nrow = length(GEVSim)/500)
+  GEVStats <- apply(GEVMat, 2, SimPool, "GEV")
+  GEVsd <- sd(GEVStats)
+  GEVz <-  (tR4 - t4.GEV(tR3))/GEVsd
+
+  GLOSim <- SimData(n = sum(x$N)*500, dist = "GenLog", GF = c(tR2, tR3, 1))
+  GLOMat <- matrix(GLOSim, ncol = 500, nrow = length(GLOSim)/500)
+  GLOStats <- apply(GLOMat, 2, SimPool, "GLO")
+  GLOsd <- sd(GLOStats)
+  GLOz <-  (tR4 - t4.GLO(tR3))/GLOsd
+
+  ZFrame <- data.frame(GEVz, GLOz)
+  Names <- c("GEV", "GenLog")
+  colnames(ZFrame) <- Names
+  Abs <- c(abs(GEVz), abs(GLOz))
+  MinInd <- which.min(Abs)
+  Result <- paste(Names[MinInd], "has the best fit", sep = " ")
+  ResultList <- list(ZFrame, Result)
+  return(ResultList)
 }
+
 
 #' Heterogeneity measure (H2) for pooling groups.
 #'

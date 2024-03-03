@@ -10,13 +10,13 @@ Zdists(x)
 \item{x}{pooling group derived from the Pool() function}
 }
 \value{
-A list with the first element a data.frame of three GoF scores related to the columns; "GEV, "GenLog", and "Gumebl. The second element is a character stating which has the best fit.
+A list with the first element a data.frame of three GoF scores related to the columns; "GEV" & "GenLog". The second element is a character stating which has the best fit.
 }
 \description{
-Calculates the goodness of fit score for pooling groups with the method outlined in the Flood Estimation Hanbook (1999), volume 3.
+Calculates the goodness of fit score for pooling groups.
 }
 \details{
-The goodness of fit measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: an approach based on LMoments (1997), as well as Flood Estimation Handbook volume 3.
+The goodness of fit measure is detailed in "Improving the FEH statistical procedures for flood frequency estimation", Environment Agency (2008, ISBN: 978 1 84432 920 5).
 }
 \examples{
 #Get CDs, form a pooling group and calculate the Zdist
