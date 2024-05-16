@@ -23,7 +23,7 @@ PoolEst(
 
 \item{QMED}{estimate of the median annual maximum flow}
 
-\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel"; the generalised logistic, generalised extreme value, and Gumbel distribution, respectively. The default is "GenLog"}
+\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel"; the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"}
 
 \item{RP}{return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000}
 
@@ -36,7 +36,7 @@ PoolEst(
 \item{fseQMED}{factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46}
 }
 \value{
-A list of length 4. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve.
+If RP is default then a list of length 4. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve. If RP is not the default only the first two elements are returned.
 }
 \description{
 Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
@@ -50,7 +50,7 @@ PoolEst is a function to provide results from a pooling group derived using the 
 CDs.27083 <- GetCDs(27083)
 Pool.27083 <- Pool(CDs.27083)
 #Get results for the ungauged case, with urban adjustment
-PoolEst(Pool.27083, QMED = 11.941, UrbAdj = TRUE, CDs = CDs.27083)
+PoolEst(Pool.27083, QMED = 12, UrbAdj = TRUE, CDs = CDs.27083)
 #Form the group again with the urban gauge included & undertake a gauged estimate
 #with urban adjustment. QMED in this example is estimated as the median of the annual
 #maximum series for site 27083.

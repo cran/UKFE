@@ -27,7 +27,7 @@ QuickResults(
 
 \item{plot}{logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot}
 
-\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel; the generalised logistic, generalised extreme value, and Gumbel distributions, respectively. The default is "GenLog"}
+\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"}
 }
 \value{
 A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). Two additional columns quantify the uncertainty. The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). By default an extreme value plot is also returned

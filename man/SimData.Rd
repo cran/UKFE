@@ -11,7 +11,7 @@ SimData(n, pars = NULL, dist = "GenLog", GF = NULL)
 
 \item{pars}{vector of parameters in the order of location, scale, shape (only location and shape for Gumbel)}
 
-\item{dist}{choice of distribution. Either "GEV", "GenLog", "Gumbel" or "GenPareto"}
+\item{dist}{choice of distribution. Either "GEV", "GenLog", "Gumbel", "Kappa3", or "GenPareto"}
 
 \item{GF}{vector of GF inputs in the order of Lcv, LSkew, QMED (only Lcv and QMED if dist = "Gumbel")}
 }
@@ -19,7 +19,7 @@ SimData(n, pars = NULL, dist = "GenLog", GF = NULL)
 A random sample of size n for the chosen distribution.
 }
 \description{
-Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, or generalised Pareto distributions
+Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, Kappa3, or generalised Pareto distributions
 }
 \details{
 The simulated sample can be generated using distribution parameters, or the growth factor (GF) inputs; linear coefficient of variationn (Lcv), linear skewness (LSkew) & the median annual maximum (QMED).

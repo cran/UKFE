@@ -11,21 +11,24 @@ POTextract(
   thresh = 0.975,
   Plot = TRUE,
   ylab = "Magnitude",
+  xlab = "Time",
   main = "Peaks over threshold"
 )
 }
 \arguments{
 \item{x}{either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second}
 
-\item{div}{numeric  percentile (between 0 and thres), either side of which two peaks over the threshold are considered independent. Default is the mean of the sample.}
+\item{div}{numeric  percentile (between 0 and thresh), either side of which two peaks over the threshold are considered independent. Default is the mean of the sample.}
 
-\item{TimeDiv}{Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicablee for data.frames.}
+\item{TimeDiv}{Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicable for data.frames.}
 
 \item{thresh}{user chosen threshold. Default is 0.975}
 
 \item{Plot}{logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted}
 
 \item{ylab}{Label for the plot yaxis. Default is "Magnitude"}
+
+\item{xlab}{Label (character) for the plot x axis. Default is "Time".}
 
 \item{main}{Title for the plot. Default is "Peaks over threshold"}
 }
@@ -42,13 +45,13 @@ If the x argument is a numeric vector, the peaks will be extracted with no time 
  The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
- The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks.
+ The TimeDiv argument can also be applied to ensure the peaks are separated by a number of time-steps either side of the peaks.
  For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
  In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall.
  When plotted, the blue line is the threshold, and the green line is the independence line (div).
 }
 \examples{
-#Extract POT data from Thames mean daily flow 1970-10-01 to 2015-09-25 with
+#Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
 #div = mean and threshold = 0.95. Then display the first six rows
 ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
 head(ThamesQPOT)

@@ -22,7 +22,7 @@ EVPool(
 
 \item{gauged}{logical argument with a default of FALSE. If FALSE, the plot is the ungauged pooled curve accompanied by the single site curves of the group members. If TRUE, the plot is the gauged curve and single site curve with the observed points added}
 
-\item{dist}{a choice of distribution. Choices are "GEV" or "GenLog". The default is "GenLog"}
+\item{dist}{a choice of distribution. Choices are "GEV", "GenLog", "Kappa3", or "Gumbel". The default is "GenLog"}
 
 \item{QMED}{a chosen QMED to convert the curve from a growth curve to the frequency curve}
 

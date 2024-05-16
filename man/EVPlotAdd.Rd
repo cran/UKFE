@@ -19,7 +19,7 @@ EVPlotAdd(
 \arguments{
 \item{Pars}{a numeric vector of length two. The first is the Lcv (linear coefficient of variation) and the second is the Lskew (linear skewness).}
 
-\item{dist}{distribution name with a choice of "GenLog", "GEV", "GenPareto", and "Gumbel"}
+\item{dist}{distribution name with a choice of "GenLog", "GEV", "GenPareto", "Kappa3", and "Gumbel"}
 
 \item{Name}{character string. User chosen name for points or line added (for the legend)}
 

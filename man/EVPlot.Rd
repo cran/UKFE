@@ -17,7 +17,7 @@ EVPlot(
 \arguments{
 \item{x}{a numeric vector. The sample of interest}
 
-\item{dist}{a choice of distribution. "GEV", "GenLog", "Gumbel" or "GenPareto". The default is "GenLog"}
+\item{dist}{a choice of distribution. "GEV", "GenLog", "Kappa3","Gumbel" or "GenPareto". The default is "GenLog"}
 
 \item{scaled}{logical argument with a default of TRUE. If TRUE the plot is a growth curve (scaled by the QMED). If FALSE, the plot is a frequency curve}
 
@@ -30,7 +30,7 @@ EVPlot(
 \item{Unc}{logical argument with a default of TRUE. If TRUE, 95 percent uncertainty intervals are plotted.}
 }
 \value{
-An extreme value plot (freqency or growth curve) with intervals to quantify uncertainty
+An extreme value plot (frequency or growth curve) with intervals to quantify uncertainty
 }
 \description{
 Plots the extreme value frequency curve or growth curve with observed sample points.

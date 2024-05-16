@@ -18,7 +18,7 @@ globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id",
 #'@param Qmed user supplied QMED which overrides the default QMED estimate
 #'@param FUngauged logical argument with a default of FALSE. TRUE provides an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs)
 #'@param plot logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel; the generalised logistic, generalised extreme value, and Gumbel distributions, respectively. The default is "GenLog"
+#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"
 #'@examples
 #'#Get some catchment descriptors
 #'CDs.73005 <- GetCDs(73005)
@@ -661,7 +661,7 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
 #'@param x pooling group derived from the Pool function
 #'@param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
 #'@param QMED estimate of the median annual maximum flow
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel"; the generalised logistic, generalised extreme value, and Gumbel distribution, respectively. The default is "GenLog"
+#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel"; the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
 #'@param RP return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000
 #'@param UrbAdj logical argument with a default of FALSE. When TRUE, an urban adjustment is applied to the pooled Lcv and LSkew
 #'@param CDs catchment descriptors derived from either GetCDs or CDsXML
@@ -673,17 +673,17 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
 #'CDs.27083 <- GetCDs(27083)
 #'Pool.27083 <- Pool(CDs.27083)
 #'#Get results for the ungauged case, with urban adjustment
-#'PoolEst(Pool.27083, QMED = 11.941, UrbAdj = TRUE, CDs = CDs.27083)
+#'PoolEst(Pool.27083, QMED = 12, UrbAdj = TRUE, CDs = CDs.27083)
 #'#Form the group again with the urban gauge included & undertake a gauged estimate
 #'#with urban adjustment. QMED in this example is estimated as the median of the annual
 #'#maximum series for site 27083.
 #'PoolG.27083 <- PoolG.27083 <- Pool(CDs.27083, iug = TRUE, DeUrb = TRUE)
 #'PoolEst(PoolG.27083, QMED = 12.5, UrbAdj = TRUE, CDs = CDs.27083)
 #'
-#'@return A list of length 4. Element one is a data frame with columns; return period (RP), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve.
+#'@return If RP is default then a list of length 4. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve. If RP is not the default only the first two elements are returned.
 #'@author Anthony Hammond
 PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,50,75,100,200,500,1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, fseQMED = 1.46) {
-  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel") stop("dist must equal one of the following, GEV, GenLog, Gumbel. Other growth curve functions such as Kappa3GF can be applied separately to the resulting LCV and LSKEW")
+  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3. Other growth curve functions can be applied separately to the resulting LCV and LSKEW")
   if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
   if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
   if(UrbAdj == TRUE) {
@@ -691,6 +691,7 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
     if(is.null(URBEXT) == TRUE) {URBEXT2000 <- CDs[18,2]} else {URBEXT2000 <- URBEXT}}
   if(dist == "GenLog") {func <- GenLogGF}
   if(dist == "GEV") {func <- GEVGF}
+  if(dist == "Kappa3") {func <- Kappa3GF}
   if(dist == "Gumbel") {func <- GumbelGF}
   if(gauged == FALSE) {lcv <- WungLcv(x)} else {lcv <- WGaugLcv(x)}
   if(gauged == FALSE) {lskew <- WungLSkew(x)} else {lskew <- WGaugLSkew(x)}
@@ -724,34 +725,41 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
     upper68 <- round(Q*fse, 3)
     res <- data.frame(RP, Q, GF, lower68, upper68)
   }
-  #res <- data.frame(RP, Q, GF)
+
   Pars <- cbind(PooledLcv, PooledLSkew)
+  if(suppressWarnings(sd(RP - c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000))) == 0) {
   ResLocScaSha <- OptimPars(res[,c(1,3)], dist = dist)
   ResLocScaSha <- signif(ResLocScaSha[1,],3)
   ResLocScaShaDist <- OptimPars(res[,c(1,2)], dist = dist)
   ResLocScaShaDist <- signif(ResLocScaShaDist[1,],3)
-  return(list(res, Pars, ResLocScaSha, ResLocScaShaDist))
+  return(list(res, Pars, ResLocScaSha, ResLocScaShaDist))} else {
+    return(list(res, Pars))
+  }
+
 }
+
+
 
 
 # OptimPars ---------------------------------------------------------------
 
 #' Optimise distribution parameters
 #'
-#' Estimates the parameters of the generalised extreme value, generalised logistic, or Gumbel distribution from known return period estimates
+#' Estimates the parameters of the Generalised extreme value, generalised logistic, Kappa3, or Gumbel distribution from known return period estimates
 #'
 #' Given a dataframe with return periods (RPs) in the first column and associated estimates in the second column, this function provides an estimate of the distribution parameters. Ideally the first RP should be 2. Extrapolation outside the RPs used for calibration comes with greater uncertainty.
 #'@param x a data.frame with RPs in the first column and associated estimates in the second column
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel" - the generalised logistic, generalised extreme value and Gumbel distribution, respectively. The default is "GenLog"
+#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel" - the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
 #'@examples
 #'#Get some catchment descriptors and some quick results. Then estmate the GenLog parameters
 #'Results <- QuickResults(GetCDs(96001), plot = FALSE)[[1]]
 #'OptimPars(Results[,1:2])
 #'
-#'@return The location, scale and shape parameters for the generalised logistic or Generalised extreme value distribution. Or the location and scale for the Gumbel.
+#'@return The parameters of one of four user chosen distributions; Generalised logistic, generalised extreme value, Gumbel, and Kappa3.
 #' @author Anthony Hammond
 OptimPars <-  function(x, dist = "GenLog") {
   if(is.data.frame(x) == FALSE) {stop("x must be a data.frame with RPs in the first column and associated variable in the second")}
+  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3.")
   res <- x
   RP <- x[,1]
   Q <- x[,2]
@@ -771,6 +779,16 @@ OptimPars <-  function(x, dist = "GenLog") {
     Pars <- data.frame(Pars[1], Pars[2], Pars[3])
     colnames(Pars) <- c("loc", "scale", "shape")
   }
+  if(dist == "Kappa3"){
+    h <- -0.4
+    min.Kappa <- function(data, par) {
+      with(data, sum(((par[1] + (par[2]/par[3]) * (1 - ((1 - (1-(1/RP))^h)/h)^par[3])-Q)^2)))}
+    result <- optim(par = c(x[1,2], mean((x[1,2]/4),(x[1,2]/3)), 0.01), fn = min.Kappa, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
+    Pars <- result$par
+    Pars <- data.frame(Pars[1], Pars[2], Pars[3])
+    colnames(Pars) <- c("loc", "scale", "shape")
+  }
+
   if(dist == "Gumbel"){
     min.Gum <- function(data, par) {
       with(data, sum((((par[1]+par[2]*(-log(-log(1-(1/RP)))))-Q)^2)))}
@@ -918,22 +936,19 @@ Kappa3GF <- function(lcv, lskew, RP) {
 #'
 #'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
-#' @param trend logical argument with default of FALSE. If TRUE, a linear adjustment to the location parameter is made to account for non-stationarity
 #' @examples
 #' #Get an annual maximum sample and estimate the 50-year RP
 #' AM.27090 <- GetAM(27090)
 #' GenLogAM(AM.27090$Flow, RP = 50)
 #' #Estimate the RP for a 600m3/s discharge
 #' GenLogAM(AM.27090$Flow, q = 600)
-#' #Estimate the 50-year RP allowing for non-stationarity in the location parameter
-#' GenLogAM(AM.27090$Flow, RP = 50, trend = TRUE)
-#' @return quantile as a function of RP or vice versa, with the option of accounting for the linear trend in the sample
+#' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
-GenLogAM <- function(x, RP = 100, q = NULL, trend = FALSE)
+GenLogAM <- function(x, RP = 100, q = NULL)
 {
   if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
   Sort.x <- sort(x)
@@ -957,17 +972,7 @@ GenLogAM <- function(x, RP = 100, q = NULL, trend = FALSE)
     P <- 1-(1/(1+exp(-y)))
     res <- 1/P
   }
-  m <- function(i, j) {sum((i-mean(i))*(j-mean(j)))/sum((i-mean(i))^2)}
-  M <- m(i = seq(1, length(x)), j = x)
-  b <- mean(x)-M*mean(seq(1,length(x)))
-  LM <- (M*(length(x))+b)-(M*median(seq(1,length(x)))+b)
-  LocTrend <- loc+LM
-  if (is.null(q) == TRUE) {resTrend <- LocTrend+ a/k * (1-(RP-1) ^-k)}
-  else {
-    yTrend <- -k^(-1) * log(1 - k * (q - LocTrend)/a)
-    Ptrend <- P <- 1-(1/(1+exp(-yTrend)))
-    resTrend <- 1/Ptrend}
-  if(trend == FALSE) {return(res)} else {return(resTrend)}
+  return(res)
 }
 
 
@@ -976,22 +981,19 @@ GenLogAM <- function(x, RP = 100, q = NULL, trend = FALSE)
 #'
 #'Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
-#' @param trend logical argument with default of FALSE. If TRUE, a linear adjustment to the location parameter is made to account for non-stationarity
 #' @examples
 #' #Get an annual maximum sample and estimate the 50-year RP
 #' AM.27090 <- GetAM(27090)
 #' GEVAM(AM.27090$Flow, RP = 50)
 #' #Estimate the RP for a 600m3/s discharge
 #' GEVAM(AM.27090$Flow, q = 600)
-#' #Estimate the 50-year RP allowing for non-stationarity in the location parameter
-#' GEVAM(AM.27090$Flow, RP = 50, trend = TRUE)
-#' @return quantile as a function of RP or vice versa, with the option of accounting for the linear trend in the sample
+#' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
-GEVAM <- function(x, RP = 100, q = NULL, trend = FALSE)
+GEVAM <- function(x, RP = 100, q = NULL)
 {
   if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
   Sort.x <- sort(x)
@@ -1014,17 +1016,7 @@ GEVAM <- function(x, RP = 100, q = NULL, trend = FALSE)
     y <- -k^(-1) * log(1 - k * (q - loc)/a)
     P <- 1-(exp(-exp(-y)))
     res <- 1/P}
-  m <- function(i, j) {sum((i-mean(i))*(j-mean(j)))/sum((i-mean(i))^2)}
-  M <- m(i = seq(1, length(x)), j = x)
-  b <- mean(x)-M*mean(seq(1,length(x)))
-  LM <- (M*(length(x))+b)-(M*median(seq(1,length(x)))+b)
-  LocTrend <- loc+LM
-  if (is.null(q) == TRUE) {resTrend <- LocTrend+a/k*(1-(-log(1-1/RP))^k)}
-  else {
-    yTrend <- -k^(-1) * log(1 - k * (q - LocTrend)/a)
-    Ptrend <- 1-(exp(-exp(-yTrend)))
-    resTrend <- 1/Ptrend}
-  if(trend == FALSE) {return(res)} else {return(resTrend)}
+  return(res)
 }
 
 
@@ -1076,22 +1068,19 @@ GenParetoPOT <- function(x, ppy = 1, RP = 100, q = NULL)
 #'Gumbel distribution - estimates directly from sample
 #'
 #' @description Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
-#' @details If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+#' @details If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
-#' @param trend logical argument with default of FALSE. If TRUE, a linear adjustment to the location parameter is made to account for non-stationarity
 #' @examples
 #' #Get an annual maximum sample and estimate the 50-year RP
 #' AM.27090 <- GetAM(27090)
 #' GumbelAM(AM.27090$Flow, RP = 50)
 #' #Estimate the RP for a 600m3/s discharge
 #' GumbelAM(AM.27090$Flow, q = 600)
-#' #Estimate the 50-year RP allowing for non-stationarity in the location parameter
-#' GumbelAM(AM.27090$Flow, RP = 50, trend = TRUE)
-#' @return quantile as a function of RP or vice versa, with the option of accounting for the linear trend in the sample
+#' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
-GumbelAM <- function(x, RP = 100, q = NULL, trend = FALSE)
+GumbelAM <- function(x, RP = 100, q = NULL)
 {
   if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
   Sort.x <- sort(x)
@@ -1107,16 +1096,7 @@ GumbelAM <- function(x, RP = 100, q = NULL, trend = FALSE)
     Prob <- 1- exp(-exp(-(q - loc)/a))
     res <- 1/Prob
   }
-  m <- function(i, j) {sum((i-mean(i))*(j-mean(j)))/sum((i-mean(i))^2)}
-  M <- m(i = seq(1, length(x)), j = x)
-  b <- mean(x)-M*mean(seq(1,length(x)))
-  LM <- (M*(length(x))+b)-(M*median(seq(1,length(x)))+b)
-  LocTrend <- loc+LM
-  if (is.null(q) == TRUE) {resTrend <- LocTrend - a * log(-log(1-(1/RP)))}
-  else {
-    ProbTrend <- 1- exp(-exp(-(q - LocTrend)/a))
-    resTrend <- 1/ProbTrend}
-  if(trend == FALSE) {return(res)} else {return(resTrend)}
+ return(res)
 }
 
 
@@ -1490,12 +1470,12 @@ GumbelPars <- function(x = NULL, mle = FALSE, L1, LCV){
 
 #'Data simulator
 #'
-#'Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, or generalised Pareto distributions
+#'Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, Kappa3, or generalised Pareto distributions
 #'
 #'The simulated sample can be generated using distribution parameters, or the growth factor (GF) inputs; linear coefficient of variationn (Lcv), linear skewness (LSkew) & the median annual maximum (QMED).
 #' @param n sample size to be simulated
 #' @param pars vector of parameters in the order of location, scale, shape (only location and shape for Gumbel)
-#' @param dist choice of distribution. Either "GEV", "GenLog", "Gumbel" or "GenPareto"
+#' @param dist choice of distribution. Either "GEV", "GenLog", "Gumbel", "Kappa3", or "GenPareto"
 #' @param GF vector of GF inputs in the order of Lcv, LSkew, QMED (only Lcv and QMED if dist = "Gumbel")
 #' @examples
 #' #Simulate a sample of size 30 using parameters GenLog and parameters 299, 51, -0.042
@@ -1509,11 +1489,13 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
     if(dist == "GenPareto") {res <- GenParetoEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n), ppy = 1)}
     if(dist == "GEV") {res <- GEVEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
     if(dist == "GenLog") {res <- GenLogEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
+    if(dist == "Kappa3") {res <- Kappa3Est(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
     if(dist == "Gumbel") {res <- GumbelEst(loc = pars[1], scale = pars[2], RP = 1/runif(n))}
     return(res)} else
     {if(dist == "GenPareto") {res <- GenParetoGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "GEV") {res <- GEVGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "GenLog") {res <- GenLogGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
+      if(dist == "Kappa3") {res <- Kappa3GF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "Gumbel") {res <- GumbelGF(lcv = GF[1], RP = 1/runif(n))}
       if(dist == "Gumbel"){
         return(res*GF[2])
@@ -2131,19 +2113,20 @@ AMImport <- function(x)
 #'  The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
 #'  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
 #'  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
-#'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of timesteps either side of the peaks.
+#'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of time-steps either side of the peaks.
 #'  For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
 #'  In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall.
 #'  When plotted, the blue line is the threshold, and the green line is the independence line (div).
 #' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
-#' @param div numeric  percentile (between 0 and thres), either side of which two peaks over the threshold are considered independent. Default is the mean of the sample.
-#' @param TimeDiv Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicablee for data.frames.
+#' @param div numeric  percentile (between 0 and thresh), either side of which two peaks over the threshold are considered independent. Default is the mean of the sample.
+#' @param TimeDiv Number of timesteps to define independence (supplements the div argument). As a default this is NULL and only 'div' defines independence. Currently this is only applicable for data.frames.
 #' @param thresh user chosen threshold. Default is 0.975
 #' @param Plot logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted
 #' @param ylab Label for the plot yaxis. Default is "Magnitude"
+#' @param xlab Label (character) for the plot x axis. Default is "Time".
 #' @param main Title for the plot. Default is "Peaks over threshold"
 #' @examples
-#' #Extract POT data from Thames mean daily flow 1970-10-01 to 2015-09-25 with
+#' #Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
 #' #div = mean and threshold = 0.95. Then display the first six rows
 #' ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
 #' head(ThamesQPOT)
@@ -2158,7 +2141,7 @@ AMImport <- function(x)
 #' @return Prints the number of peaks per year and returns a data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the hydrological variable is input.
 #' @author Anthony Hammond
 
-POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRUE, ylab = "Magnitude", main = "Peaks over threshold")
+POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRUE, ylab = "Magnitude", xlab = "Time" ,main = "Peaks over threshold")
 {
   Low.Func <- function(TS)
   {
@@ -2194,9 +2177,6 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
     MaxInds <- which(MaxMin == max(MaxMin, na.rm = TRUE))
     MaxInds <- (maxll-1) + MaxInds
     if(peaks[j] == max(MaxMin, na.rm = T) & j == MaxInds[1]) {vp <- peaks[j]} else {vp <- NA}
-    #IndPeakInEvent <- j - maxll
-    #Max1 <- which.max(peaks[maxll:minlr])
-    #if(IndPeakInEvent > Max1[1]) {vp <- NA} else {vp = peaks[j]}
     return(vp)
   }
 
@@ -2204,6 +2184,7 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
   if(is(x, "data.frame") == FALSE) {
     if(is.null(div) == FALSE) {
       if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      if(div == 0 & length(which(x == min(x, na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
       div <- quantile(x[x >0], div, na.rm = TRUE)
       if(div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
     if(is.null(div)) {mu <- mean(x[x >0],na.rm = TRUE)} else {mu <- div}
@@ -2232,9 +2213,10 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
     if(ncol(x) >2) stop("x must be a data.frame with two columns.")
     if(is.null(div) == FALSE) {
       if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      if(div == 0 & length(which(x[,2] == min(x[,2], na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
       div <- as.numeric(quantile(x[,2][x[,2] >0], div, na.rm = TRUE))
       if(div < min(x[,2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
-    if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
+    if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
     if(is.null(div)) {mu <- mean(x[,2][x[,2] >0],na.rm = TRUE)} else {mu <- div}
     if(mu > quantile(x[,2][x[,2] >0],thresh, na.rm = TRUE)) stop("The event division (div) must be significantly lower than the event threshold")
     QThresh <- as.numeric(quantile(x[,2][x[,2] >0], thresh, na.rm = TRUE))
@@ -2296,8 +2278,8 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
       }
       res <- res[,-c(3,4,5)]}
     if(Plot == TRUE) {
-      if(mu == 0){plot(x, main = main, ylab = ylab, xlab= "Date", type = "h")}
-      if(mu > 0){plot(x, main = main, ylab = ylab, xlab= "Date", type = "l")}
+      if(mu == 0){plot(x, main = main, ylab = ylab, xlab= xlab, type = "h")}
+      if(mu > 0){plot(x, main = main, ylab = ylab, xlab= xlab, type = "l")}
       abline(h = QThresh, col = "blue")
       points(res[,1:2], col = "red")
       abline(h = mu, col = rgb(0, 0.7, 0.3))}
@@ -2307,6 +2289,107 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
     return(res)
   }
 }
+
+
+#' Peaks over threshold (POT) data extraction (quick)
+#'
+#' Extracts independent peaks over a threshold from a sample, using time as the independence criteria.
+#'
+#'  This provides a quicker option than the POTextract function - useful for very long time series'. It only has the option of time division to ensure independence between peaks.
+#'  If the x argument is a numeric vector, the peaks will be extracted with no time information.
+#'  x can instead be a data.frame with dates in the first column and the numeric vector in the second.
+#'  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
+#' @param x either a numeric vector or dataframe with date (or POSIXct) in the first column and hydrological variable in the second
+#' @param div number of time steps between peaks to ensure independence.
+#' @param threshold user chosen threshold. Default is 0.975
+#' @param PlotType Type of plot with a default of "l" for line graph. For rainfall type "h" for bars could be used.
+#' @param Plot logical argument with a default of TRUE. When TRUE, the full hydrograph with the peaks over the threshold highlighted is plotted
+#' @param ylab Label (character) for the plot y axis. Default is "Magnitude"
+#' @param xlab Label (character) for the plot x axis. Default is "Time".
+#' @param main Title for the plot. Default is "Peaks over threshold"
+#' @examples
+#' #Extract POT data from Thames catchment daily rainfall 2000-10-01 to 2015-09-30 with
+#' #div = 14 (14 days) and threshold = 0.975. Then display the first six rows
+#' ThamesPPOT <- POTt(ThamesPQ[, c(1,2)], div = 14)
+#' head(ThamesPPOT)
+#' #Extract Thames rainfall POT from only the numeric vector of rainfall, with threshold
+#' #set to 0.95 and div set to 14. Then display the first six rows
+#' ThamesPPOT <- POTt(ThamesPQ[, 2], threshold = 0.95, div = 14)
+#' head(ThamesPPOT)
+#' @return A data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the variable is input as x.
+#' @author Anthony Hammond
+
+POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = "Peaks over threhsold", ylab = "Magnitude", xlab = "Time") {
+  if(is(x, "data.frame") == FALSE & is(x,"numeric") == FALSE) stop("x must be a data.frame or a numeric vector")
+  if(is(x, "data.frame")) {
+    if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
+    }
+  PFunc <- function(TS)
+  {
+    L <- length(TS)-2
+    L1 <- length(TS)-1
+    L2 <- length(TS)
+    Vec1 <- TS[1:L]
+    Vec2 <- TS[2:L1]
+    Vec3 <- TS[3:L2]
+    P1 <- ifelse(Vec2 >= Vec1 & Vec2 >= Vec3 & Vec1!= Vec2, Vec2, NA)
+    P1 <- c(NA, P1, NA)
+    return(P1)
+  }
+
+  if(is(x,"numeric")) {
+    thresh <- as.numeric(quantile(x[x>0], threshold, na.rm = TRUE))
+    PPeaks <- PFunc(x)}
+  if(is(x,"data.frame")) {
+    xVar <- x[,2]
+    thresh <- as.numeric(quantile(xVar[xVar>0], threshold, na.rm = TRUE))
+    PPeaks <- PFunc(xVar)
+  }
+  ID <- seq(1, length(PPeaks), by = 1)
+  ThreshInd <- which(PPeaks <= thresh)
+  PPeaks[ThreshInd] <- NA
+  IndP <- which(is.na(PPeaks) == FALSE)
+  ev.start <- IndP - div
+  ev.end <- IndP + div
+  PeakDF <- data.frame(IndP, ev.start, ev.end, PPeaks[IndP])
+
+  RMInd <- function(ind) {
+    if(PeakDF$IndP[ind] <= PeakDF$ev.end[ind-1]) {
+      MaxInd <- which.max(PeakDF$PPeaks.IndP.[(ind-1):ind])
+      if(MaxInd == 1) {Ind <- ind}
+      if(MaxInd == 2) {Ind <- ind-1}
+    }
+    if(PeakDF$IndP[ind] > PeakDF$ev.end[ind-1]){
+      Ind <- NA
+    }
+    return(Ind)
+  }
+
+  while(any(PeakDF$IndP[2:nrow(PeakDF)] - PeakDF$ev.end[1:(nrow(PeakDF)-1)] < 0)) {
+    RMInds <- NULL
+    for(i in 2:nrow(PeakDF)){RMInds[i] <- RMInd(i)}
+    RMInds <- RMInds[is.na(RMInds) == FALSE]
+    PeakDF <- PeakDF[-RMInds, ]
+  }
+  if(is(x, "data.frame")) {
+    Res <- x[PeakDF$IndP,]
+    if(Plot == TRUE) {
+    plot(x[,], type = PlotType, main = main, xlab = xlab, ylab = ylab)
+    points(Res[,1:2], col = "red")
+    abline(h = thresh, col = "blue")}
+    LengthP <- length(Res[,1])
+    #print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
+  }
+  if(is(x, "numeric")) {
+    Res <- PeakDF[,4]
+    LengthP <- length(Res)
+    #print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
+  }
+  return(Res)
+}
+
+
+
 
 #' Annual maximum extraction
 #'
@@ -2331,9 +2414,9 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 AMextract <- function(x, func = NULL, Calendar =FALSE, Trunc = TRUE, Plot = TRUE, Title = "Hydrological annual maximum sequence", Ylabel = "Magnitude")
 {
   if(is(x, "data.frame") == FALSE) stop("x must be a data.frame")
-  if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
+  if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
   if(is.null(func) == TRUE) {func <- max} else {func <- func}
-  if(class(x[,1])[1] == "POSIXct") {x <- suppressWarnings(AggDayHour(x, func = func))}
+  if(is(x[1,1], "POSIXct")) {x <- suppressWarnings(AggDayHour(x, func = func))}
   DayDiffs <- as.numeric(diff(x$Date))
   IndDiff <- which(DayDiffs > 1)
   LengthDiff <- length(IndDiff)
@@ -2684,199 +2767,67 @@ UncSS <- function (x, func, conf = 0.95, RP = NULL)
 
 # Diagnostics -------------------------------------------------------------
 
-#' Goodness of tail fit (GoTF).
-#'
-#' Provides two GoTF scores for the generalised extreme value (GEV), Gumbel, generalised Pareto (GenPareto), or generalised logistic (GenLog) distribution. Also for any simulated numeric distribution
-#'
-#' The closer the results are to one, the better the fit. The GoTF is calculated by simulating the sample 5000 times with the desired distribution and calculating a statistic (in this case the coefficient of variation (CV) & mean) for the upper 25 percent of each sample. The same is calculated for the subject sample and compared to the distribution. The number of statistics from the simulated samples that are greater than the sample statistics is divided by 5000. The GoTF is this latter number where it is <0.5 and 1 minus this latter number where is it >0.5. If any further distributions are of interest, the representative distribution (RepDist) argument can be used. In this case a simulation of 5000*length(x) from that distribution can be used as RepDist, in place of using the dist input. If a sample that is not equal to 5000 time length(x) is in the RepDist argument, it will be resampled with replacement. An alternative is to use the pars or GF arguments which simulate from the distribution choice (dist) based on the parameters (location, scale, shape) or the growth factor (GF) inputs; the median annual maximum flow (QMED), linear coefficient of variation (Lcv), and linear skewnes (LSkew). The resulting probabilities for each statistic (the GoTF score) represent the probability of observing that statistic if the sample distribution has the same underlying distribution as the one under scrutiny.
-#' @param x a numeric vector. The sample of interest
-#' @param dist a choice of distribution to be assessed. The choices are "GenLog", "GEV", "Gumbel", or "GenPareto". The default is "GenLog"
-#' @param pars numeric vector of parameters for the GEV, GenLog, Gumbel, or GenPareto distributions. In the order of location, scale, shape (excluding shape for Gumbel)
-#' @param GF numeric vector of length three which are the growth factor statistics & QMED, in the order of Lcv, Lskew, & QMED
-#' @param RepDist a simulated sample (ideally of size = 5000*n) of a representative distribution to compare to the sample of interest
-#' @examples
-#' #Get an AMAX sample and derive GoTF score against the GenLog and the GEV distributions
-#' \donttest{AM <- GetAM(203018)}
-#' \donttest{GoTF(AM$Flow, dist = "GenLog")}
-#' \donttest{GoTF(AM$Flow, dist = "GEV")}
-#' #Derive the GF parameters for the ungauged pooled estimate for the AM and
-#' #calculate a GoTF for GenLog (assuming the gauged QMED)
-#' #For this assume 0.16 and 0.2 as the ungauged Lcv & LSkew pooled estimates
-#'  \donttest{GoTF(AM$Flow, GF = c(0.16, 0.2, median(AM$Flow)))}
-#' #calculate the GoTF based on parameters of the GenLog estimated inadequately.
-#' \donttest{Loc <- mean(AM$Flow)}
-#' \donttest{Scale <- sd(AM$Flow)}
-#' \donttest{Skew <- 1-(median(AM$Flow)/mean(AM$Flow))}
-#' \donttest{GoTF(AM$Flow, pars = c(Loc, Scale, Skew))}
-#' @return A data.frame with one row of probabilities representing the GoTF. The first column is the Tail cv and the second is the tail mean.
-#' @author Anthony Hammond
-
-GoTF <- function(x, dist = "GenLog", pars = NULL, GF = NULL, RepDist = NULL){
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  if(is.null(RepDist) == FALSE) {
-    if(length(RepDist) != (5000*length(x))) {print("Warning: RepDist not equal to 5000 * length(x), resampling has been used")}
-    if(length(RepDist) != (5000*length(x))) {RepDist <- sample(RepDist, 5000*length(x), replace = TRUE)}
-    MMR <- function(x) {sd(x[x > quantile(x, 0.75, na.rm = TRUE)])/mean(x[x > quantile(x, 0.75, na.rm = TRUE)])}
-    Mat.1 <- matrix(RepDist, nrow = length(x), ncol = 5000)
-    MMRs <- apply(Mat.1, 2, MMR)
-    MMRo <- MMR(x)
-    SortMMRs <- sort(MMRs)
-    Ind <- suppressWarnings(min(which(SortMMRs >  MMRo)))
-    if(Ind == Inf | Ind == 0) {Prop <- 0.0002} else {Prop <- Ind/5000}
-    if(Prop > 0.5) {res <- 1-Prop} else {res <- Prop}
-    if(Ind == Inf | res == 0) {res <- "< 0.0002"} else {res <- res/0.5}
-
-    TailMean <- function(x) {mean(x[x > quantile(x, 0.75, na.rm = TRUE)])}
-    Mat.2 <- matrix(RepDist, nrow = length(x), ncol = 5000)
-    TMs <- apply(Mat.1, 2, TailMean)
-    TMo <- TailMean(x)
-    SortTMs <- sort(TMs)
-    Ind2 <- suppressWarnings(min(which(SortTMs >  TMo)))
-    if(Ind2 == Inf | Ind2 == 0) {Prop2 <- 0.0002} else {Prop2 <- Ind2/5000}
-    if(Prop2 > 0.5) {res2 <- 1-Prop2} else {res2 <- Prop2}
-    if(Ind2 == Inf | res2 == 0) {res2 <- "< 0.0002"} else {res2 <- res2/0.5}
-
-    ResDF <- data.frame(res, res2)
-    colnames(ResDF) <- c("p(Tail cv)", "p(Tail mean)")
-    return(ResDF)
-
-  } else {
-
-    if(dist == "GenLog") {funcX <- GenLogAM
-    funcPars <- GenLogEst
-    funcGF <- GenLogGF}
-    if(dist == "GEV")
-    {funcX <- GEVAM
-    funcPars <- GEVEst
-    funcGF <- GEVGF}
-    if(dist == "Gumbel")
-    {funcX <- GumbelAM
-    funcPars <- GumbelEst
-    funcGF <- GumbelGF}
-    if(dist == "GenPareto")
-    {funcX <- GenParetoPOT
-    funcPars <- GenParetoEst
-    funcGF <- GenParetoGF}
-    MMR <- function(x) {sd(x[x > quantile(x, 0.75, na.rm = TRUE)])/mean(x[x > quantile(x, 0.75, na.rm = TRUE)])}
-    Rands <- 1/runif(length(x)*5000)
-    if(is.null(pars) == TRUE & is.null(GF) == TRUE) {Sims <- funcX(x, RP = Rands)}
-    if(is.null(pars) == FALSE) {
-      if(dist == "Gumbel") {Sims <- funcPars(pars[1], pars[2], RP = Rands)} else
-      {Sims <- funcPars(pars[1], pars[2], pars[3], RP = Rands)}}
-    if(is.null(GF) == FALSE)  {
-      if(dist == "Gumbel") {Sims <- funcGF(GF[1], RP = Rands)*GF[3]} else
-      {Sims <- funcGF(GF[1], GF[2], RP = Rands)*GF[3]}}
-
-    Mat.1 <- matrix(Sims, nrow = length(x), ncol = 5000)
-    MMRs <- apply(Mat.1, 2, MMR)
-    MMRo <- MMR(x)
-    SortMMRs <- sort(MMRs)
-    Ind <- suppressWarnings(min(which(SortMMRs >  MMRo)))
-    if(Ind == Inf | Ind == 0) {Prop <- 0.0002} else {Prop <- Ind/5000}
-    if(Prop > 0.5) {res <- 1-Prop} else {res <- Prop}
-    if(Ind == Inf | res == 0) {res <- "< 0.0002"} else {res <- res/0.5}
-
-    TailMean <- function(x) {mean(x[x > quantile(x, 0.75, na.rm = TRUE)])}
-    Mat.2 <- matrix(Sims, nrow = length(x), ncol = 5000)
-    TMs <- apply(Mat.1, 2, TailMean)
-    TMo <- TailMean(x)
-    SortTMs <- sort(TMs)
-    Ind2 <- suppressWarnings(min(which(SortTMs >  TMo)))
-    if(Ind2 == Inf | Ind2 == 0) {Prop2 <- 0.0002} else {Prop2 <- Ind2/5000}
-    if(Prop2 > 0.5) {res2 <- 1-Prop2} else {res2 <- Prop2}
-    if(Ind2 == Inf | res2 == 0) {res2 <- "< 0.0002"} else {res2 <- res2/0.5}
-    if(is(res, "character") == TRUE) {res <- res} else {res <- round(res, 4)}
-    if(is(res2, "character") == TRUE) {res2 <- res2} else {res2 <- round(res2, 4)}
-    ResDF <- data.frame(res, res2)
-    colnames(ResDF) <- c("p(Tail cv)", "p(Tail mean)")
-    return(ResDF)
-
-  }
-}
-
-#' Goodness of tail fit (GoTF) for pooling groups
-#'
-#' Calculates GoTF scores for pooling groups for both generalised extreme value (GEV), generalised logistic (GenLog) & Gumbel distributions
-#'
-#'  The GoTF for pooling groups is calculated by standardising all the sites in the group (dividing by median) and calculating the linear coefficient of variation (Lcv) and linear skewness (Lskew) of the pooled data as if it was one sample. The GoTF() function is then applied to the pooled data with the GF arguments using the aforementioned Lcv and Lskew, and QMED equal to one. The GoTF scores are calculated for the GEV, Gumbel, and GenLog distributions and can be used to assist the decision of which distribution to use for the final estimates. See details for the GoTF function for information about the resulting values. The closer the scores are to one, the better the tail fit.
-#' @param x pooling group derived from the Pool function
-#' @examples
-#' #Get CDs, create pooled group and calculate GoTFs.
-#' \donttest{CDs.203018 <- GetCDs(203018)}
-#' \donttest{Pool.203018 <- Pool(CDs.203018)}
-#' \donttest{GoTFPool(Pool.203018)}
-#' @return A list of two data.frames. Each with one row of the two GoTF values related to the columns; p(Tail cv) & p(Tail mean). See GoTF details. The first data.frame is for the GEV distribution, the second is for the GenLog distribution, and the third is for the Gumbel distribution.
-#' @author Anthony Hammond
-GoTFPool <- function(x) {
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Sites <- rownames(x)
-  SiteScale <- GetAM(Sites[1])[,2]/median(GetAM(Sites[1])[,2])
-  for(i in 2:length(Sites)) {SiteScale <- append(SiteScale,GetAM(Sites[i])[,2]/median(GetAM(Sites[i])[,2]))}
-  lcv <- Lcv(SiteScale)
-  lskew <- LSkew(SiteScale)
-  pGEV <- GoTF(SiteScale, dist = "GEV", GF = c(lcv, lskew, 1))
-  pGenLog <- GoTF(SiteScale, dist = "GenLog", GF = c(lcv, lskew, 1))
-  pGumbel <- GoTF(SiteScale, dist = "Gumbel", GF = c(lcv, lskew, 1))
-  ResList <- list(pGEV, pGenLog, pGumbel)
-  names(ResList) <- c("GEV", "GenLog", "Gumbel")
-  return(ResList)
-}
 
 #' Zdist Goodness of fit measure for pooling groups
 #'
 #' Calculates the goodness of fit score for pooling groups.
 #'
-#'   The goodness of fit measure is detailed in "Improving the FEH statistical procedures for flood frequency estimation", Environment Agency (2008, ISBN: 978 1 84432 920 5).
+#' @details
+#'  The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 – mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
 #' @param x pooling group derived from the Pool() function
 #' @examples
 #' #Get CDs, form a pooling group and calculate the Zdist
 #' CDs.203018 <- GetCDs(203018)
 #' Pool.203018 <- Pool(CDs.203018)
 #' Zdists(Pool.203018)
-#' @return A list with the first element a data.frame of three GoF scores related to the columns; "GEV" & "GenLog". The second element is a character stating which has the best fit.
+#' @return A list with the first element a data.frame of four Z-Scores related to the columns; "GEV", "GenLog", "Gumbel", and "Kappa3". The second element is a character stating which has the best fit.
 #' @author Anthony Hammond
 
 Zdists <- function(x) {
-  Weights <- x$N / sum(x$N)
-  tR4 <- sum(x$LKurt * Weights)
-  tR3 <- sum(x$LSkew * Weights)
-  tR2 <- sum(x$Lcv * Weights)
-  t4.GEV <- function(k) {(5*(1-4^-k)-10*(1-3^-k)+6*(1-2^-k))/(1-2^-k)}
-  t4.GLO <- function(k) {(1+5*k^2)/6}
+  LSKEW <- sum((x$LSkew) * x$N/sum(x$N))
+  LCV <- sum((x$Lcv) * x$N/sum(x$N))
+  LKURT <- sum((x$LKurt) * x$N/sum(x$N))
 
-  SimPool <- function(xi, Dist = "GEV"){
-    CumN <- append(1, cumsum(x$N))
-    AMList <- list()
-    for(i in 1:(length(CumN) - 1)) {AMList[[i]] <- xi[CumN[i] : CumN[i+1]] }
-    Kurts <- sapply(AMList, LKurt)
-    Skews <- sapply(AMList, LSkew)
-    KurtRes <- sum(Kurts * Weights)
-    SkewRes <- sum(Skews * Weights)
-    if(Dist == "GEV") {Result <- KurtRes - t4.GEV(SkewRes)}
-    if(Dist == "GLO") {Result <- KurtRes - t4.GLO(SkewRes)}
-    return(Result)
+  SimPool <- function(x, Dist = "GEV"){
+    AM <- list()
+    for(i in 1:nrow(x)) {
+      if(Dist == "GEV") {
+        AM[[i]] <-  SimData(n = x$N[i], dist = "GEV", GF = c(LCV, LSKEW, 1))}
+      if(Dist == "GenLog") {
+        AM[[i]] <-  SimData(n = x$N[i], dist = "GenLog", GF = c(LCV, LSKEW, 1))}
+      if(Dist == "Gumbel") {
+        AM[[i]] <-  SimData(n = x$N[i], dist = "Gumbel", GF = c(LCV, 1))}
+      if(Dist == "Kappa3") {
+        AM[[i]] <-  SimData(n = x$N[i], dist = "Kappa3", GF = c(LCV, LSKEW, 1))}
+    }
+    LSKEWs <- NULL
+    for(i in 1:length(AM)) {LSKEWs[i] <- LSkew(AM[[i]])}
+    LKURTs <- NULL
+    for(i in 1:length(AM)) {LKURTs[i] <- LKurt(AM[[i]])}
+    #LSKEWsMu <- sum(LSKEWs * (x$N / sum(x$N)))
+    LKURTsMu <- sum(LKURTs * (x$N /sum(x$N)))
+    T_res <- LKURTsMu
+    return(T_res)
   }
-
-  GEVSim <- SimData(n = sum(x$N)*500, dist = "GEV", GF = c(tR2, tR3, 1))
-  GEVMat <- matrix(GEVSim, ncol = 500, nrow = length(GEVSim)/500)
-  GEVStats <- apply(GEVMat, 2, SimPool, "GEV")
-  GEVsd <- sd(GEVStats)
-  GEVz <-  (tR4 - t4.GEV(tR3))/GEVsd
-
-  GLOSim <- SimData(n = sum(x$N)*500, dist = "GenLog", GF = c(tR2, tR3, 1))
-  GLOMat <- matrix(GLOSim, ncol = 500, nrow = length(GLOSim)/500)
-  GLOStats <- apply(GLOMat, 2, SimPool, "GLO")
-  GLOsd <- sd(GLOStats)
-  GLOz <-  (tR4 - t4.GLO(tR3))/GLOsd
-
-  ZFrame <- data.frame(GEVz, GLOz)
-  Names <- c("GEV", "GenLog")
-  colnames(ZFrame) <- Names
-  Abs <- c(abs(GEVz), abs(GLOz))
-  MinInd <- which.min(Abs)
-  Result <- paste(Names[MinInd], "has the best fit", sep = " ")
-  ResultList <- list(ZFrame, Result)
+  GEVSims <- NULL
+  for(i in 1:500) {GEVSims[i] <- SimPool(x, Dist = "GEV")}
+  GLOSims <- NULL
+  for(i in 1:500) {GLOSims[i] <- SimPool(x, Dist = "GenLog")}
+  GumSims <- NULL
+  for(i in 1:500) {GumSims[i] <- SimPool(x, Dist = "Gumbel")}
+  KapSims <- NULL
+  for(i in 1:500) {KapSims[i] <- SimPool(x, Dist = "Kappa3")}
+  GenLog <- (LKURT - mean(GEVSims)) / sd(GEVSims)
+  GEV <- (LKURT - mean(GLOSims)) / sd(GLOSims)
+  Gumbel <- (LKURT - mean(GumSims)) / sd(GumSims)
+  Kappa3 <- (LKURT - mean(KapSims)) / sd(KapSims)
+  zResults <- data.frame(GEV, GenLog, Gumbel, Kappa3)
+  Results <- signif(zResults, 3)
+  Names <- colnames(Results)
+  Abs <- abs(Results)
+  MinInd <- as.numeric(which.min(Abs))
+  ResultScript <- paste(Names[MinInd], "has the best fit", sep = " ")
+  ResultList <- list(Results, ResultScript)
   return(ResultList)
 }
 
@@ -2887,6 +2838,7 @@ Zdists <- function(x) {
 #'
 #' The H2 measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: an approach based on LMoments (1997). It was also adopted for use by the Flood Estimation Handbook (1999) and is described in volume 3.
 #' @param x pooling group derived from the Pool() function
+#' @param H1 logical with a default of FALSE. If TRUE, the function applies the 'H1' version of the test (see Hosking & Wallis 1997 reference). If FALSE, the default H2 version is applied.
 #' @examples
 #' #Get CDs, form a pooling group and calculate H2
 #' CDs.203018 <- GetCDs(203018)
@@ -2895,9 +2847,9 @@ Zdists <- function(x) {
 #' @return A vector of two characters; the first representing the H2 score and the second stating a qualitative measure of heterogeneity.
 #' @author Anthony Hammond
 
-H2 <- function(x){
+H2 <- function(x, H1 = FALSE){
   if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  #if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
   Pool.Kap.pars <- function(x)
   {
     l1 <- 1
@@ -2919,33 +2871,19 @@ H2 <- function(x){
     return(v2)
   }
 
-  Lcv <- function(x)
+  v1 <- function(x)
   {
-    Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
-    b0 <- mean(x)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x)
-    b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x)
-    b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x)
-    L1 <- b0
-    L2 <- 2*b1-b0
-    Lcv <- L2/L1
-    return(Lcv)
+    t2r <- mean(x$Lcv)
+    #t3r <- mean(x$LSkew)
+    ni <- sum(x$N  * (x$Lcv-t2r)^2)
+    #nni <- sum(x$N*ni)
+    mn <- sum(x$N)
+    Result <- (ni/mn)^(1/2)
+    return(Result)
   }
-  LSkew <- function(x)
-  {
-    Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
-    b0 <- mean(x)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x)
-    b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x)
-    b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x)
-    L1 <- b0
-    L2 <- 2*b1-b0
-    L3 <- 6*b2-6*b1+b0
-    LSkew <- L3/L2
-    return(LSkew)
-  }
+
+  if(H1 == TRUE) {v2 <- v1}
+
 
   Kap.pars <- function(L1, L2, LSkew, LKurt)
   {
@@ -3018,12 +2956,13 @@ H2 <- function(x){
 
   V2.Sim <- function(x)
   {
-    Pars <- Pool.Kap.pars(x)
     Ns <- x$N
+    AMList <- list()
+    for(i in 1:nrow(x)) {AMList[[i]] <- Qt.kap(Pars[1],Pars[2],Pars[3],Pars[4], T = 1/runif(x$N[i]))}
     LCV.sim <- NULL
-    for (i in 1:nrow(x)) {LCV.sim[i] <- Lcv(Qt.kap(Pars[1],Pars[2],Pars[3],Pars[4], T = 1/runif(x$N[i])))}
+    for(i in 1:length(AMList)) {LCV.sim[i] <- Lcv(AMList[[i]])}
     LSKEW.sim <- NULL
-    for (i in 1:nrow(x)) {LSKEW.sim[i] <- LSkew(Qt.kap(Pars[1],Pars[2],Pars[3],Pars[4], T = 1/runif(x$N[i])))}
+    for(i in 1:length(AMList)) {LSKEW.sim[i] <- LSkew(AMList[[i]])}
     LR.Group <- data.frame(LCV.sim, LSKEW.sim, Ns)
     colnames(LR.Group) <- c("Lcv", "LSkew", "N")
     v2.sim <- v2(LR.Group)
@@ -3050,7 +2989,7 @@ H2 <- function(x){
 #' Plots the extreme value frequency curve or growth curve with observed sample points.
 #' @details The plotting has the option of generalised extreme value (GEV), generalised Pareto (GenPareto), Gumbel, or generalised logistic (GenLog) distributions. The uncertainty is quantified by bootstrapping.
 #' @param x a numeric vector. The sample of interest
-#' @param dist a choice of distribution. "GEV", "GenLog", "Gumbel" or "GenPareto". The default is "GenLog"
+#' @param dist a choice of distribution. "GEV", "GenLog", "Kappa3","Gumbel" or "GenPareto". The default is "GenLog"
 #' @param scaled logical argument with a default of TRUE. If TRUE the plot is a growth curve (scaled by the QMED). If FALSE, the plot is a frequency curve
 #' @param Title a character string. The user chosen plot title. The default is "Extreme value plot"
 #' @param ylabel a character string. The user chosen label for the y axis. The default is "Q/QMED" if scaled = TRUE and "Discharge (m3/s)" if scaled = FALSE
@@ -3060,7 +2999,7 @@ H2 <- function(x){
 #' #Get an AMAX sample and plot the growth curve with the GEV distribution
 #' AM.203018 <- GetAM(203018)
 #' EVPlot(AM.203018$Flow, dist = "GEV")
-#' @return An extreme value plot (freqency or growth curve) with intervals to quantify uncertainty
+#' @return An extreme value plot (frequency or growth curve) with intervals to quantify uncertainty
 #' @author Anthony Hammond
 
 EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plot", ylabel = NULL, LineName = NULL, Unc = TRUE) {
@@ -3068,6 +3007,7 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
   if(dist == "GenLog") {func <- GenLogGF}
   if(dist == "GEV") {func <- GEVGF}
   if(dist == "GenPareto") {func <- GenParetoGF}
+  if(dist == "Kappa3") {func <- Kappa3GF}
   if(dist == "Gumbel") {func <- GumbelGF}
   Ranks <- seq(500, 1)
   Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
@@ -3143,7 +3083,7 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
 #' @description Functionality to add extra lines or points to an extreme value plot (derived from the EVPlot function).
 #' @details A line can be added using the Lcv and Lskew based on one of four distributions (Generalised extreme value, Generalised logistic, Gumbel, Generalised Pareto). Points can be added as a numeric vector. If a single point is required, the base points() function can be used and the x axis will need to be log(RP-1).
 #' @param Pars a numeric vector of length two. The first is the Lcv (linear coefficient of variation) and the second is the Lskew (linear skewness).
-#' @param dist distribution name with a choice of "GenLog", "GEV", "GenPareto", and "Gumbel"
+#' @param dist distribution name with a choice of "GenLog", "GEV", "GenPareto", "Kappa3", and "Gumbel"
 #' @param Name character string. User chosen name for points or line added (for the legend)
 #' @param MED The two year return level. Necessary In the case where the EV plot is not scaled
 #' @param xyleg a numeric vector of length two. They are the x and y position of the symbol and text to be added to the legend.
@@ -3178,6 +3118,7 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
   if(dist == "GenLog") {func <- GenLogGF}
   if(dist == "GEV") {func <- GEVGF}
   if(dist == "GenPareto") {func <- GenParetoGF}
+  if(dist == "Kappa3") {func <- Kappa3GF}
   if(dist == "Gumbel") {func <- GumbelGF}
   if(is.null(MED) == TRUE) {
     if(dist == "Gumbel") {
@@ -3213,7 +3154,7 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
 #' @param x pooling group derived from the Pool() function
 #' @param AMAX the AMAX sample to be plotted in the case of gauged. If NULL, & gauged equals TRUE, the AMAX from the first site in the pooling group is used
 #' @param gauged logical argument with a default of FALSE. If FALSE, the plot is the ungauged pooled curve accompanied by the single site curves of the group members. If TRUE, the plot is the gauged curve and single site curve with the observed points added
-#' @param dist a choice of distribution. Choices are "GEV" or "GenLog". The default is "GenLog"
+#' @param dist a choice of distribution. Choices are "GEV", "GenLog", "Kappa3", or "Gumbel". The default is "GenLog"
 #' @param QMED a chosen QMED to convert the curve from a growth curve to the frequency curve
 #' @param Title a character string. The user chosen plot title. The default is "Pooled growth curve"
 #' @param UrbAdj a logical argument with a default of FALSE. If TRUE and urban adjustment is applied to the pooled growth curve
@@ -3243,6 +3184,7 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
   if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
   if(dist == "GenLog") {func <- GenLogGF}
   if(dist == "GEV") {func <- GEVGF}
+  if(dist == "Kappa3") {func <- Kappa3GF}
   if(dist == "Gumbel") {func <- GumbelGF}
   if(is.null(QMED) == TRUE) {
     Ranks <- seq(500, 1)
@@ -3629,74 +3571,6 @@ DesHydro <- function(x , qu = 0.8, n = 10, thr = 0.975, xst = NULL, xend = NULL,
   if(RetAll == FALSE) {return(AveHydro[PlotInd][xst:xend])} else {return(Hydros)}
 }
 
-#' Extreme rank plot
-#'
-#' A plot to inspect the distribution of ordered data
-#'
-#' By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. The ERplot is described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
-#' @param x numeric vector. A sample for inspection
-#' @param Title a character string to change the default title, which is "Extreme Rank Plot"
-#' @param dist a choice of distribution. The choices are "GenLog", "GEV", "Gumbel" and "GenPareto"
-#' @param pars a vector of length three. In the order of location, scale, & shape. If left null the parameters are estimated from x
-#' @param GF a vector of length three, in the order of; Lcv, LSkew and Median
-#' @param ylabel a character string. For user choice of a label for the y axis.
-#' @param ln logical TRUE or FALSE with a default of FALSE. If TRUE, the variable under consideration is log transformed for the plot
-#' @examples
-#' #Get an AMAX sample and plot
-#' \donttest{AM.27083 <- GetAM(27083)}
-#' \donttest{ERPlot(AM.27083$Flow)}
-#' #Get some pooled estimate of Lcv & LSkew to use with the GF argument
-#' \donttest{QuickResults(GetCDs(27083), gauged = TRUE)}
-#' #Use the resulting Lcv, Lskew and RP2 for the GF argument and change the title
-#' \donttest{ERPlot(AM.27083$Flow, Title = "Site 27083 pooled comparison", GF = c(0.2286109, 0.1536903, 12.513))}
-#' @return The extreme rank plot with GoTF scores
-#' @author Anthony Hammond
-
-ERPlot <- function(x, Title = "Extreme Rank Plot", dist = "GenLog", pars = NULL, GF = NULL, ylabel = "Discharge (m3/s)", ln = FALSE)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  Score <- GoTF(x = x, dist = dist, pars = pars, GF = GF)
-  RandRP <- 1/runif(length(x)*10000)
-  if(dist == "GenPareto") {
-    if(is.null(pars) == TRUE) {parsCalc <- as.numeric(GenParetoPars(x))}
-    if(is.null(pars) == FALSE) {Sims <- GenParetoEst(pars[1], pars[2], pars[3], RP = RandRP, ppy = 1)}
-    if(is.null(GF) == FALSE) {Sims <- GF[3]*GenParetoGF(GF[1], GF[2], RP = RandRP, ppy = 1)}
-    if(is.null(pars) == TRUE & is.null(GF) == TRUE) {Sims <- GenParetoEst(parsCalc[1], parsCalc[2], parsCalc[3], RP = RandRP, ppy = 1)}
-  }
-  if(dist == "GenLog") {
-    if(is.null(pars) == TRUE) {parsCalc <- as.numeric(GenLogPars(x))}
-    if(is.null(pars) == FALSE) {Sims <- GenLogEst(pars[1], pars[2], pars[3], RP = RandRP)}
-    if(is.null(GF) == FALSE) {Sims <- GF[3]*GenLogGF(GF[1], GF[2], RP = RandRP)}
-    if(is.null(pars) == TRUE & is.null(GF) == TRUE) {Sims <- GenLogEst(parsCalc[1], parsCalc[2], parsCalc[3], RP = RandRP)}
-  }
-  if(dist == "GEV") {
-    if(is.null(pars) == TRUE) {parsCalc <- as.numeric(GEVPars(x))}
-    if(is.null(pars) == FALSE) {Sims <- GEVEst(pars[1], pars[2], pars[3], RP = RandRP)}
-    if(is.null(GF) == FALSE) {Sims <- GF[3]*GEVGF(GF[1], GF[2], RP = RandRP)}
-    if(is.null(pars) == TRUE & is.null(GF) == TRUE) {Sims <- GEVEst(parsCalc[1], parsCalc[2], parsCalc[3], RP = RandRP)}
-  }
-  if(dist == "Gumbel") {
-    if(is.null(pars) == TRUE) {parsCalc <- as.numeric(GumbelPars(x))}
-    if(is.null(pars) == FALSE) {Sims <- GumbelEst(pars[1], pars[2], RP = RandRP)}
-    if(is.null(GF) == FALSE) {Sims <- GF[3]*GumbelGF(GF[1], RP = RandRP)}
-    if(is.null(pars) == TRUE & is.null(GF) == TRUE) {Sims <- GumbelEst(parsCalc[1], parsCalc[2], RP = RandRP)}
-  }
-  Mat.1 <- matrix(Sims, nrow = length(x), ncol = 10000)
-  Mat.Sort <- apply(Mat.1, 2, sort)
-  Sorted.AM <- sort(x)
-  Quants.Lower <- apply(Mat.Sort,1, quantile,0.05)
-  Quants.Upper <- apply(Mat.Sort,1, quantile,0.95)
-  Quants.Middle <- apply(Mat.Sort,1, quantile,0.5)
-  if(ln == TRUE) {PlotData <- data.frame(log(Sorted.AM), log(Quants.Lower), log(Quants.Upper),log(Quants.Middle))} else {PlotData <- data.frame(Sorted.AM, Quants.Lower, Quants.Upper, Quants.Middle)}
-  if(ln == FALSE) {
-    matplot(PlotData, type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, main = Title, xlab = "Rank", ylab = ylabel, ylim = c(min(x)-0.1*min(x), max(x)+0.1*max(x)))
-    legend("topleft", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue","black","black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)
-    text(x = 0.5*length(x), y = min(x), labels = paste(paste("GoTF cv:", Score[1], sep = " "), paste("GoTF mean:", Score[2], sep = " "), sep = ";  "), cex = 0.8, adj = 0)
-  } else {
-    matplot(PlotData, type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, main = Title, xlab = "Flow Ranks", ylab = ylabel, ylim = c(min(log(x))-0.1*min(log(x)), max(log(x))+0.1*max(log(x))))
-    legend("topleft", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue","black","black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)
-  }
-}
 
 
 # LMoments ----------------------------------------------------------------
@@ -5026,7 +4900,7 @@ NonFloodAdj <- function(x) {
 #'@return By default the pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL), or all sites with percentage of non-flood years above AutoP. No difference will be seen for sites with no AMAX < 0.5QMED. If ReturnStats is set to TRUE, a dataframe with Non-flood year stats is returned. The dataframe has a row for each site in the pooling group and three columns. The forst the number of non-flood years, the second is the number of years, and the third is the associated percentage.
 #'@author Anthony Hammond
 NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL, ReturnStats = FALSE) {
-  if(class(x) != class(NRFAData)) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
+  if(is(x, "data.frame") == FALSE) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
   if(ncol(x) != 24) stop("x must be a pooling group formed using Pool or PoolSmall functions")
   if(is.null(Index) == FALSE & is.null(AutoP) == FALSE) stop("Warning: Either Index or AutoP should be applied. Not both")
   if(is.null(AutoP) == FALSE) {
@@ -5134,7 +5008,7 @@ UEF <- function(Year) {
 #'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided.
 #'@author Anthony Hammond
 MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitude", main = "Monthly Statistics", col = "grey") {
-  if(class(x[,1])[1] != "Date" & class(x[,1])[1] != "POSIXct") stop("First column must be Date or POSIXct class")
+  if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
   if(anyNA(x[,2]) == TRUE) {
     WarnTextNA <- "Warning: One or more missing values have been detected and the associated time periods have been removed"
     warning(WarnTextNA)
@@ -5305,3 +5179,188 @@ AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
   }
 
 }
+
+
+
+
+#'Kappa3 distribution estimates from parameters
+#'
+#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#'
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#' @param loc location parameter
+#' @param scale scale parameter
+#' @param shape shape parameter
+#' @param q quantile. magnitude of the variable under consideration
+#' @param RP return period
+#' @examples
+#' #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
+#' AM.27090 <- GetAM(27090)
+#' #Get parameters and Store as an object
+#' Pars <- as.numeric(Kappa3Pars(AM.27090$Flow))
+#' #get estimate of 50-yr flow
+#' Kappa3Est(Pars[1], Pars[2], Pars[3], RP = 50)
+#' #Estimate the RP for a 600m3/s discharge
+#' Kappa3Est(Pars[1], Pars[2], Pars[3], q = 600)
+#' @return quantile as a function of RP or vice versa
+#' @author Anthony Hammond
+
+Kappa3Est <- function(loc, scale, shape, q = NULL, RP = 100) {
+  h <- -0.4
+  if(is.null(q) == TRUE) {
+    res <- loc + (scale/shape) * (1 - ((1 - (1-(1/RP))^h)/h)^shape)}
+  else {
+    res <- (1 - h * (1 - shape * (q - loc)/scale)^(1/shape))^(1/h)
+    res <- 1/(1-res)
+  }
+  return(res)
+}
+
+
+#'Kappa3 distribution parameter estimates
+#'
+#'Estimated parameters from a sample (using Lmoments) or from user supplied L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
+#'
+#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The Kappa3 distribution is as defined by This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#'
+#' @param x numeric vector. The sample
+#' @param L1 first Lmoment
+#' @param LCV linear coefficient of variation
+#' @param LSKEW linear skewness
+#' @examples
+#' #Get an annual maximum sample and estimate the parameters.
+#' AM.27090 <- GetAM(27090)
+#' Kappa3Pars(AM.27090$Flow)
+#' #calculate Lmoments and estimate the parmeters with L1, L2, Lcv, and Lskew
+#' LPars <- as.numeric(Lmoms(AM.27090$Flow))[c(1,2,5,6)]
+#' Kappa3Pars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
+#' @return Parameter estimates (location, scale, shape)
+#' @author Anthony Hammond
+
+Kappa3Pars <- function(x = NULL, L1, LCV, LSKEW) {
+  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+  gr <- function(k){
+    g1 <- (1*gamma(1+k)*gamma(-k-1/-0.4))/((0.4)^(1+k)*gamma(1-1/-0.4))
+    g2 <- (2*gamma(1+k)*gamma(-k-2/-0.4))/((0.4)^(1+k)*gamma(1-2/-0.4))
+    g3 <- (3*gamma(1+k)*gamma(-k-3/-0.4))/((0.4)^(1+k)*gamma(1-3/-0.4))
+    vec <- c(g1,g2,g3)
+    return(vec)
+  }
+  KSolve <- function(k) {
+    abs(((- gr(k)[1] + 3*gr(k)[2] - 2*gr(k)[3])/ (gr(k)[1] - gr(k)[2])) - LSKEW)
+  }
+
+  if(is.null(x)) {
+    k <- 0.01
+    #lskew <- LSKEW
+    #lcv <- LCV
+    L2 <- LCV * L1
+    KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
+    GrRes <- gr(KRes)
+    Scale <- (L2 * KRes) / (GrRes[1] - GrRes[2])
+    Loc <- L1  - (Scale *(1- GrRes[1])/KRes)
+    Shape <- KRes
+    Result <- data.frame(Loc, Scale, Shape)
+  }
+  if(is.null(x) == FALSE) {
+    Sort.x <- sort(x)
+    Rank <- seq(1, length(x))
+    b0 <- mean(x, na.rm = TRUE)
+    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
+    L1 <- b0
+    L2 <- 2*b1-b0
+    LCV <- Lcv(x)
+    LSKEW <- LSkew(x)
+    k <- 0.01
+    lskew <- LSKEW
+    KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
+    GrRes <- gr(KRes)
+    Scale <- (L2 * KRes) / (GrRes[1] - GrRes[2])
+    Loc <- L1  - (Scale *(1- GrRes[1])/KRes)
+    Shape <- KRes
+    Result <- data.frame(Loc, Scale, Shape)
+  }
+  return(Result)
+}
+
+
+#'Kappa3 distribution - estimates directly from sample
+#'
+#'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
+#'
+#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The Kappa3 distribution is as defined by This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#' @param x numeric vector (block maxima sample)
+#' @param RP return period (default = 100)
+#' @param q quantile (magnitude of variable)
+#' @examples
+#' #Get an annual maximum sample and estimate the 50-year RP
+#' AM.27090 <- GetAM(27090)
+#' Kappa3AM(AM.27090$Flow, RP = 50)
+#' #Estimate the RP for a 600m3/s discharge
+#' Kappa3AM(AM.27090$Flow, q = 600)
+#' @return quantile as a function of RP or vice versa.
+#' @author Anthony Hammond
+
+Kappa3AM <- function(x, RP = 100, q = NULL) {
+  Pars <- as.numeric(Kappa3Pars(x = x))
+  Result <- Kappa3Est(Pars[1], Pars[2], Pars[3], q = q, RP = RP)
+  return(Result)
+}
+
+
+#Add AMAX sample----
+
+#'Add an AMAX sample
+#'
+#'This function allows the user to add an AMAX sample and associated catchment descriptors for use with the FEH process.
+#'
+#'The function provides the necessary AMAX sample statistics and data.frame for adding catchment descriptors to the NRFAData data.frame. The user must then add these outputs using the rbind function (see example). The AMAX could be read in or pasted in by the user or imported using the AMImport function. Once they are added they can be used in the current R session. If a new session is started (rather than a saved workspace) the added AMAX would need to be added again.
+#' @param CDs catchment descriptor object imported using the CDsXML function.
+#' @param AMAX Either a data.frame with date (or POSIXct) in the first column and a numeric vector in the second (the AMAX). Or an AMAX sample (a numeric vector).
+#' @param ID This is a user supplied identification number for the AMAX.
+#' @examples
+#' #Read in AMAX and catchment descriptors
+#' \dontrun{AMAdd <- AMImport(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.am}")}
+#' \dontrun{CDsAdd <- CDsXML(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.xml}")}
+#'
+#' #Apply the function and then add the results to the necessary data.frames.
+#'
+#' \dontrun{Gauge27003 <- AddGauge(CDsAdd, AMAdd, ID = "27003")}
+#' #Add the descriptors and stats (the first element of the output) to the NRFAData data.frame
+#' \dontrun{NRFAData <- rbind(NRFAData, Gauge27003[[1]])}
+#' #Add the AMAX to the AMSP data.frame.
+#' \dontrun{AMSP <- rbind(AMSP, Gauge27003[[2]])}
+#' @return A list object. The first element is a data.frame which is a
+#' row of statistics and descriptors to be added to the NRFAData data.frame.
+#' The second element is the AMAX sample formatted to be added to the AMSP data.frame
+#' @author Anthony Hammond
+
+
+AddGauge <- function(CDs, AMAX, ID) {
+  MatchTest <- match(ID, rownames(NRFAData))
+  if(is.na(MatchTest) == FALSE) stop("ID is already in the NRFAData data.frame")
+  if(is(AMAX, "data.frame")) {
+    Dates <- AMAX[,1]
+    AMAXvec <- AMAX[,2]
+  }
+  if(is(AMAX, "numeric")) {
+    AMAXvec <- AMAX
+  }
+  if(class(AMAXvec) != class(runif(10))) stop("AMAX must be a numeric vector")
+  LMomsAMAX <- Lmoms(AMAXvec)
+  PoolRow <- t(data.frame(CDs[1:20,2]))
+  colnames(PoolRow) <- CDs[1:20,1]
+  rownames(PoolRow) <- ID
+  QMEDIAN <- median(AMAXvec)
+  PoolRow <- cbind(PoolRow, QMED = QMEDIAN, Lcv = LMomsAMAX$Lcv, LSkew = LMomsAMAX$LSkew, LKurt = LMomsAMAX$LKurt,
+                   L1 = LMomsAMAX$L1, L2 = LMomsAMAX$L2, N = length(AMAXvec))
+
+  if(is(AMAX, "data.frame")) {
+    AM <- data.frame(Date = Dates, Flow = AMAX[,2], id = ID)}
+  if(is(AMAX, "numeric")) {
+    AM <- data.frame(Date = rep(NA, length(AMAX)), Flow = AMAX, id = ID)}
+  ResultList <- list(PoolRow, AM)
+  names(ResultList) <- c("PoolRow", "AM")
+  return(ResultList)
+}
+

@@ -4,10 +4,12 @@
 \alias{H2}
 \title{Heterogeneity measure (H2) for pooling groups.}
 \usage{
-H2(x)
+H2(x, H1 = FALSE)
 }
 \arguments{
 \item{x}{pooling group derived from the Pool() function}
+
+\item{H1}{logical with a default of FALSE. If TRUE, the function applies the 'H1' version of the test (see Hosking & Wallis 1997 reference). If FALSE, the default H2 version is applied.}
 }
 \value{
 A vector of two characters; the first representing the H2 score and the second stating a qualitative measure of heterogeneity.

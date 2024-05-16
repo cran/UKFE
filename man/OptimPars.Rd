@@ -9,13 +9,13 @@ OptimPars(x, dist = "GenLog")
 \arguments{
 \item{x}{a data.frame with RPs in the first column and associated estimates in the second column}
 
-\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", or "Gumbel" - the generalised logistic, generalised extreme value and Gumbel distribution, respectively. The default is "GenLog"}
+\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel" - the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"}
 }
 \value{
-The location, scale and shape parameters for the generalised logistic or Generalised extreme value distribution. Or the location and scale for the Gumbel.
+The parameters of one of four user chosen distributions; Generalised logistic, generalised extreme value, Gumbel, and Kappa3.
 }
 \description{
-Estimates the parameters of the generalised extreme value, generalised logistic, or Gumbel distribution from known return period estimates
+Estimates the parameters of the Generalised extreme value, generalised logistic, Kappa3, or Gumbel distribution from known return period estimates
 }
 \details{
 Given a dataframe with return periods (RPs) in the first column and associated estimates in the second column, this function provides an estimate of the distribution parameters. Ideally the first RP should be 2. Extrapolation outside the RPs used for calibration comes with greater uncertainty.

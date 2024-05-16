@@ -4,7 +4,7 @@
 \alias{GEVAM}
 \title{Generalised extreme value distribution - estimates directly from sample}
 \usage{
-GEVAM(x, RP = 100, q = NULL, trend = FALSE)
+GEVAM(x, RP = 100, q = NULL)
 }
 \arguments{
 \item{x}{numeric vector (block maxima sample)}
@@ -12,17 +12,15 @@ GEVAM(x, RP = 100, q = NULL, trend = FALSE)
 \item{RP}{return period (default = 100)}
 
 \item{q}{quantile (magnitude of variable)}
-
-\item{trend}{logical argument with default of FALSE. If TRUE, a linear adjustment to the location parameter is made to account for non-stationarity}
 }
 \value{
-quantile as a function of RP or vice versa, with the option of accounting for the linear trend in the sample
+quantile as a function of RP or vice versa.
 }
 \description{
 Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 }
 \details{
-If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The trend argument allows the location parameter to move in line with the observed linear trend of the sample. Another option is to detrend the sample first with the DeTrend function. On average this makes little difference to the two year flow but lower results for longer return periods (not always) when compared to the trend option in this function.
+If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
 }
 \examples{
 #Get an annual maximum sample and estimate the 50-year RP
@@ -30,8 +28,6 @@ AM.27090 <- GetAM(27090)
 GEVAM(AM.27090$Flow, RP = 50)
 #Estimate the RP for a 600m3/s discharge
 GEVAM(AM.27090$Flow, q = 600)
-#Estimate the 50-year RP allowing for non-stationarity in the location parameter
-GEVAM(AM.27090$Flow, RP = 50, trend = TRUE)
 }
 \author{
 Anthony Hammond
