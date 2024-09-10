@@ -19,11 +19,11 @@ Provides 10 plots to compare the sites in the pooling group
 }
 \examples{
 #Form a gauged pooling group and plot the diagnostics with gauged = TRUE
-Pool.96001 <- Pool(GetCDs(96001))
-DiagPlots(Pool.96001, gauged = TRUE)
+Pool.28015 <- Pool(GetCDs(28015))
+DiagPlots(Pool.28015, gauged = TRUE)
 #Form an ugauged pooling group and plot the diagnostics
-Pool.96001 <- Pool(GetCDs(96001), exclude = 96001)
-DiagPlots(Pool.96001)
+Pool.28015 <- Pool(GetCDs(28015), exclude = 28015)
+DiagPlots(Pool.28015)
 }
 \author{
 Anthony Hammond

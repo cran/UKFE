@@ -20,8 +20,8 @@ LSkew calculated according to methods outlined by Hosking & Wallis (1997): Regio
 }
 \examples{
 #Get an AMAX sample and calculate the Lmoments
-AM.96001 <- GetAM(96001)
-LSkew(AM.96001$Flow)
+AM.27051 <- GetAM(27051)
+LSkew(AM.27051$Flow)
 }
 \author{
 Anthony Hammond

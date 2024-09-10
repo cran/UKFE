@@ -11,7 +11,7 @@ AggDayHour(x, func, Freq = "Day", hour = 9)
 
 \item{func}{the function used for aggregation; mean, max, or sum, for example.}
 
-\item{Freq}{Choices are "Day", or "Hour", or a numeric value representing the number of hours for aggregation.}
+\item{Freq}{Choices are "Day", or "Hour".}
 
 \item{hour}{An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.}
 }
@@ -34,10 +34,6 @@ TS <- data.frame(DateTime = TS, Var = rnorm(length(TS), 10, 2))
 Hourly <- AggDayHour(TS, func = max, Freq = "Hour")
 #now aggregate with the mean at a daily scale
 Daily <- AggDayHour(TS, func = mean, Freq = "Day")
-#now aggregate with the sum at a 48 hour scale
-Hr48 <- AggDayHour(TS, func = sum, Freq = 48)
-#now aggregate with the sum at a 6 hour scale
-Hr6 <- AggDayHour(TS, func = sum, Freq = 6)
 }
 \author{
 Anthony Hammond

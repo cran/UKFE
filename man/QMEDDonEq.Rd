@@ -48,14 +48,14 @@ Applies a donor adjustment to the median annual maximum flow (QMED) estimate
 Although a single donor adjustment can be applied with the DonAdj() function and the QMED(), this is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008).
 }
 \examples{
-#Get observed QMED for site 96003
-Qob <- median(GetAM(96003)[,2])
+#Get observed QMED for site 15006
+Qob <- median(GetAM(15006)[,2])
 #Get QMED equation estimated QMED for the donor site
-QCD <- QMED(CDs = GetCDs(96003))
-#display CDs for site 96001 & note the easting and northing
-GetCDs(96001)
-#display CDs for site 96003 & note the easting and northing
-GetCDs(96003)
+QCD <- QMED(CDs = GetCDs(15006))
+#display CDs for site 27051 & note the easting and northing
+GetCDs(27051)
+#display CDs for site 15006 & note the easting and northing
+GetCDs(15006)
 #Apply the QMEDDonEq function with the information gained
 QMEDDonEq(194, 1096, 0.955, 0.297, Qob, QCD, xSI = 289289,ySI = 947523,xDon = 280908,yDon = 953653)
 }

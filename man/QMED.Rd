@@ -14,7 +14,9 @@ QMED(
   SAAR,
   FARL,
   BFIHOST,
-  URBEXT2000 = NULL
+  URBEXT2000 = NULL,
+  Easting,
+  Northing
 )
 }
 \arguments{
@@ -37,6 +39,10 @@ QMED(
 \item{BFIHOST}{baseflow index calculated from the catchment hydrology of soil type classification}
 
 \item{URBEXT2000}{measure of catchment urbanisation}
+
+\item{Easting}{Easting. A six digit Easting (British national grid reference).}
+
+\item{Northing}{Northing. A six digit Northing (British national grid reference).}
 }
 \value{
 An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned

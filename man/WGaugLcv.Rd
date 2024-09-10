@@ -20,9 +20,9 @@ Weighting method as according to Science Report: SC050050 - Improving the FEH st
 }
 \examples{
 #Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-CDs.96001 <- GetCDs(96001)
-Pool.96001 <- Pool(CDs.96001)
-WGaugLcv(Pool.96001)
+CDs.27051 <- GetCDs(27051)
+Pool.27051 <- Pool(CDs.27051)
+WGaugLcv(Pool.27051)
 }
 \author{
 Anthony Hammond

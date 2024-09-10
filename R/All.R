@@ -752,7 +752,7 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
 #'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel" - the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
 #'@examples
 #'#Get some catchment descriptors and some quick results. Then estmate the GenLog parameters
-#'Results <- QuickResults(GetCDs(96001), plot = FALSE)[[1]]
+#'Results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
 #'OptimPars(Results[,1:2])
 #'
 #'@return The parameters of one of four user chosen distributions; Generalised logistic, generalised extreme value, Gumbel, and Kappa3.
@@ -1485,14 +1485,23 @@ GumbelPars <- function(x = NULL, mle = FALSE, L1, LCV){
 #' @return A random sample of size n for the chosen distribution.
 #' @author Anthony Hammond
 SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
+  MatchDist <- match(dist, c("GEV", "GenLog", "GenPareto", "Gumbel", "Kappa3"))
+  if(is.na(MatchDist)) stop("dist must be one of GEV, GenLog, GenPareto, Gumbel, or Kappa3")
   if(is.null(GF) == TRUE){
+    if(dist == "Gumbel") {if(length(pars) != 2) stop("The Gumbel distribution should have two parameters")}
+    if(dist != "Gumbel") {if(length(pars) != 3) stop("Your disribution choice requires three parameters")}
+
     if(dist == "GenPareto") {res <- GenParetoEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n), ppy = 1)}
     if(dist == "GEV") {res <- GEVEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
     if(dist == "GenLog") {res <- GenLogEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
     if(dist == "Kappa3") {res <- Kappa3Est(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
     if(dist == "Gumbel") {res <- GumbelEst(loc = pars[1], scale = pars[2], RP = 1/runif(n))}
     return(res)} else
-    {if(dist == "GenPareto") {res <- GenParetoGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
+    {
+      if(dist == "Gumbel") {if(length(GF) != 2) stop("The Gumbel distribution should have two parameters")}
+      if(dist != "Gumbel") {if(length(GF) != 3) stop("Your disribution choice requires three parameters")}
+
+      if(dist == "GenPareto") {res <- GenParetoGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "GEV") {res <- GEVGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "GenLog") {res <- GenLogGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
       if(dist == "Kappa3") {res <- Kappa3GF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
@@ -1521,6 +1530,8 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' @param FARL flood attenuation from reservoirs and lakes
 #' @param BFIHOST baseflow index calculated from the catchment hydrology of soil type classification
 #' @param URBEXT2000 measure of catchment urbanisation
+#' @param Easting Easting. A six digit Easting (British national grid reference).
+#' @param Northing Northing. A six digit Northing (British national grid reference).
 #' @examples
 #' #Get some catchment descriptors and calculate QMED as if it was ungauged, with
 #' #no donors, one donor, and two donors
@@ -1533,46 +1544,61 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' QMED(CDs.27083, UrbAdj = TRUE)
 #' @return An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned
 #' @author Anthony Hammond
-QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL){
+QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL, Easting, Northing){
   if(is.null(Don1) == FALSE) {
     if(length(Don1) != 1) stop("The Don1 argument has length that is not 1")
   }
   if(is.null(Don2) == FALSE) {
     if(length(Don2) != 2) stop("The Don2 argument has length that is not 2")
   }
+  if(is.null(CDs) == FALSE) {
+    AREA <- CDs[1,2]
+    SAAR <- CDs[15,2]
+    FARL <- CDs[8,2]
+    BFIHOST <- CDs[5, 2]
+    Easting <- CDs[19,2]
+    Northing <- CDs[20,2]
+    URBEXT2000 <- CDs[18,2]
+  } else {AREA <- AREA
+  SAAR <- SAAR
+  FARL <- FARL
+  BFIHOST <- BFIHOST
+  URBEXT2000 <- URBEXT2000
+  Easting <- Easting
+  Northing <- Northing}
 
-  Donor1 <- function(CDs, DonSite){
-    QMED.cd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
+  Donor1 <- function(CDs = NULL, DonSite){
+    QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
     Site <- DonSite
-    Donors <- DonAdj(CDs = CDs, rows = nrow(QMEDData))
+    Donors <- DonAdj(x = Easting, y = Northing, QMEDscd = QMED.cd, rows = nrow(QMEDData))
     Rw <- which(rownames(Donors) == DonSite)
     DonCDs <- GetCDs(rownames(Donors)[Rw])
     if(DonUrbAdj == TRUE) {
       DonQMEDcdUrb <- as.numeric(UAF(CDs = DonCDs)[2]) * Donors$QMEDcd[Rw]
-      Result <- QMEDDonEq(CDs[1,2], CDs[15,2], CDs[8,2], CDs[5,2], Donors$QMED[Rw], DonQMEDcdUrb,
-                          xSI = CDs[19,2], ySI = CDs[20,2], xDon = DonCDs[19,2],
+      Result <- QMEDDonEq(AREA, SAAR, FARL, BFIHOST, Donors$QMED[Rw], DonQMEDcdUrb,
+                          xSI = Easting, ySI = Northing, xDon = DonCDs[19,2],
                           yDon = DonCDs[20,2], alpha = TRUE)
     }
     if(DonUrbAdj == FALSE) {
       Result <- Donors$QMED.adj[Rw]}
     return(Result)
   }
-  Donor2 <- function(CDs, Sites, DonUrbAdj = FALSE) {
+  Donor2 <- function(CDs = NULL, Sites, DonUrbAdj = FALSE) {
     rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
     NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
     Site1 <- Sites[1]
     Site2 <- Sites[2]
     CDs.Site1 <- GetCDs(Site1)
     CDs.Site2 <- GetCDs(Site2)
-    Dist1 <- NGRDist(c(CDs[19,2], CDs[20,2]), c(CDs.Site1[19,2], CDs.Site1[20,2]))
-    Dist2 <- NGRDist(c(CDs[19,2], CDs[20,2]), c(CDs.Site2[19,2], CDs.Site2[20,2]))
+    Dist1 <- NGRDist(c(Easting, Northing), c(CDs.Site1[19,2], CDs.Site1[20,2]))
+    Dist2 <- NGRDist(c(Easting, Northing), c(CDs.Site2[19,2], CDs.Site2[20,2]))
     Dist12 <- NGRDist(c(CDs.Site1[19,2], CDs.Site1[20,2]), c(CDs.Site2[19,2], CDs.Site2[20,2]))
     ps1 <- rij(Dist1)
     p12 <- rij(Dist12)
     ps2 <- rij(Dist2)
     a1 <- (ps1-p12*ps2)/(1-p12^2)
     a2 <- (ps2-p12*ps1)/(1-p12^2)
-    QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
+    QMEDscd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
     QMED1cd <- 8.3062*CDs.Site1[1,2]^0.8510*0.1536^(1000/CDs.Site1[15,2])*CDs.Site1[8,2]^3.4451*0.0460^(CDs.Site1[5,2]^2)
     QMED2cd <- 8.3062*CDs.Site2[1,2]^0.8510*0.1536^(1000/CDs.Site2[15,2])*CDs.Site2[8,2]^3.4451*0.0460^(CDs.Site2[5,2]^2)
     if(DonUrbAdj == TRUE) {
@@ -1587,6 +1613,9 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
   }
   if(is.null(CDs) == TRUE) {
     QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
+    if(is.null(Don1) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor1(DonSite = Don1)}
+    if(is.null(Don2) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor2(Sites = Don2)}
+
     if(is.null(URBEXT2000) == TRUE & UrbAdj == TRUE) stop ("If UrbAdj is TRUE, URBEXT2000 is required")
     if(UrbAdj == TRUE) {
       Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT2000, BFIHOST = BFIHOST)[2])*QMED.cd}
@@ -1664,14 +1693,14 @@ QMEDLink <- function(Q5dmf, Q10dmf, DPSBAR, BFI) {
 #' @param alpha a logical argument with a default of TRUE. When FALSE the exponent in the donor equation is set to one. Otherwise it is determined by the distance between the donor and the subject site
 #'
 #' @examples
-#' #Get observed QMED for site 96003
-#' Qob <- median(GetAM(96003)[,2])
+#' #Get observed QMED for site 15006
+#' Qob <- median(GetAM(15006)[,2])
 #' #Get QMED equation estimated QMED for the donor site
-#' QCD <- QMED(CDs = GetCDs(96003))
-#' #display CDs for site 96001 & note the easting and northing
-#' GetCDs(96001)
-#' #display CDs for site 96003 & note the easting and northing
-#' GetCDs(96003)
+#' QCD <- QMED(CDs = GetCDs(15006))
+#' #display CDs for site 27051 & note the easting and northing
+#' GetCDs(27051)
+#' #display CDs for site 15006 & note the easting and northing
+#' GetCDs(15006)
 #' #Apply the QMEDDonEq function with the information gained
 #' QMEDDonEq(194, 1096, 0.955, 0.297, Qob, QCD, xSI = 289289,ySI = 947523,xDon = 280908,yDon = 953653)
 #' @author Anthony Hammond
@@ -2774,6 +2803,8 @@ UncSS <- function (x, func, conf = 0.95, RP = NULL)
 #'
 #' @details
 #'  The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 – mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
+#'
+#'  NOTE: This is slightly different from the zdist function described in the science report 'Improving the FEH statistical procedures for flood frequency estimation, Environment Agency (2008)'. That function assumes a theoretical LKurtosis as a function of the pooled LSKEW to compare with a distribution of LKurtosis from simulated pooling groups. This means that the Gumbel distribution cannot be compared (hence the change).
 #' @param x pooling group derived from the Pool() function
 #' @examples
 #' #Get CDs, form a pooling group and calculate the Zdist
@@ -3161,22 +3192,22 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML. Only necessary if UrbAdj is TRUE
 #' @examples
 #' #Get some CDs, form an ungauged pooling group and apply EVPlot.
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001, exclude = 96001)
-#' EVPool(Pool.96001)
+#' CDs.28015 <- GetCDs(28015)
+#' Pool.28015 <- Pool(CDs.28015, exclude = 28015)
+#' EVPool(Pool.28015)
 #' #Do the same for the gauged case, change the title, and convert with a QMED of 105.5.
-#' PoolG.96001 <- Pool(CDs.96001)
-#' EVPool(PoolG.96001, gauged = TRUE, Title = "Gauged frequency curve - Site 96001", QMED = 105.5)
+#' PoolG.28015 <- Pool(CDs.28015)
+#' EVPool(PoolG.28015, gauged = TRUE, Title = "Gauged frequency curve - Site 28015", QMED = 9.8)
 #' #Pretend we have an extra AMAX for the gauge. Amend the pooling group Lcv and LSkew
 #' #for the site accordingly then apply EVPool with the updated AMAX.
 #' #Firstly, get the AMAX sample
-#' AM.96001 <- GetAM(96001)
-#' #Add an extra AMAX flow of 350m3/s
-#' Append96001 <- append(AM.96001$Flow, 350)
+#' AM.28015 <- GetAM(28015)
+#' #Add an extra AMAX flow of 15m3/s
+#' Append28015 <- append(AM.28015$Flow, 15)
 #' #Amend the Lcv and Lskew in the pooling group
-#' PoolG.96001[1, c(16, 17)] <- c(Lcv(Append96001), LSkew(Append96001))
+#' PoolG.28015[1, c(16, 17)] <- c(Lcv(Append28015), LSkew(Append28015))
 #' #Now plot gauged with the updated AMAX
-#' EVPool(PoolG.96001, AMAX = Append96001, gauged = TRUE)
+#' EVPool(PoolG.28015, AMAX = Append28015, gauged = TRUE)
 #' @return An extreme value plot for gauged or ungauged pooling groups
 #' @author Anthony Hammond
 
@@ -3390,11 +3421,11 @@ AMplot <- function(x){
 #' @param gauged logical argument with a default of FALSE. TRUE adds the top site in the pooling group to the plots in a different colour
 #' @examples
 #' #Form a gauged pooling group and plot the diagnostics with gauged = TRUE
-#' Pool.96001 <- Pool(GetCDs(96001))
-#' DiagPlots(Pool.96001, gauged = TRUE)
+#' Pool.28015 <- Pool(GetCDs(28015))
+#' DiagPlots(Pool.28015, gauged = TRUE)
 #' #Form an ugauged pooling group and plot the diagnostics
-#' Pool.96001 <- Pool(GetCDs(96001), exclude = 96001)
-#' DiagPlots(Pool.96001)
+#' Pool.28015 <- Pool(GetCDs(28015), exclude = 28015)
+#' DiagPlots(Pool.28015)
 #' @return ten diagnostic plots for pooling groups
 #' @author Anthony Hammond
 DiagPlots <- function(x, gauged = FALSE){
@@ -3582,8 +3613,8 @@ DesHydro <- function(x , qu = 0.8, n = 10, thr = 0.975, xst = NULL, xend = NULL,
 #' @param x a numeric vector. The sample of interest
 #' @examples
 #' #Get an AMAX sample and calculate the Lmoments
-#' AM.96001 <- GetAM(96001)
-#' Lmoms(AM.96001$Flow)
+#' AM.27051 <- GetAM(27051)
+#' Lmoms(AM.27051$Flow)
 #' @return A data.frame with one row and column headings; L1, L2, L3, L4, Lcv, LSkew, and LKurt. The first four are the Lmoments and the next three are the Lmoment ratios.
 #' @author Anthony Hammond
 
@@ -3617,9 +3648,9 @@ Lmoms <- function(x)
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001, exclude = 96001)
-#' WungLcv(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
+#' WungLcv(Pool.27051)
 #' @return the ungauged weighted Lcv from a pooling group
 #' @author Anthony Hammond
 
@@ -3646,9 +3677,9 @@ WungLcv <- function(x)
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001, exclude = 96001)
-#' WungLSkew(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
+#' WungLSkew(Pool.27051)
 #' @return the ungauged weighted LSkew from a pooling group
 #' @author Anthony Hammond
 
@@ -3676,9 +3707,9 @@ WungLSkew <- function(x)
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form a gauged pooling group, and estimate gauged LSkew
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001)
-#' WGaugLSkew(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051)
+#' WGaugLSkew(Pool.27051)
 #' @return the gauged weighted LSkew from a pooling group
 #' @author Anthony Hammond
 WGaugLSkew <- function(x)
@@ -3728,9 +3759,9 @@ WGaugLSkew <- function(x)
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001)
-#' WGaugLcv(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051)
+#' WGaugLcv(Pool.27051)
 #' @return the gauged weighted Lcv from a pooling group
 #' @author Anthony Hammond
 WGaugLcv <- function(x)
@@ -3780,9 +3811,9 @@ WGaugLcv <- function(x)
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001, exclude = 96001)
-#' WeightsUnLcv(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
+#' WeightsUnLcv(Pool.27051)
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
 WeightsUnLcv <- function(x){
@@ -3808,9 +3839,9 @@ WeightsUnLcv <- function(x){
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001, exclude = 96001)
-#' WeightsUnLSkew(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
+#' WeightsUnLSkew(Pool.27051)
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
 WeightsUnLSkew <- function(x){
@@ -3837,9 +3868,9 @@ WeightsUnLSkew <- function(x){
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001)
-#' WeightsGLcv(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051)
+#' WeightsGLcv(Pool.27051)
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
 WeightsGLcv  <- function(x){
@@ -3888,9 +3919,9 @@ WeightsGLcv  <- function(x){
 #' @param x pooling group derived with the Pool() function
 #' @examples
 #' #Get some CDs, form a gauged pooling group, and estimate gauged LSkew
-#' CDs.96001 <- GetCDs(96001)
-#' Pool.96001 <- Pool(CDs.96001)
-#' WeightsGLSkew(Pool.96001)
+#' CDs.27051 <- GetCDs(27051)
+#' Pool.27051 <- Pool(CDs.27051)
+#' WeightsGLSkew(Pool.27051)
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
 
@@ -3940,8 +3971,8 @@ WeightsGLSkew <- function(x){
 #' @param x a numeric vector. The sample of interest
 #' @examples
 #' #Get an AMAX sample and calculate the Lmoments
-#' AM.96001 <- GetAM(96001)
-#' Lcv(AM.96001$Flow)
+#' AM.27051 <- GetAM(27051)
+#' Lcv(AM.27051$Flow)
 #' @return Numeric. The Lcv of a sample.
 #' @author Anthony Hammond
 
@@ -3968,8 +3999,8 @@ Lcv <- function(x){
 #' @param x a numeric vector. The sample of interest
 #' @examples
 #' #Get an AMAX sample and calculate the Lmoments
-#' AM.96001 <- GetAM(96001)
-#' LSkew(AM.96001$Flow)
+#' AM.27051 <- GetAM(27051)
+#' LSkew(AM.27051$Flow)
 #' @return Numeric. The LSkew of a sample.
 #' @author Anthony Hammond
 LSkew <- function(x){
@@ -3996,8 +4027,8 @@ LSkew <- function(x){
 #' @param x a numeric vector. The sample of interest
 #' @examples
 #' #Get an AMAX sample and calculate the Lmoments
-#' AM.96001 <- GetAM(96001)
-#' LKurt(AM.96001$Flow)
+#' AM.27051 <- GetAM(27051)
+#' LKurt(AM.27051$Flow)
 #' @return Numeric. The LSkew of a sample.
 #' @author Anthony Hammond
 LKurt <- function(x) {
@@ -4671,34 +4702,134 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 
 #' Trend hypothesis test
 #'
-#' A hypothesis test for the correlation between the variable of interest and time
+#' A hypothesis test for trend
 #'
-#'  The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
-#'  The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater". And for negative trend, set it to "less"
+#'  The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between Mann Kendall, Pearson, or Spearman tests. The Spearman and Mann Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is Mann Kendall.
+#'  The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater", and to test for negative trend set alternative to "less".
+#'
+#'  Interpretation: When testing for positive trend (alternative = "greater") the P_value is the probability of exceeding the observed statistic under the null hypothesis (that it is less than zero).
+#'  The vice versa is true when testing for negative trend (alternative = "less"). For alternative = "two.sided" the P_value is the probability of exceeding the absolute value of the observed statistic under the null hypothesis (that it is different from zero). Low P values indicate that the null hypothesis is less likely.
 #' @param x a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.
-#' @param method a choice of test method. Choices are "pearson", "spearman", and "kendall"
-#' @param alternative the alternative hypothesis. The default is "two.sided". See details for other options
+#' @param method a choice of test method. Choices are "mk" (Mann Kendall - the default), "pearson", and "spearman".
+#' @param alternative the alternative hypothesis. Options are "less", "greater", and "two.sided". The default is "two.sided".
 #' @examples
-#' #Get AMAX sample and apply a trend test with the default kendall test.
+#' #Get AMAX sample and apply a trend test with the default Mann Kendall test.
 #' AM.27083 <- GetAM(27083)
 #' TrendTest(AM.27083)
 #' #Apply the test with the pearson method with dates included and not
 #' TrendTest(AM.27083, method = "pearson")
 #' TrendTest(AM.27083$Flow, method = "pearson")
-#' @return A data.frame with columns and associated values: P_value, correlation coefficient, and method specific statistic.
+#' #Apply the default mk test for positive trend
+#' TrendTest(AM.27083$Flow, alternative = "greater")
+#' @return A data.frame with columns and associated values: P_value, statistic (Kendall's tau, Spearman's rho, or Pearson's correlation coefficient), and a standardised distribution value. The latter is either the z score (for MK test) or students 't' of the observed statistic under the null hypothesis.
 #' @author Anthony Hammond
 
-TrendTest <- function(x, method = "kendall", alternative = "two.sided"){
-  if(is(x, "numeric") == TRUE | is(x, "integer") == TRUE) {
-    Res <- suppressWarnings(cor.test(x, seq(1, length(x)), method = method, alternative = alternative))} else
-    {DayDiffs <- NULL
-    for(i in 1:length(x[,1])) {DayDiffs[i] <- as.numeric(x[,1][i]-x[,1][1])}
-    YrDiffs <- DayDiffs/365.25
-    Res <- suppressWarnings(cor.test(x[,2], YrDiffs, method = method, alternative = alternative))}
-  P_value <- Res[3]$p.value
-  CorCoef <- Res[4]$estimate
-  Statistic <- Res[1]$statistic
-  return(data.frame(P_value, CorCoef, Statistic, row.names = "Result:"))
+TrendTest <- function (x, method = "mk", alternative = "two.sided")
+{
+  if(method != "mk" & method != "spearman" & method != "pearson") stop("Method should be one of mk, spearman, or pearson")
+  if(alternative != "two.sided" & alternative != "greater" & alternative != "less") stop("alternative should be one of two.sided, greater, or less")
+  if(anyNA(x)) warning("At least one value in x is NA. NA's have been removed")
+  if(class(x) == class(data.frame(rep(NA,4)))) {
+    NAIndex <- which(is.na(x[,2]))
+    if(length(NAIndex) < 1) {x <- x} else{x <- x[-NAIndex, ]  }
+    }
+  if(class(x) == class(runif(2))) {x <-x[!is.na(x)]}
+  if(method == "mk") {
+    MannKendallTest <- function(x) {
+      Order <- seq(1, length(x), by = 1)
+      Ranks <- rank(x)
+      N <- length(x)
+      Nmin <- N - 1
+
+      Concordants <- NULL
+      for (i in 1:Nmin) {
+        Concordants[i] <- length(which(Ranks[(i + 1):N] > Ranks[i]))
+      }
+
+      Discordants <- NULL
+      for (i in 1:Nmin) {
+        Discordants[i] <- length(which(Ranks[(i + 1):N] < Ranks[i]))
+      }
+
+      C <- sum(Concordants)
+      D <- sum(Discordants)
+      tau <- (C - D) / (C + D)
+
+      # Calculate the S statistic
+      S <- C - D
+
+      # Correct the variance for ties
+      uniqueRanks <- unique(Ranks)
+      tieCorrections <- sum(sapply(uniqueRanks, function(r) {
+        t <- sum(Ranks == r)
+        return(t * (t - 1) * (2 * t + 5))
+      }))
+
+      VarS <- (N * (N - 1) * (2 * N + 5) - tieCorrections) / 18
+      if(length(uniqueRanks) != length(Ranks)) {tau <- cor(x, seq(1, N), method = "kendall")}
+
+      if (S > 0) {
+        z <- (S - 1) / sqrt(VarS)
+      } else if (S < 0) {
+        z <- (S + 1) / sqrt(VarS)
+      } else {
+        z <- 0
+      }
+
+      LessP <- pnorm(z)
+      GreaterP <- 1 - LessP
+
+      if (tau == 0) {
+        BothSided <- 1
+      } else if (tau < 0) {
+        BothSided <- LessP * 2
+      } else {
+        BothSided <- GreaterP * 2
+      }
+
+      ResDF <- data.frame(N, S, VarS, tau, z, BothSided, GreaterP, LessP)
+      return(ResDF)
+    }
+    if(class(x) == class(data.frame(seq(1,3)))) {x <- x[,2]}
+    Result <- MannKendallTest(x)
+    if(alternative == "greater") {Result <- Result[,c(7, 4, 5)]}
+    if(alternative == "two.sided") {Result <- Result[,c(6, 4, 5)]}
+    if(alternative == "less") {Result <- Result[,c(8, 4, 5)]}
+    colnames(Result) <- c("P_value", "tau" ,"z")
+    rownames(Result) <- "Result:"
+    return(Result)
+  }
+  if(method != "mk") {
+
+    if (is(x, "numeric") == TRUE | is(x, "integer") == TRUE) {
+      Res <- suppressWarnings(cor.test(x, seq(1, length(x)),
+                                       method = method, alternative = alternative))
+      N <- length(x)
+
+    }
+    else {
+      DayDiffs <- NULL
+      for (i in 1:length(x[, 1])) {
+        DayDiffs[i] <- as.numeric(x[, 1][i] - x[, 1][1])
+        N <- nrow(x)
+      }
+      YrDiffs <- DayDiffs/365.25
+      Res <- suppressWarnings(cor.test(x[, 2], YrDiffs, method = method,
+                                       alternative = alternative))
+    }
+    P_value <- Res[3]$p.value
+    cor <- Res[4]$estimate
+    Statistic <- Res[1]$statistic
+    if(method == "spearman") {
+      tauRho <- function(n, Rho) {Rho*( sqrt( (n-2) / (1-Rho^2) ) )}
+      Statistic <- tauRho(n = N, Rho = cor)
+    }
+    Result <- data.frame(P_value, cor, Statistic, row.names = "Result:")
+    if(method == "spearman" | method == "pearson") {colnames(Result)[3] <- "t"}
+    if(method == "spearman") {colnames(Result)[2] <- "rho"}
+    #if(method == "kendall") {colnames(Result)[3] <- "z"}
+    return(Result)
+  }
 }
 
 
@@ -5014,6 +5145,7 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitud
     warning(WarnTextNA)
     x <- x[complete.cases(x),]
   }
+  if((  as.numeric(as.Date(x[nrow(x),1]) - as.Date(x[1,1])) / 395) < 1.6) stop("To ensure a at least one full year is covered (Jan through Dec) the difference between the x end date and start date must be at least 1.6 years")
   MonthInd <- function(x) {
     POSlt <- as.POSIXlt(x)
     Mons <- (POSlt$mon)+1
@@ -5065,7 +5197,7 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitud
   if(Plot == TRUE) {
     barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
             xlab = "Month", ylab = ylab, main = main,
-            ylim = c(min(ResList$Aggregated[,2])*0.9925, max(ResList$Aggregated[,2])),
+            ylim = c(min(ResList$Aggregated[,2])*0.9925, max(ResList$Aggregated[,2])*1.1),
             col = col, xpd = FALSE)
     #abline(h = min(ResList$Aggregated[,2]))*0.999
   }
@@ -5082,7 +5214,7 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitud
 #'@details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
 #'@param x a data.frame with POSIXct in the first column and numeric vector in the second.
 #'@param func the function used for aggregation; mean, max, or sum, for example.
-#'@param Freq Choices are "Day", or "Hour", or a numeric value representing the number of hours for aggregation.
+#'@param Freq Choices are "Day", or "Hour".
 #'@param hour An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.
 #'@examples
 #'#Create a data.frame with a normally distributed variable at
@@ -5094,10 +5226,6 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitud
 #'Hourly <- AggDayHour(TS, func = max, Freq = "Hour")
 #'#now aggregate with the mean at a daily scale
 #'Daily <- AggDayHour(TS, func = mean, Freq = "Day")
-#'#now aggregate with the sum at a 48 hour scale
-#'Hr48 <- AggDayHour(TS, func = sum, Freq = 48)
-#'#now aggregate with the sum at a 6 hour scale
-#'Hr6 <- AggDayHour(TS, func = sum, Freq = 6)
 #'@return A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
 #'@author Anthony Hammond
 
@@ -5106,8 +5234,13 @@ AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
     NAWarning <- "Warning: There is at least one missing value in the time series, this may have compromised the aggregation"
     warning(NAWarning)
   }
+  if(Freq != "Day" & Freq != "Hour") stop("The Freq argument must equal Day or Hour")
+
   if(is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
   if(is(x[,1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
+  SampleRate <- x[2,1] - x[1,1]
+  DummySample <- seq(as.Date("2021-10-01"), as.Date("2021-10-02"), by = 1)
+  if(SampleRate >= (DummySample[2]-DummySample[1])) stop("The time series you're attempting to aggregate already appears to be at a daily or lower sampling rate")
   if(Freq == "Day") {
     if(hour < 0 | hour > 23) stop("hour must be an integer >= 0 and <= 23")
     POSlt <- as.POSIXlt(x[,1])
@@ -5364,3 +5497,152 @@ AddGauge <- function(CDs, AMAX, ID) {
   return(ResultList)
 }
 
+
+
+# GoFCompare ---------------------------------------------------
+
+#' Goodness of fit comparison (single sample)
+#'
+#'@description compares the RMSE of four distribution fits for a single AMAX sample.
+#'@details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
+#'It works as follows. For each distribution:
+#'Step1. Simulate 500 samples the same size as x.
+#'Step2. Calculate the mean across all 500 samples for each rank to create an ordered central estimate.
+#'Step3. Calculate the RMSE between the result of step 2 and the ordered x.
+#'Step4. Standardise the RMSE by dividing it by the mean of x and multiply it by 100 (RMSE as a percentage of mean).
+#'Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
+#'@param x a numeric vector (your AMAX sample)
+#'@examples
+#'# Get an AMAX sample then compare the fit..
+#' AM15006 <- GetAM(15006)
+#' GoFCompare(AM15006$Flow)
+#'@return A list. The first element is a dataframe with four columns and one row of results. Each column has
+#'the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
+#'The second element is a character string stating the distribution with the best fit.
+#'@author Anthony Hammond
+
+GoFCompare <- function(x) {
+  if(class(x) != class(runif(10))) stop("x must be a numeric vector. Make sure x isn't a dataframe (if it is you may need to select a column)")
+  RMSE <- function(x, y) {sqrt(mean( (x-y)^2  ))}
+  MeanSortFunc <- function(xSim) {
+    MatSim <- matrix(xSim, nrow = length(xSim)/500, ncol = 500)
+    xSimSort <- MatSim
+    for(i in 1:500) {xSimSort[,i] <- sort(xSimSort[,i])}
+    xSimSortMean <- apply(xSimSort, 1, mean)
+    return(xSimSortMean)
+  }
+
+  N <- length(x)
+  Seed <- sample(seq(1, 10000), 1)
+  set.seed(Seed)
+  xGEV <- SimData(n = N*500, pars = as.numeric(GEVPars(x)), dist = "GEV")
+  RMSE.GEV <- signif(RMSE(sort(x), MeanSortFunc(xGEV)), 3)
+  set.seed(Seed)
+  xGumbel <- SimData(n = N*500, pars = as.numeric(GumbelPars(x)), dist = "Gumbel")
+  RMSE.Gumbel <- signif(RMSE(sort(x), MeanSortFunc(xGumbel)), 3)
+  set.seed(Seed)
+  xGLO <- SimData(n = N*500, pars = as.numeric(GenLogPars(x)), dist = "GenLog")
+  RMSE.GLO <- signif(RMSE(sort(x), MeanSortFunc(xGLO)), 3)
+  set.seed(Seed)
+  xKappa3 <- SimData(n = N*500, pars = as.numeric(Kappa3Pars(x)), dist = "Kappa3")
+  RMSE.Kappa3 <- signif(RMSE(sort(x), MeanSortFunc(xKappa3)), 3)
+  Result <- data.frame(GEV = RMSE.GEV, GenLog = RMSE.GLO,
+                       Gumbel = RMSE.Gumbel, Kappa3 = RMSE.Kappa3)
+  Result <- signif((Result / mean(x)) * 100, 3)
+  BestInd <- which.min(as.numeric(Result))
+  Winner <- c("GEV", "GenLog", "Gumbel", "Kappa3")[BestInd]
+  CharacterResult <- paste(Winner, "has the best fit", sep = " ")
+  Result <- list(Result, CharacterResult)
+  return(Result)
+}
+
+
+
+# GoFComparePool ---------------------------------------------------
+
+#' Goodness of fit comparison (for a pooling group)
+#'
+#'@description compares the RMSE of four distribution fits for a pooling group.
+#'@details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
+#'It works for pooling groups created using the Pool or PoolSmall function. It uses the same method as GoFCompare (see the associated details of that function).
+#'It first standardises the pooled AMAX samples (by dividing them by median) and then treats them as a single large sample.
+#'Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
+#'@param x a numeric vector (your AMAX sample)
+#'@examples
+#'# Get a pooling group then compare the fit..
+#' Pool60009 <- Pool(GetCDs(60009))
+#' GoFComparePool(Pool60009)
+#'@return A list. The first element is a dataframe with four columns and one row of results. Each column has
+#'the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
+#'The second element is a character string stating the distribution with the best fit.
+#'@author Anthony Hammond
+GoFComparePool <- function(x) {
+  if(class(x) != class(data.frame(seq(1,12), nrow = 3, ncol = 4))  ) stop("x must be a pooling group derived from the Pool or PoolSmall function")
+  if(ncol(x) != ncol(Pool(GetCDs(39001)))) stop("x must be a pooling group derived from the Pool or PoolSmall function")
+  #if(isClass("data.frame", Pool69047) == FALSE) {stop(x )}
+  Standardise <- function(x) {GetAM(x)[,2] / GetQMED(x)}
+  AMList <- list()
+  for(i in 1:nrow(x)) {AMList[[i]] <- Standardise(rownames(x)[i])}
+  AMvec <- AMList[[1]]
+  for(i in 2:length(AMList)) {AMvec <- append(AMvec, AMList[[i]])}
+  GoFCompare(AMvec)
+}
+
+
+
+#' Extreme rank plot
+#'
+#' A plot to inspect the distribution of ordered data
+#'
+#' This plot compares the simulated flows for each rank of the sample with the observed flows of the same rank. 500 simulated flows for each rank are plotted and the mean of these is highlighted in red. There is a line of perfect fit so you can see how much this "cloud" of simulation differs from the observed.
+#' By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. This ERplot is an updated version of that described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
+#' @param x numeric vector. A sample for inspection
+#' @param main a character string to change the default title, which is the distribution choice.
+#' @param dist a choice of distribution. The choices are "GenLog" (the default), "GEV", "Kappa3,"Gumbel", and "GenPareto"
+#' @param Pars a vector of parameters for the distribution. In the order of location, scale, & shape (ignoring the latter if Gumbel). If left null the parameters are estimated from x.
+#' @param GF a vector of length growth curve parameters, in the order of; Lcv, LSkew and Median (ignoring the LSkew if Gumbel).
+#' @examples
+#' #Get an AMAX sample and plot
+#' \donttest{AM.27083 <- GetAM(27083)}
+#' \donttest{ERPlot(AM.27083$Flow)}
+#' #Get a pooled estimate of Lcv & LSkew to use with the GF argument
+#' \donttest{QuickResults(GetCDs(27083), gauged = TRUE)}
+#' #Use the resulting Lcv, Lskew and RP2 for the GF argument and change the title
+#' \donttest{ERPlot(AM.27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))}
+#' @return The extreme rank plot as described in the details
+#' @author Anthony Hammond
+
+ERPlot <- function(x, dist = "GenLog", main = NULL, Pars = NULL, GF = NULL) {
+  if(dist != "GEV" & dist != "GenLog" & dist != "Kappa3" & dist != "Gumbel")
+    stop("dist must be either GEV, GenLog, Kappa3, or Gumbel")
+
+  if(dist == "GEV") {Params <- as.numeric(GEVPars(x))}
+  if(dist == "GenLog") {Params <- as.numeric(GenLogPars(x))}
+  if(dist == "Kappa3") {Params <- as.numeric(Kappa3Pars(x))}
+  if(dist == "Gumbel") {Params <- as.numeric(GumbelPars(x))}
+
+  if(is.null(Pars) == FALSE) {Params <- Pars}
+  if(is.null(GF)) {
+    xSim <- SimData(500*length(x), pars = as.numeric(Params), dist = dist)
+  }
+  if(is.null(GF) == FALSE) {
+    xSim <- SimData(500*length(x), dist = dist, GF = GF)
+  }
+  MatSim <- matrix(xSim, nrow = length(x), ncol = 500)
+  xSimSort <- MatSim
+  for(i in 1:500) {xSimSort[,i] <- sort(xSimSort[,i])}
+  xSimSortMean <- apply(xSimSort, 1, mean)
+  if(is.null(main)) {
+    if(dist == "GEV") {main <- "generalised extreme value"}
+    if(dist == "GenLog") {main <- "generalised logistic"}
+    if(dist == "Kappa3") {main <- "Kappa 3"}
+    if(dist == "Gumbel") {main <- "Gumbel"}
+  } else {main <- main}
+
+
+  plot(xSimSortMean, sort(x), xlab = "Modelled", ylab = "Observed", main = main)
+  for(i in 1:500) {points(xSimSort[,i], sort(x), col = rgb(0.5,0.5,0.5,0.5))}
+  points(xSimSortMean, sort(x), col = "red", pch = 16)
+  abline(0,1)
+  legend("bottomright", legend = c("Perfect fit", "Central Estimate", "500 samples"), pch = c(NA,16,1), lty = c(1,NA,NA), col = c("black", "red", "grey"), bty = "n")
+}

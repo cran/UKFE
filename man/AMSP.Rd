@@ -5,7 +5,7 @@
 \alias{AMSP}
 \title{National River Flow Archive (NRFA) annual maximum data for sites suitable for pooling}
 \format{
-A data frame with 26203 rows and 3 columns
+A data frame with 26539 rows and 3 columns
 \describe{
   \item{Date}{Date}
   \item{Flow}{Annual maximum peak flow, m3/s}
@@ -19,6 +19,6 @@ A data frame with 26203 rows and 3 columns
 AMSP
 }
 \description{
-A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 12.1
+A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 13.0.2
 }
 \keyword{datasets}

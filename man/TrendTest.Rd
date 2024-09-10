@@ -4,32 +4,37 @@
 \alias{TrendTest}
 \title{Trend hypothesis test}
 \usage{
-TrendTest(x, method = "kendall", alternative = "two.sided")
+TrendTest(x, method = "mk", alternative = "two.sided")
 }
 \arguments{
 \item{x}{a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.}
 
-\item{method}{a choice of test method. Choices are "pearson", "spearman", and "kendall"}
+\item{method}{a choice of test method. Choices are "mk" (Mann Kendall - the default), "pearson", and "spearman".}
 
-\item{alternative}{the alternative hypothesis. The default is "two.sided". See details for other options}
+\item{alternative}{the alternative hypothesis. Options are "less", "greater", and "two.sided". The default is "two.sided".}
 }
 \value{
-A data.frame with columns and associated values: P_value, correlation coefficient, and method specific statistic.
+A data.frame with columns and associated values: P_value, statistic (Kendall's tau, Spearman's rho, or Pearson's correlation coefficient), and a standardised distribution value. The latter is either the z score (for MK test) or students 't' of the observed statistic under the null hypothesis.
 }
 \description{
-A hypothesis test for the correlation between the variable of interest and time
+A hypothesis test for trend
 }
 \details{
-The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between a Pearson's, Spearman's Rho or Kendall's tau test. The Spearman and Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is kendall (note: for very long time series the kendall method takes a touch longer).
- The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater". And for negative trend, set it to "less"
+The test can be performed on a numeric vector, or a data.frame with dates in the first column and the associated variable of interest in the second. A choice can be made between Mann Kendall, Pearson, or Spearman tests. The Spearman and Mann Kendall are based on ranks and will therefore have the same results whether dates are included or not. The default is Mann Kendall.
+ The default is to test for any trend (alternative = "two.sided"). For positive trend set alternative to "greater", and to test for negative trend set alternative to "less".
+
+ Interpretation: When testing for positive trend (alternative = "greater") the P_value is the probability of exceeding the observed statistic under the null hypothesis (that it is less than zero).
+ The vice versa is true when testing for negative trend (alternative = "less"). For alternative = "two.sided" the P_value is the probability of exceeding the absolute value of the observed statistic under the null hypothesis (that it is different from zero). Low P values indicate that the null hypothesis is less likely.
 }
 \examples{
-#Get AMAX sample and apply a trend test with the default kendall test.
+#Get AMAX sample and apply a trend test with the default Mann Kendall test.
 AM.27083 <- GetAM(27083)
 TrendTest(AM.27083)
 #Apply the test with the pearson method with dates included and not
 TrendTest(AM.27083, method = "pearson")
 TrendTest(AM.27083$Flow, method = "pearson")
+#Apply the default mk test for positive trend
+TrendTest(AM.27083$Flow, alternative = "greater")
 }
 \author{
 Anthony Hammond
