@@ -9,14 +9,15 @@ QMED(
   Don1 = NULL,
   Don2 = NULL,
   UrbAdj = FALSE,
+  uef = FALSE,
   DonUrbAdj = FALSE,
   AREA,
   SAAR,
   FARL,
   BFIHOST,
   URBEXT2000 = NULL,
-  Easting,
-  Northing
+  Easting = NULL,
+  Northing = NULL
 )
 }
 \arguments{
@@ -28,7 +29,9 @@ QMED(
 
 \item{UrbAdj}{logical argument with a default of FALSE. True applies an urban adjustment}
 
-\item{DonUrbAdj}{logical argument with a defailt of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.}
+\item{uef}{logical argument with a default of FALSE. If true an urban expansion factor is applied to the URBEXT2000 value - using the current year.}
+
+\item{DonUrbAdj}{logical argument with a default of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.}
 
 \item{AREA}{catchment area in km2}
 

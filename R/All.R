@@ -1524,7 +1524,8 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' @param Don1 numeric site reference for the a single donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
 #' @param UrbAdj logical argument with a default of FALSE. True applies an urban adjustment
-#' @param DonUrbAdj logical argument with a defailt of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.
+#' @param uef logical argument with a default of FALSE. If true an urban expansion factor is applied to the URBEXT2000 value - using the current year.
+#' @param DonUrbAdj logical argument with a default of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.
 #' @param AREA catchment area in km2
 #' @param SAAR standard average annual rainfall (mm)
 #' @param FARL flood attenuation from reservoirs and lakes
@@ -1544,14 +1545,19 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' QMED(CDs.27083, UrbAdj = TRUE)
 #' @return An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned
 #' @author Anthony Hammond
-QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL, Easting, Northing){
+QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, uef = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL, Easting= NULL, Northing = NULL){
   if(is.null(Don1) == FALSE) {
     if(length(Don1) != 1) stop("The Don1 argument has length that is not 1")
   }
   if(is.null(Don2) == FALSE) {
     if(length(Don2) != 2) stop("The Don2 argument has length that is not 2")
   }
+  if(uef == TRUE){
+    DateTime <- as.POSIXlt(Sys.Date())
+    Yr <- DateTime$year + 1900
+  }
   if(is.null(CDs) == FALSE) {
+    if(class(CDs) != class(data.frame(seq(1,4)))) stop("The argument used for CDs is not a CDs object. Use the individual descriptor arguments or get CDs using CDsXML or GetCDs")
     AREA <- CDs[1,2]
     SAAR <- CDs[15,2]
     FARL <- CDs[8,2]
@@ -1559,13 +1565,20 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
     Easting <- CDs[19,2]
     Northing <- CDs[20,2]
     URBEXT2000 <- CDs[18,2]
+    if(uef == TRUE) {
+      URBEXT2000 <- URBEXT2000*UEF(Year = Yr)
+    }
   } else {AREA <- AREA
   SAAR <- SAAR
   FARL <- FARL
   BFIHOST <- BFIHOST
   URBEXT2000 <- URBEXT2000
+  if(uef == TRUE) {
+    URBEXT2000 <- URBEXT2000*UEF(Year = Yr)
+  }
   Easting <- Easting
-  Northing <- Northing}
+  Northing <- Northing
+  }
 
   Donor1 <- function(CDs = NULL, DonSite){
     QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
@@ -1617,8 +1630,10 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
     if(is.null(Don2) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor2(Sites = Don2)}
 
     if(is.null(URBEXT2000) == TRUE & UrbAdj == TRUE) stop ("If UrbAdj is TRUE, URBEXT2000 is required")
+    if(is.null(URBEXT2000) == TRUE & uef == TRUE) stop ("If uef is TRUE, URBEXT2000 is required")
     if(UrbAdj == TRUE) {
-      Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT2000, BFIHOST = BFIHOST)[2])*QMED.cd}
+    if(uef == TRUE){URBEXT2000 <-  URBEXT2000*UEF(Year = Yr)}
+        Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT2000, BFIHOST = BFIHOST)[2])*QMED.cd}
     if (UrbAdj == FALSE) {QMED <- QMED.cd} else {QMED <- Q.ua}
     if (is.null(URBEXT2000) == TRUE & UrbAdj == FALSE) {print("No input for URBEXT2000. If it is above > 0.03, urban adjustment is recommended")}
     if(is.null(URBEXT2000) == FALSE){
@@ -1628,7 +1643,10 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, DonUrbAdj
     QMED.cd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
     if(is.null(Don1) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor1(CDs = CDs, Don1)}
     if(is.null(Don2) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor2(CDs = CDs, Don2)}
-    Q.ua <- as.numeric(UAF(CDs = CDs)[2])*QMED.cd
+    if(uef == TRUE) {
+      URBEXT.uef <- UEF(Yr)*CDs[18,2]
+    Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT.uef, BFIHOST = CDs[5,2])[2])*QMED.cd}
+    if(uef == FALSE) {Q.ua <-  as.numeric(UAF(CDs = CDs)[2])*QMED.cd}
     if (UrbAdj == FALSE) {QMED <- QMED.cd} else {QMED <- Q.ua}
     if (CDs[18,2] > 0.03 & UrbAdj == FALSE) {print("URBEXT > 0.03, urban adjustment is recommended")}
     return(QMED)
@@ -5197,7 +5215,6 @@ MonthlyStats <- function(x, stat, AggStat = NULL, Plot = FALSE, ylab = "Magnitud
   if(Plot == TRUE) {
     barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
             xlab = "Month", ylab = ylab, main = main,
-            ylim = c(min(ResList$Aggregated[,2])*0.9925, max(ResList$Aggregated[,2])*1.1),
             col = col, xpd = FALSE)
     #abline(h = min(ResList$Aggregated[,2]))*0.999
   }

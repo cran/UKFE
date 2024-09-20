@@ -9,7 +9,7 @@ GetNRFA(ID, Type = "Q")
 \arguments{
 \item{ID}{ID number of the gauge of interest.}
 
-\item{Type}{Type of data required. One of "Q", "P", "PQ", "Gaugings", or "AMAX".}
+\item{Type}{Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", or "Catalogue".}
 }
 \value{
 A data.frame with date in the first columns and variable/s of interest in the remaining column/s.
@@ -18,7 +18,7 @@ A data.frame with date in the first columns and variable/s of interest in the re
 Extracts NRFA data using the API.
 }
 \details{
-The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings and amax data. Note that the latter has rejected years included (check the gauge on the associated NRFA web page for details).
+The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that the AMAX has rejected years included (check the gauge on the associated NRFA web page for details). Lastly if Type = "Catalogue" it will return a dataframe of all the NRFA gauges associated details and descriptors.
 }
 \examples{
 #Get the concurrent rainfall and mean flow series for the Tay at Ballathie (site 15006).

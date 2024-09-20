@@ -24,9 +24,9 @@ If the "From" date used is significantly before (approx. 30 years) the start of 
 }
 \examples{
 #Get the list of available stations
-\dontrun{ RainSEPA("AnythingButAStationName") }
+\dontrun{ GetRainSEPA("AnythingButAStationName") }
 #Now we'll get rain from the Bannockburn station
-\dontrun{ Bannockburn <- RainSEPA("Bannockburn", From = "1998-10-01", To = "1998-10-31") }
+\dontrun{ Bannockburn <- GetRainSEPA("Bannockburn", From = "1998-10-01", To = "1998-10-31") }
 #Now we'll have a look at the top of the data and plot it
 \dontrun{ head(Bannockburn) }
 \dontrun{ plot(Bannockburn, type = "h", ylab = "Rainfall (mm)") }
