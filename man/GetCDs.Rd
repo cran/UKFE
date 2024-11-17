@@ -13,7 +13,7 @@ GetCDs(x)
 A data.frame with columns; Descriptor and Value.
 }
 \description{
-Extracts the catchment descriptors for a site of interest from those suitable for QMED and pooling.
+Extracts the catchment descriptors for a site of interest from the National River Flow Archive. If the site is considered suitable for QMED and pooling the CDs are extracted from the QMEDData data.frame. Otherwise they are extracted using the NRFA API.
 }
 \examples{
 #Get CDs and display in the console

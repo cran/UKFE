@@ -33,9 +33,9 @@ GenParetoPars(ThamesPOT$peak)
 #Estimate parameters using MLE
 GenParetoPars(ThamesPOT$peak, mle = TRUE)
 #calculate Lmoments and estimate the parmeters with L1, Lcv and Lskew
-Lmoms(ThamesPOT$peak)
+LMoments(ThamesPOT$peak)
 #store linear moments in an object
-LPars <- as.numeric(Lmoms(ThamesPOT$peak))[c(1,5,6)]
+LPars <- as.numeric(LMoments(ThamesPOT$peak))[c(1,5,6)]
 GenParetoPars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
 }
 \author{

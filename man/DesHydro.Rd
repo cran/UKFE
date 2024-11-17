@@ -6,56 +6,41 @@
 \usage{
 DesHydro(
   x,
-  qu = 0.8,
-  n = 10,
-  thr = 0.975,
-  xst = NULL,
-  xend = NULL,
-  RetAll = FALSE,
-  Smooth = 1
+  div,
+  EventSep,
+  N = 10,
+  Exclude = NULL,
+  Plot = TRUE,
+  main = "Design Hydrograph"
 )
 }
 \arguments{
-\item{x}{a numeric vector. The flow series of interest}
+\item{x}{a dataframe with Date or POSIXct in the first coumn and the numeric vector of discharge in the second}
 
-\item{qu}{the quantile of flow which separates peaks and truncates either side of the peak to form the event hydrograph. The default is 0.8}
+\item{div}{The number of timesteps to separate peaks for the peak extraction process.}
 
-\item{n}{number of event hydrographs from which to derive the mean hydrograph. Default is 10. Depending on the length of x, there may be less than 10}
+\item{EventSep}{When hydrographs are extracted according to the peaks, the start and end point of the hydrograph is Peak - EventSep and Peak + EventSep * 1.5}
 
-\item{thr}{threshold above which event peaks are selected. The default is 0.975}
+\item{N}{number of event hydrographs from which to derive the mean hydrograph. Default is 10. Depending on the length of x, there may be fewer than 10}
 
-\item{xst}{an integer to truncate the x axis of the plot and resulting design hydrograph. The first point of the design hydrograph}
+\item{Exclude}{An index (single integer or vector of integers up to N) for which hydrographs to exclude if you so wish. This may require some trial and error. You may want to increase N for every excluded hydrograph.}
 
-\item{xend}{an integer to truncate the x axis of the plot and resulting design hydrograph. The last point of the design hydrograph}
+\item{Plot}{logical argument with a default of TRUE. If TRUE, all the hydrographs from which the mean is derived are plotted along with the mean hydrograph.}
 
-\item{RetAll}{logical argument with a default of false. If TRUE, all the hydrographs from which the mean is derived are returned in a data.frame. If FALSE, the mean hydrograph is returned}
-
-\item{Smooth}{an integer (from 0 to 5). To smooth the design hydrograph. The default is 1 which provides the minimum level of smoothing. 0 is no smoothing and 5 is the highest}
+\item{main}{Title for the plot}
 }
 \value{
-a numeric vector which is the mean of the top n peak events in the flow series. Also a plot of the n hydrographs and the design hydrograph. If the RetAll argument equals TRUE, a data.frame of the n hydrographs is returned instead.
+a list of length three. The first element is a dataframe of the peaks of the hydrographs and the associated dates. The second element is a dataframe with all the scaled hydrographs, each column being a hydrograph. The third element is the averaged hydrograph
 }
 \description{
 Extracts a mean hydrograph from a flow series
 }
 \details{
-All the peaks over a user defined threshold are identified and separated by a user defined value 'qu', which is a quantile of flow. The top n peaks are selected and the hydrographs extracted. Each hydrograph is centred on the peak and truncated either side, where the flow falls below the 'qu' quantile flow. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph. After an initial view of the hydrograph, it can be truncated using the 'xst' and 'xend' arguments. The default is to select 10 hydrographs for averaging, however, there may well be fewer if the sample is short.
-}
-\note{
-The smoothing is done by rolling average, where the the mean is of points from n to the left up to n to the right. The n is chosen by the Smooth argument.
+All the peaks over the 97.5th percentile are identified and separated by a user defined value 'div', which is a number of time steps. The top N peaks are selected and the hydrographs extracted where EventSep is the number of timesteps either side of the peak. Each hydrograph is centred on the peak and truncated either side by EventSep. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph.
 }
 \examples{
 #Extract a design hydrograph from the Thames daily mean flow. Then print the resulting hydrograph
-ThamesDesHydro <- DesHydro(ThamesPQ$Q)
-ThamesDesHydro
-#Do the same but truncate the design hydrograph and the plot from the first point to the 30th
-DesHydro(ThamesPQ$Q, xst = 1, xend = 30)
-#adjust the qu value to see the impact
-ThamesDesHydro <- DesHydro(ThamesPQ$Q, qu = 0.7)
-#Return all the hydrographs
-ThamesHydros <- DesHydro(ThamesPQ$Q, xst = 1, xend = 30, RetAll = TRUE)
-#view the first six rows of the hydrographs
-head(ThamesHydros)
+ThamesDesHydro <- DesHydro(ThamesPQ[,c(1,3)], div = 30, EventSep = 10, N = 10)
 }
 \author{
 Anthony Hammond

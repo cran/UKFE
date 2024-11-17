@@ -49,8 +49,8 @@ A line can be added using the Lcv and Lskew based on one of four distributions (
 AM.203018 <- GetAM(203018)
 EVPlot(AM.203018$Flow, dist = "GEV")
 #Now add a line (dotted & red) for the generalised logistic distribution
-#first get the Lcv and Lskew using the Lmoms function
-pars <- as.numeric(Lmoms(AM.203018[,2])[c(5,6)])
+#first get the Lcv and Lskew using the LMoments function
+pars <- as.numeric(LMoments(AM.203018[,2])[c(5,6)])
 EVPlotAdd(Pars = pars, dist = "GenLog", Name = "GenLog", xyleg = c(-5.2,2.65), lty = 3)
 #Now add a line for the gumbel distribution which is darkgreen and dashed.
 EVPlotAdd(Pars = pars[1], dist = "Gumbel", Name = "Gumbel",

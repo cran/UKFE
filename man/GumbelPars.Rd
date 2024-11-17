@@ -31,7 +31,7 @@ GumbelPars(AM.27090$Flow)
 #Estimate parameters using MLE
 GumbelPars(AM.27090$Flow, mle = TRUE)
 #calculate Lmoments and estimate the parmeters with L1 and Lcv
-Pars <- as.numeric(Lmoms(AM.27090$Flow)[c(1,5)])
+Pars <- as.numeric(LMoments(AM.27090$Flow)[c(1,5)])
 GumbelPars(L1 = Pars[1], LCV = Pars[2])
 }
 \author{

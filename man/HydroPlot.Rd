@@ -6,7 +6,8 @@
 \usage{
 HydroPlot(
   x,
-  Title = "Concurrent Rainfall & Discharge",
+  main = "Concurrent Rainfall & Discharge",
+  ylab = "Discharge (m3/s)",
   from = NULL,
   to = NULL,
   adj.y = 1.5,
@@ -18,7 +19,9 @@ HydroPlot(
 \arguments{
 \item{x}{a data.frame with three columns in the order of date (or POSIXct), precipitation, and discharge}
 
-\item{Title}{a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"}
+\item{main}{a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"}
+
+\item{ylab}{User choice for the y label of the plot. THe default is "Discharge (m3/s)".}
 
 \item{from}{a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x}
 

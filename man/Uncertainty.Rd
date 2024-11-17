@@ -6,54 +6,59 @@
 \usage{
 Uncertainty(
   x,
-  gauged = FALSE,
-  RP = 100,
-  dist = "GenLog",
+  Gauged = FALSE,
   qmed = NULL,
-  QMEDfse = 1.46,
+  Dist = "GenLog",
+  Conf = 0.95,
+  fseQMED = 1.55,
   UrbAdj = FALSE,
-  CDs = NULL,
-  conf = 0.95
+  URBEXT = NULL,
+  Plot = TRUE,
+  IncAMest = TRUE,
+  Parametric = TRUE
 )
 }
 \arguments{
-\item{x}{the pooled group derived from the Pool() function}
+\item{x}{the pooled group derived from the Pool() or PoolSmall function}
 
-\item{gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case}
+\item{Gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case}
 
-\item{RP}{the return period of interest. Default is 100}
+\item{qmed}{the QMED estimate for the ungauged case. It is derived from the observed AMAX if Gauged equals TRUE.}
 
-\item{dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog" or "Gumbel". The default is "GenLog"}
+\item{Dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog" ,"Gumbel", or "Kappa3". The default is "GenLog"}
 
-\item{qmed}{the QMED estimate for the ungauged case. Or for the gauged if the user wishes to override the median from the NRFA data}
+\item{Conf}{the confidence level of the uncertainty intervals. Default is 0.95. Must be between 0 and 1.}
 
-\item{QMEDfse}{The factorial standard error of the QMED estimate for when an ungauged assessment has been undertaken. The default is 1.46}
+\item{fseQMED}{The factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.}
 
 \item{UrbAdj}{applies an urban adjustment to the growth curves}
 
-\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML. Necessary if a UrbAdj is TRUE}
+\item{URBEXT}{URBEXT value for the site of interest. This is necessary if a UrbAdj equals TRUE.}
 
-\item{conf}{the confidence level of the intervals for the gauged case. Default is 0.95. Must be between 0 and 1}
+\item{Plot}{logical argument with a default of TRUE. If TRUE a return level plot with results and margin of error is plotted. If FALSE, it is not.}
+
+\item{IncAMest}{logical argument with a default of TRUE. Sometimes when doing gauged (enhanced single site analysis), the central estimate of the single site estimate is outside the intervals of the ESS estimate. When this argument is true the confidence interval is expanded to include the central estimate for the single site. If FALSE, it is not.}
+
+\item{Parametric}{logical argument with a default of TRUE. If TRUE, the bootsrapping is done by simulation with the distribution of choice. If FALSE the bootsrapping is done by resampling with replacement.}
 }
 \value{
-For the ungauged case a data.frame of four values relating to the lower 68 and upper 68 percent interval and the lower 95 and upper 95 percent intervals. These are headed by the associated percentiles. For the gauged case a numeric vector of two values is provided with the lower and upper intervals of the chosen conf level.
+A dataframe with 10 rows and four columns. Return period in the first column, central estimate in the second, lower in the third, and upper in the fourth. If Plot = TRUE, a return level plot is also returned.
 }
 \description{
 Quantification of uncertainty for pooling results for the gauged and ungauged case
 }
 \details{
-Uncertainty in the ungauged case is calulated as detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The 68 percent and 95 percent intervals are returned. For the gauged case the pooled group is bootstrapped 500 times and the enhanced single site weighted linear skewness (LSkew) and linear coefficient of variation (Lcv) are calculated 500 times accordingly and 500 associated growth factors are calculated. Each  growth factor (GF) is multiplied by a randomly selected median annual maximum flow (QMED) from the uncertainty distribution of median estimates for the gauged subject site. The distribution of medians is derived from bootstrapping the gauged site 500 times. The intervals are then the upper and lower quantiles (depending on the conf input) of the distribution of median * GFs. For the gauged case the user can choose the level for the intervals. The default is 0.95. Occasionally the single site central estimate will be outside the uncertainty intervals. In these cases the intervals are widened to incorporate it. i.e. if above the intervals, the upper interval is increased to the single site estimate and vice versa if below. This occurs regardless of the confidence setting. For details about the calculations of weighted growth curves & urban adjustment see the PoolEst() function details. The gauged method is detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research, 52 (6), 1357–1371.
+Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6).
 }
 \examples{
-#Get CDs, form an ungauged pooling group and quantify the uncertainty of the
-#50-year pooled estimate when using a CDs estimate of QMED with no donors
-CDs.203018 <- GetCDs(203018)
-Pool.203018 <- Pool(CDs.203018, exclude = 203018)
-Uncertainty(Pool.203018, qmed  = QMED(CDs.203018), RP = 50)
-#Form pooling group with subject site included. Quantify the uncertainty of the
-#50-year pooled estimate at the 99\% level.
- Pool.203018 <- Pool(CDs.203018)
- Uncertainty(Pool.203018, gauged = TRUE, RP = 50, conf = 0.99)
+#Get an ungauged pooling group:
+Pool.203018 <- Pool(GetCDs(203018), exclude = 203018)
+#Use the function to quantify the central estimate and uncertainty
+Uncertainty(Pool.203018, qmed  = QMED(GetCDs(203018)))
+#Form a pooling group with subject site included.
+ Pool.203018 <- Pool(GetCDs(203018))
+#Quantify the central estimate and uncertainty
+ Uncertainty(Pool.203018, Gauged = TRUE)
 }
 \author{
 Anthony Hammond

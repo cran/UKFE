@@ -29,7 +29,7 @@ The L-moment estimated parameters are by the method detailed in 'Hosking J. Wall
 AM.27090 <- GetAM(27090)
 Kappa3Pars(AM.27090$Flow)
 #calculate Lmoments and estimate the parmeters with L1, L2, Lcv, and Lskew
-LPars <- as.numeric(Lmoms(AM.27090$Flow))[c(1,2,5,6)]
+LPars <- as.numeric(LMoments(AM.27090$Flow))[c(1,2,5,6)]
 Kappa3Pars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
 }
 \author{

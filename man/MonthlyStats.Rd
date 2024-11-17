@@ -6,8 +6,9 @@
 \usage{
 MonthlyStats(
   x,
-  stat,
+  Stat,
   AggStat = NULL,
+  TS = FALSE,
   Plot = FALSE,
   ylab = "Magnitude",
   main = "Monthly Statistics",
@@ -17,11 +18,13 @@ MonthlyStats(
 \arguments{
 \item{x}{a data.frame with Dates or POSIXct in the first column and numeric vector in the second.}
 
-\item{stat}{the function of interest. mean or sum for example.}
+\item{Stat}{A user chosen function to calculate the statistic of interest; mean or sum for example. Could be a user developed function.}
 
-\item{AggStat}{the aggregating statistic. The default is mean. See details}
+\item{AggStat}{the aggregating statistic. The default is mean. The function applied must have an na.rm argument (base R stat functions such as mean, max, and sum all have an na.rm argument.).}
 
-\item{Plot}{logical argument with a default of TRUE. If TRUE the monthly statistics are plotted.}
+\item{TS}{A logical statement with a default of FALSE. If TRUE, instead of a dataframe of monthly statistics and average statistics, a monthly time series is returned.}
+
+\item{Plot}{logical argument with a default of FALSE. If TRUE the monthly statistics are plotted.}
 
 \item{ylab}{A label for the y axis of the plot. The default is "Magnitude"}
 
@@ -30,7 +33,7 @@ MonthlyStats(
 \item{col}{A choice of colour for the bar plot. A single colour or a vector (a colour for each bar).}
 }
 \value{
-A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided.
+A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided. However, of TS = TRUE, a monthly time series is returned - as a dataframe with date in the first column and monthly value in the second.
 }
 \description{
 Derives monthly statistics from a data.frame with Dates or POSIXct in the first column and variable of interest in the second
@@ -40,11 +43,11 @@ The statistic of interest for each month is calculated for each calendar year in
 }
 \examples{
 # Get the mean flows for each month for the Thames at Kingston
-QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], stat = mean,
-ylab = "Discharge (m3/s)", main = "Thames at Kingston monthly mean flow")
+QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], Stat = mean,
+ylab = "Discharge (m3/s)", main = "Thames at Kingston monthly mean flow", Plot = TRUE)
 # Get the monthly sums of rainfall for the Thames at Kingston
-PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], stat = sum,
-ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall")
+PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], Stat = sum,
+ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall", Plot = TRUE)
 }
 \author{
 Anthony Hammond
