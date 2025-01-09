@@ -9,8 +9,8 @@ GetDataSEPA_Rain(
   Lon = NULL,
   Range = 30,
   StationName,
-  From = "2022-10-01",
-  To = "ToDate"
+  From = NULL,
+  To = NULL
 )
 }
 \arguments{
@@ -22,7 +22,7 @@ GetDataSEPA_Rain(
 
 \item{StationName}{The name of the station for which you want rainfall. If you type something other than one of the available stations, the list of stations will be returned.}
 
-\item{From}{A start date for the data in the form of "YYYY-MM-DD".}
+\item{From}{A start date for the data in the form of "YYYY-MM-DD". Default of NULL means the earliest available date is used}
 
 \item{To}{An end date for the data in the form of "YYYY-MM-DD". The default is the most recent date available.}
 }
@@ -33,13 +33,14 @@ A data.frame with POSIXct in the first column, and rainfall in the second column
 Extract hourly rainfall data from SEPA's API.
 }
 \details{
-If the "From" date used is significantly before (approx. 30 years) the start of the available data, the function will fail with an error message saying the connection cannot be opened. You can download data using the gauge name and you can find gauges within a given range using the latitude and longitude.
+You can download data using the gauge name and you can find gauges within a given range using the latitude and longitude. If the 'From' date is left as null, the earliest date of available data will be used. If the 'To' date is left as null, the most recent date of available data will be used.
 }
 \examples{
 #Get the list of available stations
-\dontrun{ GetDataSEPA_Rain("AnythingButAStationName") }
+\dontrun{ GetDataSEPA_Rain(StationName = "AnythingButAStationName") }
 #Now we'll get rain from the Bannockburn station
-\dontrun{ Bannockburn <- GetDataSEPA_Rain("Bannockburn", From = "1998-10-01", To = "1998-10-31") }
+\dontrun{ Bannockburn <- GetDataSEPA_Rain(StationName = "Bannockburn",
+From = "1998-10-01", To = "1998-10-31") }
 #Now we'll have a look at the top of the data and plot it
 \dontrun{ head(Bannockburn) }
 \dontrun{ plot(Bannockburn, type = "h", ylab = "Rainfall (mm)") }

@@ -26,11 +26,11 @@ AnnualStat(
 
 \item{Hr}{Choice of hour to start the year (numeric from 0 to 23). The default is 9.}
 
-\item{Sliding}{Logical argument with a default of FALSE. This can be applied if you want the statistic over a sliding period. For example, deriving maximum annual rainfall totals over a 24 hour period, rather than the maximum daily totals. The number of periods (timesteps) is chosen with the N argument}
+\item{Sliding}{Logical argument with a default of FALSE. This can be applied if you want the statistic over a sliding period. For example, deriving maximum annual rainfall totals over a 24 hour period, rather than the maximum daily totals. The number of periods (timesteps) is chosen with the N argument. If for example you want the annual maximum sum of rainfall over a 24 hour period, and you have 15minute data, the Stat input would be sum, and N would be 96 (because there are 96 15 minute periods in 24 hours).}
 
-\item{N}{Number of timesteps to slide over - used in conjunction with Sliding. The default is 24, make sure to adjust this depending on the duration on interest and the sampling rate of the input data.}
+\item{N}{Number of timesteps to slide over - used in conjunction with Sliding. The default is 24, make sure to adjust this depending on the duration of interest and the sampling rate of the input data.}
 
-\item{...}{further arguments for the stat function.}
+\item{...}{further arguments for the stat function. Such as na.rm = TRUE.}
 }
 \value{
 a data.frame with columns; DateTime and Result. By default Result is the annual maximum sample, but will be any statistic used as the Stat argument.
@@ -47,6 +47,8 @@ ThamesAM <- AnnualStat(ThamesPQ[,c(1,3)])
 head(ThamesAM)
 #Extract the annual rainfall totals.
 ThamesAnnualP <- AnnualStat(ThamesPQ[,1:2], Stat = sum)
+#Extract maximum five day rainfall totals from the Thames rain
+ThamesP5DayAM <- AnnualStat(ThamesPQ[,1:2], Stat = sum, Sliding = TRUE, N = 5)
 }
 \author{
 Anthony Hammond

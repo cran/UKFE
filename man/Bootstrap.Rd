@@ -4,14 +4,14 @@
 \alias{Bootstrap}
 \title{Bootstrap}
 \usage{
-Bootstrap(x, n = 500, Stat, Conf = 0.95, ReturnSD = FALSE, ...)
+Bootstrap(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
 }
 \arguments{
 \item{x}{a numeric vector. The sample of interest}
 
-\item{n}{the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.}
-
 \item{Stat}{the function (to calculate the statistic) to be applied to the bootstrapped samples. For example mean, max, or median.}
+
+\item{n}{the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.}
 
 \item{Conf}{the confidence level of the intervals (default 0.95). Must be between 0 and 1.}
 

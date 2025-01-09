@@ -10,8 +10,8 @@ GetDataEA_QH(
   Range = 20,
   RiverName = NULL,
   WISKI_ID = NULL,
-  From = "2015-10-01",
-  To = "2016-09-30",
+  From = NULL,
+  To = NULL,
   Type = "flow",
   Period = "DailyMean"
 )
@@ -25,11 +25,11 @@ GetDataEA_QH(
 
 \item{RiverName}{Name of the river along which you want to search for gauges. Character string.}
 
-\item{WISKI_ID}{The WISKI ID for the gauge from which you want to obtain data (character string)}
+\item{WISKI_ID}{The WISKI ID for the gauge from which you want to obtain data (character string). Note that sometimes a preceding zero, which is not returned via the API, is needed. If the data extraction fails, this may be the cause and you can resolve it by including the preceding zero in the WISKI_ID.}
 
-\item{From}{Date for start of data extraction in the format of "2015-12-02"}
+\item{From}{Date for start of data extraction in the format of "2015-12-02". If NULL the start date of the available data is used.}
 
-\item{To}{Date for the end of data extraction in the format of "2015-12-02"}
+\item{To}{Date for the end of data extraction in the format of "2015-12-02". If NULL end date of the available data is used.}
 
 \item{Type}{The variable to extract, either "flow" or "level"}
 
@@ -43,16 +43,20 @@ When extracting flow or level data with a WISKI ID then a dataframe with two col
 Function to extract flow or level data from the Environment Agency's Hydrology Data Explorer.
 }
 \details{
-To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function. The lat and lon option will provide all flow and level gauges within a specified range (default of 10km). This provides gauged details including the WISKI ID. You can get data from specific gauges using the WISKI_ID. Note that many flow gauges also have level data available. Do ensure you get the start date you can put in a year that is many years prior to the start of the gauge. Lastly, I have noticed that WISKI IDs can be returned without a preceding 0 which might be necessary for the data extraction (oddly, most do have the necessary 0). If it does not work try adding a 0 to the beginning of the WISKI ID.
+To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function (you can also get lat and lon by left clicking on google maps). The lat and lon option will provide all flow and level gauges within a specified range (default of 10km). This provides gauged details including the WISKI ID. You can get data from specific gauges using the WISKI_ID. Note that flow gauges also have level data available. You can get data from a date range using the From and To arguments or you can return all data by leaving the From and To as the default (NULL). Lastly, WISKI IDs are sometimes returned without a preceding 0 which might be necessary for the data extraction (oddly, most do have the necessary 0). If data extraction fails try adding a 0 to the beginning of the WISKI ID.
 }
 \examples{
 #Find gauges on the river Tame
 \dontrun{GetDataEA_QH(RiverName = "Tame")}
-#Find gauges within 10km of a latlon grid reference somewhere near the centre of Dartmoor
-\dontrun{GetDataEA_QH(lat = 50.6, lon = -3.9, Range = 10)}
-#Get daily maximum flow data from the Bellever gauge on the
-#East Dart River for the default From - To date range
+#Find gauges within 10km of a latlon grid reference somewhere near the
+#centre of Dartmoor
+\dontrun{GetDataEA_QH(Lat = 50.6, Lon = -3.9, Range = 10)}
+#Get all available daily maximum flow data from the Bellever gauge on the
+#East Dart River.
 \dontrun{BelleverMax <- GetDataEA_QH(WISKI_ID = "SX67F051")}
+#Get 15-minute data from the Bellever for the Novermeber 2024 event
+\dontrun{BelleverNov2024 <- GetDataEA_QH(WISKI_ID = "SX67F051",
+From = "2024-11-23", To = "2024-11-25", Period = "15Mins")}
 }
 \author{
 Anthony Hammond

@@ -8,8 +8,8 @@ HydroPlot(
   x,
   main = "Concurrent Rainfall & Discharge",
   ylab = "Discharge (m3/s)",
-  from = NULL,
-  to = NULL,
+  From = NULL,
+  To = NULL,
   adj.y = 1.5,
   plw = 1,
   qlw = 1.8,
@@ -23,9 +23,9 @@ HydroPlot(
 
 \item{ylab}{User choice for the y label of the plot. THe default is "Discharge (m3/s)".}
 
-\item{from}{a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x}
+\item{From}{a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x}
 
-\item{to}{an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x}
+\item{To}{an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x}
 
 \item{adj.y}{a numeric value to adjust the closeness of the preciptation and discharge in the plot. Default is 1.5. A lower value brings them closer and a larger value further apart}
 
@@ -47,7 +47,7 @@ The input of x is a dataframe with the first column being time. If the data is s
 \examples{
 #Plot the Thames precipitation and discharge for the 2013 hydrological year,
 #adjusting the y axis to 1.8.
-HydroPlot(ThamesPQ, from = "2013-10-01", to = "2014-09-30", adj.y = 1.8)
+HydroPlot(ThamesPQ, From = "2013-10-01", To = "2014-09-30", adj.y = 1.8)
 }
 \author{
 Anthony Hammond

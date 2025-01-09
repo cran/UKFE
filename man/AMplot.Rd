@@ -4,19 +4,25 @@
 \alias{AMplot}
 \title{Plot of the annual maximum sample}
 \usage{
-AMplot(x)
+AMplot(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", main = NULL)
 }
 \arguments{
-\item{x}{a data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id is necessary for inclusion of the id in the plot title. An AM object derived from the GetAM or AMImport functions.}
+\item{x}{A data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id can be applied which is then used for the default plot title.}
+
+\item{ylab}{Label for the y axis (character string).}
+
+\item{xlab}{Label for the x axis (character string).}
+
+\item{main}{Title for the plot (character string). The default is 'Annual maximum sample:', where : is followed by an ID number if this is included in a third column of the dataframe x.}
 }
 \value{
 A barplot of the annual maximum sample
 }
 \description{
-Provides two plots. First, a histogram of the sample, second, a barplot
+Provides a barplot for an annual maximum sample
 }
 \details{
-When used with a GetAM object or any data.frame with dates in the first column, the barplot is daily. Therefore, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
+When used with a GetAM object or any data.frame with dates/POSIXct in the first column, the date-times are daily or sub-daily. Therefore, although it's an annual maximum (AM) sequence, some bars may be closer together depending on the number of days between them.
 }
 \examples{
 #Get an AMAX sample and plot

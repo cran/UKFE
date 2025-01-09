@@ -19,7 +19,8 @@
 ConvertGridRef <- function(x, fromBNG = TRUE, IGorLatLon = "LatLon") {
   if(IGorLatLon != "LatLon" & IGorLatLon != "IG") stop("IGorLatLon argument must be either LatLon or IG")
   if(IGorLatLon == "LatLon") {
-  if(fromBNG == FALSE) {
+  if(length(x) != 2) stop("x must be a vector of length 2.")
+    if(fromBNG == FALSE) {
     if(x[1] > 61 | x[1] < 49.94) stop("Grid reference appears to be outside the UK")
     if(x[1] > 1000) stop("your latitude seems rather high. Is the BNG argument correct?")
     if(x[2] > 1.87 | x[2] < -8.5) stop("Grid reference appears to be outside the UK")

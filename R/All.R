@@ -2249,7 +2249,7 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
   NAs <- FALSE
   if(is(x, "data.frame") == FALSE) {
     if(anyNA(x)) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
-    if(length(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15minute data for example). You may want to use the POTt function which is much quicker. If you have associated datetimes available You could aggregate the data to daily maximums using the AggDayHour function")
+    if(length(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15minute data for example). You may want to use the POTt function which is much quicker. If you have associated datetimes available another option is to aggregate the data to daily maximums using the AggDayHour function")
     if(is.null(div) == FALSE) {
       if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
       if(div == 0 & length(which(x == min(x, na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
@@ -2473,15 +2473,17 @@ POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = 
 #' @param Truncate Logical argument with a default of TRUE. If TRUE, then x is truncated to be within the first and last occurrence of the chosen month and time. If FALSE tuncation is not done and results from partial years will be included.
 #' @param Mon Choice of month as a numeric, from 1 to 12. The default is 10 which means the year starts October 1st.
 #' @param Hr Choice of hour to start the year (numeric from 0 to 23). The default is 9.
-#' @param Sliding Logical argument with a default of FALSE. This can be applied if you want the statistic over a sliding period. For example, deriving maximum annual rainfall totals over a 24 hour period, rather than the maximum daily totals. The number of periods (timesteps) is chosen with the N argument
-#' @param N Number of timesteps to slide over - used in conjunction with Sliding. The default is 24, make sure to adjust this depending on the duration on interest and the sampling rate of the input data.
-#' @param ... further arguments for the stat function.
+#' @param Sliding Logical argument with a default of FALSE. This can be applied if you want the statistic over a sliding period. For example, deriving maximum annual rainfall totals over a 24 hour period, rather than the maximum daily totals. The number of periods (timesteps) is chosen with the N argument. If for example you want the annual maximum sum of rainfall over a 24 hour period, and you have 15minute data, the Stat input would be sum, and N would be 96 (because there are 96 15 minute periods in 24 hours).
+#' @param N Number of timesteps to slide over - used in conjunction with Sliding. The default is 24, make sure to adjust this depending on the duration of interest and the sampling rate of the input data.
+#' @param ... further arguments for the stat function. Such as na.rm = TRUE.
 #' @examples
 #' #Extract the Thames AMAX daily mean flow and display the first six rows
 #' ThamesAM <- AnnualStat(ThamesPQ[,c(1,3)])
 #' head(ThamesAM)
 #' #Extract the annual rainfall totals.
 #' ThamesAnnualP <- AnnualStat(ThamesPQ[,1:2], Stat = sum)
+#' #Extract maximum five day rainfall totals from the Thames rain
+#' ThamesP5DayAM <- AnnualStat(ThamesPQ[,1:2], Stat = sum, Sliding = TRUE, N = 5)
 #' @return a data.frame with columns; DateTime and Result. By default Result is the annual maximum sample, but will be any statistic used as the Stat argument.
 #' @author Anthony Hammond
 
@@ -2495,6 +2497,10 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
   #if(length(x[,1]) != length(unique(x[,1]))) stop("There are duplicates in the first column which should be a vector of unique dates or date times in chronological order. Remove the duplicates. The duplicates function is handy for this purpose. For example x <- x[!duplicated(x$dateTime),]")
   x <- x[order(x[,1]),]
+  DateNA <- which(is.na(x[,1]))
+  if(length(DateNA) > 0) {
+    warning("One or more dates were NA and these rows have been removed")
+    x <- x[-DateNA,]}
   PluckOutTime <- function(x, from, to, Plot = FALSE, type = "l") {
     Ind <- which(as.POSIXct(x[,1]) >= as.POSIXct(from) & as.POSIXct(x[,1]) < as.POSIXct(to))
     Result <- x[Ind,]
@@ -2514,6 +2520,7 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
 
   StDate <- x[1,1]
   EndDate <- x[nrow(x), 1]
+  if(anyNA(c(StDate, EndDate)) == TRUE) stop("Either the first or the last Date/POSIXct value are NA. Correct the date or remove NA values from column one (the date time column)")
   LtSt <- as.POSIXlt(StDate)
   LtEnd <- as.POSIXlt(EndDate)
   StYr <- LtSt$year + 1900
@@ -2526,21 +2533,23 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   for(i in 1:(nDWY-1)) {WYList[[i]] <- PluckOutTime(x, DatesWY[i], DatesWY[i+1])}
   Nrows <- NULL
   for(i in 1:length(WYList)) {Nrows[i] <- nrow(WYList[[i]])}
-  if(length(Nrows[Nrows == 0]) > 0) warning("At least one year has no data. The year in question may result in a -Inf or NaN value")
+  if(length(Nrows[Nrows == 0]) > 0) warning("At least one year has no data. The year in question may result in NA, -Inf, or NaN value")
   NAsearch <- NULL
   for(i in 1:length(WYList)) {NAsearch[i] <- anyNA(WYList[[i]][,2])}
-  if(any(NAsearch)) warning("One or more years include missing data. This may impact results.")
+  if(any(NAsearch)) warning("Use an na.rm = TRUE argument (if you haven't already). One or more years include missing data. This may impact results.")
   HeaviestPeriod <- function(x, Period = 24, Stat = max) {
-    if(Period > length(x)) stop("N is rather large")
-    MA <- function(x, n) {
-      ma <- NULL
-      for(i in n:length(x)) {ma[i] <- Stat(x[i:(i-n)], ...)}
-      return(ma)
-    }
-    MAResult <- MA(x, n = Period-1)
-    MaxIndex <- which.max(MAResult)
-    StartIndex <- (MaxIndex - Period) + 1
-    Result <- data.frame(Result = MAResult[MaxIndex], StartIndex)
+    if(Period > length(x)) {warning("N is longer than the data available in at least one of the years. NA is returned")
+      Result <- data.frame(Result = NA, StartIndex = NA)}
+    if(Period <= length(x)) {
+      MA <- function(x, n) {
+        ma <- NULL
+        for(i in n:length(x)) {ma[i] <- Stat(x[i:(i-n)], ...)}
+        return(ma)
+      }
+      MAResult <- MA(x, n = Period-1)
+      MaxIndex <- which.max(MAResult)
+      StartIndex <- (MaxIndex - Period) + 1
+      Result <- data.frame(Result = MAResult[MaxIndex], StartIndex)}
     return(Result)
   }
   if(Sliding == TRUE) {
@@ -2690,8 +2699,8 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
 #'
 #'The bootstrapping procedure resamples from a sample length(x) * n times with replacement. After splitting into n samples of size length(x), the statistic of interest is calculated on each.
 #' @param x a numeric vector. The sample of interest
-#' @param n the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.
 #' @param Stat the function (to calculate the statistic) to be applied to the bootstrapped samples. For example mean, max, or median.
+#' @param n the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.
 #' @param Conf the confidence level of the intervals (default 0.95). Must be between 0 and 1.
 #' @param ReturnSD Logical argument with a default of FALSE. If true the bootstrapped sampling distribution is returned.
 #' @param ... further arguments for the Stat function. For example if you use the GEVAM function you might want to add RP = 50 to derive a sampling distribution for the 50-year quantile.
@@ -2706,7 +2715,7 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
 #' hist(SampDist)
 #' @return If ReturnSD is FALSE a data.frame is returned with one row and three columns; central, lower, and upper. If ReturnSD is TRUE, the sampling distribution is returned.
 #' @author Anthony Hammond
-Bootstrap <- function (x, n = 500, Stat, Conf = 0.95, ReturnSD = FALSE, ...)
+Bootstrap <- function (x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
 {
   if (is.numeric(x) == FALSE) {
     stop("x must be a numeric vector")
@@ -2717,8 +2726,13 @@ Bootstrap <- function (x, n = 500, Stat, Conf = 0.95, ReturnSD = FALSE, ...)
   }
   resample <- sample(x, size = length(x) * n, replace = TRUE)
   mat <- matrix(resample, nrow = length(x), ncol = n)
-    res <- apply(mat, 2, Stat, ...)
-  lint <- (1 - Conf)/2
+    res <- suppressWarnings(try(apply(mat, 2, Stat, ...), silent = TRUE))
+  NAindex <- which(is.na(res) == TRUE)
+  LengthNA <- length(NAindex)
+  if(LengthNA == n) stop("the result of the function for all N bootsrapped samples was NA")
+  if(LengthNA > 0) warning("One or more results of the function for the bootstrapped samples was NA. These were removed")
+    res <- res[!is.nan(res)]
+    lint <- (1 - Conf)/2
   uint <- 1-(1-Conf)/2
   Lower <- as.numeric(quantile(res, lint))
   Upper <- as.numeric(quantile(res, uint))
@@ -3291,8 +3305,8 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
 #' @param x a data.frame with three columns in the order of date (or POSIXct), precipitation, and discharge
 #' @param main a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"
 #' @param ylab User choice for the y label of the plot. THe default is "Discharge (m3/s)".
-#' @param from a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x
-#' @param to an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x
+#' @param From a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x
+#' @param To an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x
 #' @param adj.y a numeric value to adjust the closeness of the preciptation and discharge in the plot. Default is 1.5. A lower value brings them closer and a larger value further apart
 #' @param plw a numeric value to adjust the width of the precipitation lines. Default is one. A larger value thickens them and vice versa
 #' @param qlw a numeric value to adjust the width of the discharge line. Default is 1.8. A larger value thickens them and vice versa
@@ -3300,11 +3314,11 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
 #' @examples
 #' #Plot the Thames precipitation and discharge for the 2013 hydrological year,
 #' #adjusting the y axis to 1.8.
-#' HydroPlot(ThamesPQ, from = "2013-10-01", to = "2014-09-30", adj.y = 1.8)
+#' HydroPlot(ThamesPQ, From = "2013-10-01", To = "2014-09-30", adj.y = 1.8)
 #' @return A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
 #' @author Anthony Hammond
 
-HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Discharge (m3/s)",from = NULL, to = NULL, adj.y = 1.5, plw = 1, qlw = 1.8, Return = FALSE){
+HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Discharge (m3/s)",From = NULL, To = NULL, adj.y = 1.5, plw = 1, qlw = 1.8, Return = FALSE){
   if(is.data.frame(x) == FALSE) stop("x needs to be a dataframe with date of POSIXct in the first column, precipitation in the second and discharge in the third")
   if(is.factor(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class factor")}
   if(is.character(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class character")}
@@ -3314,11 +3328,11 @@ HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Disch
   ind1 <- 1
   ind2 <- length(x[,1])
   suppressWarnings(if(is(x[1,1], "Date") == TRUE){
-    if(is.null(from)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.Date(from))}
-    if(is.null(to)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.Date(to))} } else
+    if(is.null(From)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.Date(From))}
+    if(is.null(To)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.Date(To))} } else
     {
-      if(is.null(from)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.POSIXct(from))}
-      if(is.null(to)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.POSIXct(to))} })
+      if(is.null(From)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.POSIXct(From))}
+      if(is.null(To)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.POSIXct(To))} })
   if(length(ind1) < 1 | length(ind2) < 1) {stop("The chosen date or datetime is not within the first column of x")}
   par(mar=c(5.1, 5, 4.1, 5))
   with(x, plot(x[ind1:ind2,1],x[ind1:ind2,3],  type = "l", col = rgb(0, 0.6, 0.3), main = main, xlab = "Time", ylab = ylab, lwd = qlw, ylim = c(min(x[ind1:ind2,3],na.rm = TRUE), adj.y*max(x[ind1:ind2,3],na.rm = TRUE))))
@@ -3335,18 +3349,28 @@ HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Disch
 
 #' Plot of the annual maximum sample
 #'
-#' Provides two plots. First, a histogram of the sample, second, a barplot
+#' Provides a barplot for an annual maximum sample
 #'
-#' When used with a GetAM object or any data.frame with dates in the first column, the barplot is daily. Therefore, although it's an annual maximum (AM) sequence, some bars will be closer together depending on the number of days between them.
-#' @param x a data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id is necessary for inclusion of the id in the plot title. An AM object derived from the GetAM or AMImport functions.
+#' When used with a GetAM object or any data.frame with dates/POSIXct in the first column, the date-times are daily or sub-daily. Therefore, although it's an annual maximum (AM) sequence, some bars may be closer together depending on the number of days between them.
+#' @param x A data.frame with at least two columns. The first a date column and the second the annual maximum (AM) sequence. A third column with the station id can be applied which is then used for the default plot title.
+#' @param ylab Label for the y axis (character string).
+#' @param xlab Label for the x axis (character string).
+#' @param main Title for the plot (character string). The default is 'Annual maximum sample:', where : is followed by an ID number if this is included in a third column of the dataframe x.
 #' @examples
 #' #Get an AMAX sample and plot
 #' AMplot(GetAM(58002))
 #' @return A barplot of the annual maximum sample
 #' @author Anthony Hammond
-AMplot <- function(x){
-  SiteRef <- as.character(x[1,3])
-  plot(x[, 1:2], type = "h", col = rgb(0,0.3,0.6), lwd = 1.5, main = paste("Annual maximum peak flows", SiteRef, sep = ": "), ylab = "Discharge (m3/s)", xlab = "Water Years")
+AMplot <- function(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", main = NULL){
+  if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
+  #if(ncol(x) != 2) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
+  if(class(x[,1])[1] != class(as.POSIXct("1981-10-15"))[1] &class(x[,1])[1] != class(as.Date("1981-10-15"))[1]  ) stop("x must be a dataframe with two columns, Date or POSIXct in the first and numeric in the second.")
+  if(class(x[,2])[1] != class(runif(10))[1]) stop("x must be a dataframe with numeric in the second column.")
+  if(is.null(main)) {
+    SiteRef <- as.character(x[1,3])
+    main <- paste("Annual maximum sample", SiteRef, sep = ": ")
+    } else {main <- main}
+  plot(x[, 1:2], type = "h", col = rgb(0,0.3,0.6), lwd = 1.5, main = main, ylab = ylab, xlab = xlab)
 }
 
 
@@ -3416,49 +3440,7 @@ DiagPlots <- function(x, gauged = FALSE){
   if(gauged == TRUE) {points(CDs[19,2]/1000, CDs[20,2]/1000, pch = 19, col = "blue")}
 }
 
-#' Design hydrograph extraction
-#'
-#' Extracts a mean hydrograph from a flow series
-#'
-#'All the peaks over the 97.5th percentile are identified and separated by a user defined value 'div', which is a number of time steps. The top N peaks are selected and the hydrographs extracted where EventSep is the number of timesteps either side of the peak. Each hydrograph is centred on the peak and truncated either side by EventSep. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph.
-#' @param x a dataframe with Date or POSIXct in the first coumn and the numeric vector of discharge in the second
-#' @param div The number of timesteps to separate peaks for the peak extraction process.
-#' @param EventSep When hydrographs are extracted according to the peaks, the start and end point of the hydrograph is Peak - EventSep and Peak + EventSep * 1.5
-#' @param N number of event hydrographs from which to derive the mean hydrograph. Default is 10. Depending on the length of x, there may be fewer than 10
-#' @param Exclude An index (single integer or vector of integers up to N) for which hydrographs to exclude if you so wish. This may require some trial and error. You may want to increase N for every excluded hydrograph.
-#' @param Plot logical argument with a default of TRUE. If TRUE, all the hydrographs from which the mean is derived are plotted along with the mean hydrograph.
-#' @param main Title for the plot
-#' @examples
-#' #Extract a design hydrograph from the Thames daily mean flow. Then print the resulting hydrograph
-#' ThamesDesHydro <- DesHydro(ThamesPQ[,c(1,3)], div = 30, EventSep = 10, N = 10)
-#' @return a list of length three. The first element is a dataframe of the peaks of the hydrographs and the associated dates. The second element is a dataframe with all the scaled hydrographs, each column being a hydrograph. The third element is the averaged hydrograph
-#' @author Anthony Hammond
 
-DesHydro <- function(x, div, EventSep, N = 10, Exclude = NULL, Plot = TRUE, main = "Design Hydrograph") {
-  if(class(x) != class(data.frame(seq(1,3)))) stop("x must be a datafrane with Date or POSIXct in the first column and numeric in the second")
-  if(class(x[1,1])[1] != class(as.Date("1990-01-01"))[1] & class(x[1,1])[1] != class(as.POSIXct("1990-01-01 09:00:00"))[1]) stop("The first column of x must be Date or POSIXct")
-  POTx <- suppressWarnings(POTt(x, Plot = FALSE, div = div))
-  POTx <- POTx[order(POTx[,2], decreasing = TRUE),]
-  if(nrow(POTx) < N) warning("There are fewer events than N")
-  if(nrow(POTx) < N) {POTx <- POTx} else {POTx <- POTx[1:N,]}
-  if(is.null(Exclude) == FALSE) {POTx <- POTx[-Exclude,]}
-  DateIndex <- match(POTx[,1], x[,1])
-  Hydros <- list()
-  for(i in 1:nrow(POTx)) {Hydros[[i]] <- x[(DateIndex[i]-EventSep):(DateIndex[i]+EventSep*1.5),2]}
-  ScaleHydros <- list()
-  for(i in 1:length(Hydros)) {ScaleHydros[[i]] <- Hydros[[i]]/max(Hydros[[i]])}
-  ScaleHydrosDF <- data.frame(ScaleHydros[[1]], ScaleHydros[[2]])
-  for(i in 3:length(ScaleHydros)) {ScaleHydrosDF <- cbind(ScaleHydrosDF, ScaleHydros[[i]])}
-  colnames(ScaleHydrosDF) <- paste("hydro", seq(1,ncol(ScaleHydrosDF)), sep = "")
-  Average <- as.numeric(apply(ScaleHydrosDF, 1, mean))
-  if(Plot == TRUE) {
-    matplot(ScaleHydrosDF, type = "l", col = hcl.colors(ncol(ScaleHydrosDF)), ylab = "Scaled discharge", xlab = "Time index")
-    points(Average, lwd = 2, col = "black", type = "l")
-  }
-  Results <- list(Average, POTx, ScaleHydrosDF)
-  names(Results) <- c("DesignHydrograph", "Peaks", "AllScaledHydrographs")
-  return(Results)
-}
 
 
 

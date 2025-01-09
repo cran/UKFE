@@ -13,6 +13,8 @@ GetDataNRFA(ID, Type = "Q")
 }
 \value{
 A data.frame with date in the first columns and variable/s of interest in the remaining column/s.
+Except for the following circumstances: When Type = "Catalogue", then a large dataframe is returned with all the NRFA gauge metadata.
+When Type = "AMAX" or "POT" and there are rejected years a list is returned. Where the first element is the dataframe of data and the second is rejected year/s (character string).
 }
 \description{
 Extracts NRFA data using the API.
