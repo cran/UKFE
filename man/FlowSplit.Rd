@@ -30,8 +30,8 @@ A dataframe with the original flow (x) in the first column and the baseflow in t
 A function to separate baseflow from runoff.
 }
 \details{
-The function works by linearly joining all the low points in the hydrograph - also the beginning and end points. Where a low point is any point with two higher points either side. Then any values above the hydrograph (xi) are set as xi.
-The baseflow point on the falling limb of the hydrgraph/s can be raised using the AdjUp argument. The function works for any sampling frequency and arbitrary hydrograph length (although more suited for sub-annual to event scale). This function is not design for deriving long term baseflow index. It could be used for such a purpose but careful consideration is required for the BaseQUpper argument especially for comparison across river locations. If baseflow index is required the BFI function (with daily mean flow) may be more suitable.
+The function is intended for the event scale as opposed to long term flow series. It works by linearly joining all the low points in the hydrograph - also the beginning and end points. Where a low point is any point with two higher points either side. Then any values above the hydrograph (xi) are set as xi.
+The baseflow point on the falling limb of the hydrgraph/s can be raised using the AdjUp argument. The function works for any sampling frequency and arbitrary hydrograph length (although more suited for event scale and sub-annual events  in general). This function is not design for deriving long term baseflow index. It could be used for such a purpose but careful consideration would be required for the BaseQUpper argument especially for comparison across river locations. If baseflow index is required the BFI function (with daily mean flow) is more suitable.
 }
 \examples{
 # We'll extract a wet six month period on the Thames during the 2006-2007 hydrological year

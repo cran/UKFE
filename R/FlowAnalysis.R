@@ -138,8 +138,8 @@ FlowDurationCurve <- function(x = NULL, main = "Flow duration curve", CompareCur
 #' Flow splitter
 #'
 #'@description A function to separate baseflow from runoff.
-#'@details The function works by linearly joining all the low points in the hydrograph - also the beginning and end points. Where a low point is any point with two higher points either side. Then any values above the hydrograph (xi) are set as xi.
-#'The baseflow point on the falling limb of the hydrgraph/s can be raised using the AdjUp argument. The function works for any sampling frequency and arbitrary hydrograph length (although more suited for sub-annual to event scale). This function is not design for deriving long term baseflow index. It could be used for such a purpose but careful consideration is required for the BaseQUpper argument especially for comparison across river locations. If baseflow index is required the BFI function (with daily mean flow) may be more suitable.
+#'@details The function is intended for the event scale as opposed to long term flow series. It works by linearly joining all the low points in the hydrograph - also the beginning and end points. Where a low point is any point with two higher points either side. Then any values above the hydrograph (xi) are set as xi.
+#'The baseflow point on the falling limb of the hydrgraph/s can be raised using the AdjUp argument. The function works for any sampling frequency and arbitrary hydrograph length (although more suited for event scale and sub-annual events  in general). This function is not design for deriving long term baseflow index. It could be used for such a purpose but careful consideration would be required for the BaseQUpper argument especially for comparison across river locations. If baseflow index is required the BFI function (with daily mean flow) is more suitable.
 #'@param x A numeric vector (your flow series / hydrograph).
 #'@param BaseQUpper Numeric value which is an upper level of baseflow (i.e. the baseflow will not extend above this level). The default is the mean of x. It can be set arbitrarily high so that the baseflow joins all low points/troughs in the hydrograph.
 #'@param AdjUp A numeric value between 0 and 0.5. This allows the user to adjust the baseflow up the falling limb/s of the hydrogaph. With 0.05 being a small upward adjustment and 0.49 being a large upward adjustment.
@@ -253,7 +253,7 @@ DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plo
   }
   POTx <- POTx[order(POTx[,2], decreasing = TRUE),]
   rownames(POTx) <- seq(1, nrow(POTx))
-  if(nrow(POTx) < 3) stop("There are fewer than three peaks identified with the current threshold and EventSep settings. Ideally you should use a longer time series but it might work change these settings")
+  if(nrow(POTx) < 3) stop("There are fewer than three peaks identified with the current threshold and EventSep settings. Ideally you should use a longer time series but it might work if you change the settings")
   if(nrow(POTx) < N) warning("There are fewer events (based on the current setting) than N. Use a longer timeseries or change the settings")
   if(nrow(POTx) < N) {POTx <- POTx} else {POTx <- POTx[1:N,]}
   if(is.null(Exclude) == FALSE) {POTx <- POTx[-Exclude,]}

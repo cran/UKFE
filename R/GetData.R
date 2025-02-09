@@ -505,7 +505,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
     GetQH <- function(WISKI_ID, From = NULL, To = NULL, Period = "DailyMax", Type = "flow")  {
       WISKI_ID <- as.character(WISKI_ID)
       Periods <- c("DailyMax", "DailyMean", "15Mins", "Hourly")
-      if(is.na(match(Period, Periods)) ) stop("Period must be one of DailyMax, DailyMean, 15Mins, or Hourly")
+      if(is.na(match(Period, Periods)) ) stop("Period must be one of DailyMax, DailyMean, 15Mins, or Hourly. Note that level gauges don't tend to have a DailyMean option")
       if(Type != "flow" & Type != "level") stop("Type must equal level or flow")
       if(Type == "flow") {Unit <- "-m3s"}
       if(Type == "level") {Unit <- "-m"}
@@ -515,7 +515,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
 
       IDPath <- read.csv(paste("https://environment.data.gov.uk/hydrology/id/stations.csv?wiskiID=", WISKI_ID ,sep = "") )
       TypeCheck <- grep(Type, IDPath$measures.parameter)
-      if(length(TypeCheck) == 0) stop("Your Type is not available for this WISKI_ID")
+      if(length(TypeCheck) == 0) stop("Your Type is not available for the specified WISKI_ID and Period")
       ID <- IDPath$notation
       Data <- read.csv(paste("https://environment.data.gov.uk/hydrology/id/measures/", ID, "-", Type, "-", PeriodPath, Unit, "-qualified/readings.csv?_limit=2000000&mineq-date=", From, "&maxeq-date=", To, sep = ""))
       if(PeriodPath == "max-86400" | PeriodPath == "m-86400"){
@@ -544,13 +544,13 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
           IndexNoData <- NULL
           for(i in 1:length(xList)) {IndexNoData[i] <- class(xList[[i]])}
           IndexData <- which(IndexNoData != "try-error")
-          if(length(IndexData) == 0) stop("No data available for the WISKI ID used")
+          if(length(IndexData) == 0) stop("No data available for the WISKI ID used. Check you have the correct Type; flow or level")
           xListResults <- list()
           for(i in 1:length(IndexData)) {xListResults[[i]] <- xList[[IndexData[i]]]}
           Result <- do.call(rbind,xListResults)
         }
         if(as.numeric(as.Date(To) - as.Date(From)) <= 1825) {
-          Result <- GetQH(WISKI_ID = WISKI_ID, From = From, To = To, Period = "15Mins")
+          Result <- GetQH(WISKI_ID = WISKI_ID, From = From, To = To, Period = "15Mins", Type = Type)
         }
       }
 
@@ -711,6 +711,7 @@ GetDataSEPA_QH <- function(Lat = NULL, Lon = NULL, RiverName = NULL, Type = "Flo
           Result <- AggDayHour(Result, func = mean, "Hour")
         }
       }
+      if(Type == "Level") {colnames(Result)[2] <- "Stage"}
       return(Result)
     }
 

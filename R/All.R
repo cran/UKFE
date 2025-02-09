@@ -1519,7 +1519,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #'
 #'Estimated median annual maximum flow from catchment descriptors and donor sites
 #'
-#'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that the subject catchment is rural, and the donor is urban, the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
+#'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that an urban donor is considered appropriate the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param Don1 numeric site reference for the a single donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
@@ -1602,7 +1602,7 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, uef = FAL
       Result <- Donors$QMED.adj[Rw]}
     return(Result)
   }
-  Donor2 <- function(CDs = NULL, Sites, DonUrbAdj = FALSE) {
+  Donor2 <- function(CDs = NULL, Sites) {
     rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
     NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
     Site1 <- Sites[1]
@@ -1967,7 +1967,7 @@ UAF <- function(CDs = NULL, URBEXT2000, BFIHOST) {
 
 GetAM <- function(ref) {
   Test <- which(AMSP$id == ref)
-  if(length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use AMImport to get sites not suitable for pooling")
+  if(length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use the GetDatNRFA function for annual maximum samples including peak flow gauges not considered suitable for pooling. Another option is the AMImport function")
   AM <- subset(AMSP, id == ref)
   rws <- seq(1, length(AM$Flow))
   Date <- as.Date(AM[,1])
@@ -2090,9 +2090,14 @@ GetCDs <- function(x) {
     AllCat <- GetDataNRFA(Type ="Catalogue")
     Index <- which(AllCat$id == x)
     if(length(Index) == 0) stop("Gauge id does not appear to be within the National River Flow Archive")
-    ColIndex <- c(3, 91, 92, 93, 50, 90, 84,83, 53, 89, 81, 86, 87, 88, 63, 62, 85, 102, 5, 6, 56, 38, 99, 82)
+    #ColIndex <- c(3, 91, 92, 93, 50, 90, 84,83, 53, 89, 81, 86, 87, 88, 63, 62, 85, 102, 5, 6, 56, 38, 99, 82)
+    ColIndex <- c(3, 91, 92, 93, 82, 90, 84,83, 98, 89, 81, 88, 86, 87, 63, 62, 85,102, 5, 6, 99, 50, 38)
+    Rename <- c("AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST", "DPLBAR", "DPSBAR", "FARL",
+                "FPEXT", "LDP", "PROPWET", "RMED-1H", "REMD-1D", "RMED-2D", "SAAR",
+                "SAAR4170", "SPRHOST","URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFI", "MeanFlow")
     Result <- t(AllCat[Index,ColIndex])
-    Result <- data.frame(Descriptor = rownames(Result), Value = Result[,1])
+    #Result <- data.frame(Descriptor = rownames(Result), Value = Result[,1])
+    Result <- data.frame(Descriptor = Rename, Value = Result[,1])
     rownames(Result) <- seq(1, nrow(Result))
     return(Result)
   }
@@ -2394,6 +2399,7 @@ POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = 
   if(is(x, "data.frame")) {
     if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
   }
+  if(length(ncol(x)) > 2) stop("x must be either a numeric vector or a dataframe with two columns having  date (or POSIXct) in the first column and numeric variable in the second")
   PFunc <- function(TS)
   {
     L <- length(TS)-2
@@ -2507,16 +2513,6 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
     if(Plot == TRUE) {plot(Result, type = type)}
     return(Result)
   }
-  if(Truncate == TRUE) {
-    Mons <- as.POSIXlt(x[,1])$mon +1
-    MinMon <- min(which(Mons == Mon))
-    YearMinMon <- as.POSIXlt(x[MinMon,1])$year +1900
-    DateTimeMin <-  as.POSIXct(paste(YearMinMon, "-", Mon, "-01", Hr, ":00:00", sep = ""))
-    MaxMon <- max(which(Mons == Mon))
-    YearMaxMon <- as.POSIXlt(x[MaxMon,1])$year +1900
-    DateTimeMax <-  as.POSIXct(paste(YearMaxMon, "-", Mon, "-01", Hr, ":00:00", sep = ""))
-    x <- PluckOutTime(x, DateTimeMin, DateTimeMax)
-  }
 
   StDate <- x[1,1]
   EndDate <- x[nrow(x), 1]
@@ -2525,9 +2521,15 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   LtEnd <- as.POSIXlt(EndDate)
   StYr <- LtSt$year + 1900
   EndYr <- LtEnd$year + 1900
-  StDateTime <- paste(StYr, "-", Mon, "-01", Hr, ":00:00", sep = "")
-  EndDateTime <- paste(EndYr, "-", Mon, "-01", Hr, ":00:00", sep = "")
+  StDateTime <- paste(StYr, "-", Mon, "-01 ", Hr, ":00:00", sep = "")
+  EndDateTime <- paste(EndYr, "-", Mon, "-01 ", Hr, ":00:00", sep = "")
   DatesWY <-  seq(as.POSIXct(StDateTime), as.POSIXct(EndDateTime), by = "year")
+  DatesWY <- sort(c(x[1,1], DatesWY, (x[nrow(x),1]+1)))
+  DupTest <- which(duplicated(DatesWY) == TRUE)
+  if(length(DupTest) > 0) {DatesWY <- DatesWY[-which(duplicated(DatesWY) == TRUE)]}
+  if(DatesWY[1] < x[1,1]) {DatesWY <- DatesWY[-1]}
+  nDWY <- length(DatesWY)
+  if(as.Date(DatesWY[nDWY-1]) >= as.Date(x[nrow(x),1])) {DatesWY <- DatesWY[-length(DatesWY)]}
   nDWY <- length(DatesWY)
   WYList <- list()
   for(i in 1:(nDWY-1)) {WYList[[i]] <- PluckOutTime(x, DatesWY[i], DatesWY[i+1])}
@@ -2555,14 +2557,27 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   if(Sliding == TRUE) {
     AM <- NULL
     for(i in 1:length(WYList)) {AM[i] <- HeaviestPeriod(WYList[[i]][,2], Period = N, Stat = Stat)[1,1]}
-    AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)}
+    AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)
+    colnames(AM) <- c("DateTime", "Result")
+    }
 
   if(Sliding == FALSE) {
     AM <- NULL
     for(i in 1:length(WYList)) {AM[i] <- Stat(WYList[[i]][,2], ...)}
-    AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)}
+    AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)
+    colnames(AM) <- c("DateTime", "Result")
+    }
   AM[which(AM[,2] == -Inf),2] <- NA
-  colnames(AM) <- c("DateTime", "Result")
+  if(Truncate == TRUE) {
+    #if(as.Date(WYList[[1]][1,1]) > as.Date(StDateTime)) {AM <- AM[-1,]}
+    DatesDiff <- as.numeric(diff(DatesWY))
+    rmInd <- which(DatesDiff < 365)
+    if(length(rmInd) > 0) {AM <- AM[-rmInd,]}
+    rownames(AM) <- seq(1, nrow(AM))
+    #if(DatesDiff[1] < 365) {AM <- AM[-1, ]}
+    #if(DatesDiff[length(DatesDiff)] < 365) {AM <- AM[-nrow(AM), ]}
+  }
+
   return(AM)
 }
 
@@ -2639,6 +2654,7 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
     Lower <- apply(BootResults, 1, quantile, LowQuant)
     Upper <- apply(BootResults, 1, quantile, HighQuant)
     Central <- PoolEst(x, gauged = Gauged, QMED = GetQMED(rownames(x)[1]),dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][,2]
+    if(IncAMest == FALSE) {Result <- signif(data.frame(RP, Central, Lower, Upper), 3)}
     if(IncAMest == TRUE) {
       AM <- GetAM(rownames(x)[1])[,2]
       RPs <- c(2,5, 10, 20, 50, 75, 100, 200, 500, 1000)
@@ -3932,13 +3948,16 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
   else {Season <- season}
   if(is.null(CDs) == TRUE & is.null(Depth) == TRUE) {Depth <- sum(Rain)}
   if(is.null(CDs) == TRUE & is.null(duration) == TRUE) {duration <- length(Rain)}
+  if(is.null(CDs) == FALSE) {
+    if(class(CDs)!= class(data.frame(c(1,2,3)))) stop("If CDs argument is used it must be a data.frame with two columns. The first with the name of descriptors, the second with the associated value")
+  }
   Params <- function(x, season, D = NULL, cini = NULL) {
     PROPWET <- x[which(x$Descriptor == "PROPWET"),2]
     DPLBAR <- x[which(x$Descriptor == "DPLBAR"),2]
     URBEXT1990 <- x[which(x$Descriptor == "URBEXT1990"),2]
     DPSBAR <- x[which(x$Descriptor == "DPSBAR"),2]
     SAAR <- x[which(x$Descriptor == "SAAR"),2]
-    BFIHOST <- x[which(x$Descriptor == "BFIHOST19"),2]
+    BFIHOST <- x[grep("BFIHOST", x$Descriptor)[1],2]
     AREA <- x[which(x$Descriptor == "AREA"),2]
     TP <- 1.56*PROPWET^-1.09*DPLBAR^0.6*(1+URBEXT1990)^-3.34*DPSBAR^-0.28
     if(is.null(D) == TRUE) {D <- TP*(1+(SAAR/1000))} else {D <- D}
@@ -4989,7 +5008,7 @@ MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab
   if(is.na(as.Date(x[nrow(x),1]))) stop("The last time stamp in the data.frame is NA. Ideally the final value should be associated with a date.")
   if((  as.numeric(as.Date(x[nrow(x),1]) - as.Date(x[1,1])) / 395) < 2) stop("To ensure a at least one full year is covered (Jan through Dec) the difference between the x end date and start date must be at least 1.6 years")
   PluckOutTime <- function(x, from, to, Plot = FALSE, type = "l") {
-    Ind <- which(as.POSIXct(x[,1]) >= as.POSIXct(from) & as.POSIXct(x[,1]) < as.POSIXct(to))
+    Ind <- which(as.POSIXct(x[,1]) >= as.POSIXct(from) & as.POSIXct(x[,1]) <= as.POSIXct(to))
     Result <- x[Ind,]
     if(Plot == TRUE) {plot(Result, type = type)}
     return(Result)

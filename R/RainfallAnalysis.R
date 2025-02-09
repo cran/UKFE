@@ -9,6 +9,7 @@
 #'@param x A data.frame with POSIXct in the first column and rainfall in the second. The data must have an hourly or sub-hourly sampling rate.
 #'@param Plot Logical argument with a default of TRUE. If TRUE, the DDF curves are plotted.
 #'@param main Title for the plot (character string). The default is no title.
+#'@param Truncate Logical argument with a default of TRUE. If TRUE the extraction of annual maximum process truncates the data to incorporate only full hydrological years. If there is significant rainfall within a partial year it will not be included unless Truncate = FALSE. If Truncate = FALSE, ensure that there are at least 92 hours of data available in the partial years or the function will fail.
 #'
 #'@examples
 #'# We'll extract all available 15 minute rainfall from the St Ives (Cambridgeshire)
@@ -20,7 +21,7 @@
 #'@author Anthony Hammond
 
 
-DDFExtract <- function(x, Plot = TRUE, main = NULL) {
+DDFExtract <- function(x, Plot = TRUE, main = NULL, Truncate = TRUE) {
 if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
   if(ncol(x) != 2) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
   if(class(x[,1])[1] != class(as.POSIXct("1981-10-15"))[1]) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
@@ -40,7 +41,7 @@ if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a dataframe with two
   }
   Hours <- c(1,3,6,12,24,36,48,60,72,84,96)
   AMList <- list()
-  for(i in 1:11) {AMList[[i]] <- suppressWarnings(AnnualStat(x, sum, Sliding = TRUE, N = Hours[i], na.rm = TRUE))[,2]}
+  for(i in 1:11) {AMList[[i]] <- suppressWarnings(AnnualStat(x, sum, Sliding = TRUE, Truncate = FALSE,N = Hours[i], na.rm = TRUE))[,2]}
   RMED <- NULL
   for(i in 1:length(AMList)) {RMED[i] <- median(AMList[[i]])}
   #Hrs <- c(0.25, 1, 6, 12, 24, 36, 48, 60, 72, 84, 96)

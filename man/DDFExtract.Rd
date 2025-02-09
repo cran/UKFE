@@ -4,7 +4,7 @@
 \alias{DDFExtract}
 \title{Derive and plot rainfall Depth Duration Frequency curves.}
 \usage{
-DDFExtract(x, Plot = TRUE, main = NULL)
+DDFExtract(x, Plot = TRUE, main = NULL, Truncate = TRUE)
 }
 \arguments{
 \item{x}{A data.frame with POSIXct in the first column and rainfall in the second. The data must have an hourly or sub-hourly sampling rate.}
@@ -12,6 +12,8 @@ DDFExtract(x, Plot = TRUE, main = NULL)
 \item{Plot}{Logical argument with a default of TRUE. If TRUE, the DDF curves are plotted.}
 
 \item{main}{Title for the plot (character string). The default is no title.}
+
+\item{Truncate}{Logical argument with a default of TRUE. If TRUE the extraction of annual maximum process truncates the data to incorporate only full hydrological years. If there is significant rainfall within a partial year it will not be included unless Truncate = FALSE. If Truncate = FALSE, ensure that there are at least 92 hours of data available in the partial years or the function will fail.}
 }
 \value{
 A dataframe with hours (1 to 96) in the first column then depths associated with a range of return periods (2 to 1000) in the remaining nine columns. If Plot = TRUE, a plot of the DDF curves is also returned.
