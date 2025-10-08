@@ -21,9 +21,10 @@ Estimates the parameters of the Generalised extreme value, generalised logistic,
 Given a dataframe with return periods (RPs) in the first column and associated estimates in the second column, this function provides an estimate of the distribution parameters. Ideally the first RP should be 2. Extrapolation outside the RPs used for calibration comes with greater uncertainty.
 }
 \examples{
-#Get some catchment descriptors and some quick results. Then estmate the GenLog parameters
-Results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
-OptimPars(Results[,1:2])
+# Get some catchment descriptors and some quick results
+# Then estimate the GenLog parameters
+results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
+OptimPars(results[, 1:2])
 
 }
 \author{

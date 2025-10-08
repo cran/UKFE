@@ -22,15 +22,17 @@ A new pooling group, the same as x except for the user adjusted Lcv and Lskew fo
 Adjusts the linear coefficient of variation (Lcv) and the linear skewness (LSkew) for a chosen site in a pooling group
 }
 \details{
-Pooling groups are formed from the NRFAData data.frame and all the Lcv and LSkew values are precalculated using the National River Flow Archive Peak flow dataset noted in the description file. The resulting pooled growth curve is calculated using the Lcv and Lskew in the pooled group. The user may have further data and be able to add further peak flows to the annual maximum samples within a pooling group. If that is the case a new Lcv and Lskew can be determined using the LMoments function. These new values can be added to the pooling group with this LRatioChange function. Also the permeable adjustment function may have been applied to a site, which provides a new Lcv and LSkew. In which case, the LRatioChange function can be applied. The function creates a new pooling group object and x will still exist in it's original state after the function is applied.
+Pooling groups are formed from the NRFAData data.frame and all the Lcv and LSkew values are precalculated using the National River Flow Archive Peak flow dataset noted in the description file. The resulting pooled growth curve is calculated using the Lcv and Lskew in the pooled group. The user may have further data and be able to add further peak flows to the annual maximum samples within a pooling group. If that is the case a new Lcv and Lskew can be determined using the LMoments function. These new values can be added to the pooling group with this LRatioChange function. Also the non-flood years adjustment function may have been applied to a site, which provides a new Lcv and LSkew. In which case, the LRatioChange function can be applied. The function creates a new pooling group object and x will still exist in it's original state after the function is applied.
 }
 \examples{
-# Get some catchment descriptors and create a pooling group.
-CDs.39001 <- GetCDs(39001)
-Pool.39001 <- Pool(CDs.39001, iug = TRUE)
-# apply the function to create a new adjusted pooling group,
-#changing the subject site lcv and lskew to 0.187 and 0.164, respectively
-Pool.39001Adj <- LRatioChange(Pool.39001, SiteID = 39001, lcv = 0.187, lskew = 0.164)
+# Get some catchment descriptors and create a pooling group
+cds_39001 <- GetCDs(39001)
+pool_39001 <- Pool(cds_39001, iug = TRUE)
+
+# Apply the function to create a new adjusted pooling group,
+# changing the subject site's lcv and lskew to 0.187 and 0.164, respectively
+pool_39001_adj <- LRatioChange(pool_39001, SiteID = 39001, lcv = 0.187, lskew = 0.164)
+
 }
 \author{
 Anthony Hammond

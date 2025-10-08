@@ -12,21 +12,25 @@ NGRDist(i, j)
 \item{j}{a numeric vector of length two. The first being the easting and the second being the northing of the second site}
 }
 \value{
-A distance in kilometres (if six digits for easting and northing are used)
+A distance in kilometres (if British national grid easting and northing are applied)
 }
 \description{
-Calculates the euclidean distance between two british national grid reference points using the pythagorean method
+Calculates the Euclidean distance between two British national grid reference points using the Pythagorean/Euclidean method.
 }
 \details{
-Note, that the result is converted to km when six digits are used for easting and northing, when six digits would usually provide a result in metres.
+Note, that the result is converted to km from m.
 }
 \examples{
-#Calculate the distance between the catchment centroid for the
-#Kingston upon Thames river gauge and the catchment centroid for the
-#gauge at Ardlethen on the River Ythan. First view the eastings and northings
+# Calculate the distance between the catchment centroid for the
+# Kingston upon Thames river gauge and the catchment centroid for the
+# gauge at Ardlethen on the River Ythan.
+# First retrieve the catchment descriptors (CDs) to obtain eastings and northings
 GetCDs(10001)
 GetCDs(39001)
+
+# Calculate the distance between two centroids (eastings and northings)
 NGRDist(i = c(381355, 839183), j = c(462899, 187850))
+
 }
 \author{
 Anthony Hammond

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Data input</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Data input</h1>
+
+
+
+<div id="data-within-the-ukfe-package" class="section level1">
+<h1>Data within the UKFE package</h1>
+<p>The UKFE package includes several datasets that can be used used in
+analyses. These are based on data from the National River Flow Archive
+(NRFA). There is a pre-processing script that converts new releases of
+the NRFA Peak Flow Dataset into data frames suitable for use within UKFE
+(this can be found in the ‘inst’ folder of the package). UKFE is updated
+shortly after each release to use the latest data. The user can also
+input their own data.</p>
+<p>The UKFE package contains five datasets. These are:</p>
+<ul>
+<li><p><code>AMSP</code>: This contains annual maximum data from the
+NRFA for sites suitable for pooling. These are from the AM files with
+years classed as rejected removed. This is a data frame with three
+columns containing the date, annual maximum peak flow and the NRFA gauge
+ID.</p></li>
+<li><p><code>NRFAData</code>: This contains catchment descriptors from
+the NRFA and calculated statistics for sites suitable for pooling. The
+statistics include L-moments, L-moment ratios, sample size and QMED, all
+derived from the AMAX data with rejected years removed. It is possible
+for the user to temporarily edit this data frame.</p></li>
+<li><p><code>QMEDData</code>: This contains catchment descriptors from
+the NRFA and calculated statistics for sites suitable for QMED and
+pooling. The statistics include QMED derived from the AMAX data with
+rejected years removed (<code>QMED</code>) and its factorial standard
+error (<code>QMEDfse</code>), QMED derived from catchment descriptors
+(<code>QMEDcd</code>) and the sample size of the AMAX data with rejected
+years removed (<code>N</code>). It is possible for the user to
+temporarily edit this data frame.</p></li>
+<li><p><code>ThamesPQ</code>: This contains daily flow and catchment
+rainfall for the Thames at Kingston catchment from 2000-10-01 to
+2015-09-30. There are three columns containing date (<code>Date</code>),
+precipitation (<code>P</code>) and daily mean flow (<code>Q</code>).
+Dates are in the format YYYY-MM-DD, following the ISO 8601 international
+standard. The data are from the NRFA (gauge 39001).</p></li>
+<li><p><code>UKOutline</code>: This contains the eastings and northings
+around the coastline of the UK. The data are sourced from <a href="https://environment.data.gov.uk/" class="uri">https://environment.data.gov.uk/</a>.</p></li>
+</ul>
+<p>These datasets each have a help file and can be viewed by typing the
+name of the dataset into the console, or can be saved to an object to
+view:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Load the package</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(UKFE)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Save the &#39;QMEDData&#39; data frame within the UKFE package to an object within your R </span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># environment</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>QMEDData <span class="ot">&lt;-</span> QMEDData</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># View the first rows of the data in the console</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">head</span>(QMEDData)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;          AREA ALTBAR ASPBAR ASPVAR BFIHOST19 DPLBAR DPSBAR  FARL  FPEXT   LDP</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; 2001 553.2400    213    201   0.04     0.312  30.33   97.0 0.858 0.0555 56.78</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; 2002 423.4800    259    178   0.15     0.315  28.71   97.3 0.845 0.0553 52.37</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; 3002 237.1375    439     44   0.06     0.331  15.94  218.2 0.974 0.0377 31.93</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; 3003 331.6675    297     61   0.07     0.309  16.79  148.2 0.915 0.0488 31.20</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; 4003 202.3750    396    123   0.11     0.366  22.55  147.7 0.908 0.0374 43.06</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; 4005 123.6650    463    123   0.03     0.299  12.97  289.0 0.918 0.0366 28.09</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;      PROPWET RMED-1H RMED-1D RMED-2D SAAR SAAR4170 SPRHOST URBEXT2000     QMED</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; 2001    0.65     8.3    33.0    43.7 1117     1102   52.88      0e+00 170.2170</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 2002    0.59     8.8    36.4    48.9 1217     1190   54.16      2e-04 153.4350</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; 3002    0.81     9.2    43.7    65.4 1784     2024   49.93      0e+00 177.8840</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; 3003    0.81     9.4    45.4    65.2 1896     1962   53.57      0e+00 347.4660</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; 4003    0.63     9.3    40.0    56.4 1366     1471   48.11      5e-04  80.2930</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; 4005    0.76     9.7    47.4    73.3 2145     2074   52.86      0e+00 101.5035</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;         QMEDcd      X      Y  QMEDfse  N URBEXT1990 BFIHOST</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt; 2001 146.52743 284344 929781 1.039474 48      0e+00   0.324</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; 2002 126.36506 274454 916267 1.054355 30      0e+00   0.351</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; 3002 198.85830 240494 888016 1.047491 49      0e+00   0.436</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; 3003 237.03507 231272 901365 1.052648 45      0e+00   0.359</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; 4003  91.79051 253145 877495 1.041955 49      5e-04   0.385</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; 4005 118.31455 220288 850359 1.070837 38      0e+00   0.389</span></span></code></pre></div>
+<p>The user can also supply their own data for use in analyses; however,
+AM files would need to be in the same format as those from the NRFA.
+Catchment descriptors for ungauged sites can be imported as XML files;
+these should either be from the FEH Web Service or NRFA, or be in the
+same format as those.</p>
+</div>
+<div id="functions-within-the-ukfe-package-for-importing-data" class="section level1">
+<h1>Functions within the UKFE package for importing data</h1>
+<p>There are a range of functions for importing data, as set out in this
+section.</p>
+<div id="annual-maximum-data" class="section level2">
+<h2>Annual maximum data</h2>
+<p>An annual maximum series can be obtained for sites suitable for
+pooling using the <code>GetAM()</code> function. This extracts data from
+the embedded <code>AMSP</code> data frame within the UKFE package. For
+other AMAX series available from the NRFA Peak Flow Dataset, the
+<code>AMImport()</code> function can be used, as can the
+<code>GetDataNRFA()</code> function (with <code>Type = &quot;AMAX&quot;</code>).
+The former function imports the data from the AM files and excludes the
+years classed as rejected. The latter function extracts the AMAX using
+the NRFA API. If you have a flow time series, the
+<code>AnnualStat()</code> function can be used to extract the water year
+AMAX (or any other annual statistic of interest). The following example
+uses the <code>GetAM()</code> option.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Extract the AMAX data for NRFA site 55002 and save to an object called &#39;AM.55002&#39;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>AM<span class="fl">.55002</span> <span class="ot">&lt;-</span> <span class="fu">GetAM</span>(<span class="dv">55002</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># View the head of the AMAX series</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">head</span>(AM<span class="fl">.55002</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;         Date    Flow    id</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; 1 1974-02-12 457.894 55002</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; 2 1975-01-22 410.053 55002</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; 3 1975-12-02 364.079 55002</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; 4 1977-02-03 286.690 55002</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt; 5 1977-11-20 318.908 55002</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt; 6 1978-12-14 397.771 55002</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co"># Plot the AMAX data</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="fu">AMplot</span>(AM<span class="fl">.55002</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Bar chart of annual maximum river flow. The x-axis shows years, and the y-axis shows peak flow in cubic meters per second. Each bar represents the highest flow in that year. The flows vary from year to year, with several notably high peaks in recent years." src="data:image/png;base64,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" alt="Bar chart of annual maximum river flow. The x-axis shows years, and the y-axis shows peak flow in cubic meters per second. Each bar represents the highest flow in that year. The flows vary from year to year, with several notably high peaks in recent years." /></p>
+<p>The <code>AMplot()</code> function returns a time series bar plot of
+the AMAX series.</p>
+</div>
+<div id="catchment-descriptors" class="section level2">
+<h2>Catchment descriptors</h2>
+<p>Catchment descriptors (CDs) from the NRFA can be brought into the ‘R’
+environment using the <code>GetCDs()</code> function. For gauged sites
+that are suitable for pooling or QMED, these are extracted from the
+<code>QMEDData</code> data frame, otherwise, they are extracted using
+the NRFA API. Note that if they are brought in from the NRFA API (when
+not suitable for QMED or pooling), some of the descriptors differ; for
+example, the gauge location is provided rather than the catchment
+centroid. There will be a warning message when this happens. An example
+of using the <code>GetCDs()</code> function to view the catchment
+descriptors for the gauge with an NRFA ID of 39001 is as follows:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Extract and view catchment descriptors for NRFA gauge 39001</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">GetCDs</span>(<span class="dv">39001</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt;    Descriptor       Value</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; 1        AREA   9930.7975</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; 2      ALTBAR    109.0000</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; 3      ASPBAR    108.0000</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; 4      ASPVAR      0.0800</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; 5   BFIHOST19      0.6790</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; 6      DPLBAR    139.8700</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; 7      DPSBAR     42.0000</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; 8        FARL      0.9420</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; 9       FPEXT      0.1476</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; 10        LDP    269.5500</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; 11    PROPWET      0.3000</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; 12    RMED-1H     10.8000</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; 13    RMED-1D     32.7000</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 14    RMED-2D     41.5000</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; 15       SAAR    706.0000</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; 16   SAAR4170    724.0000</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; 17    SPRHOST     26.9400</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt; 18 URBEXT2000      0.0664</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; 19    Easting 462899.0000</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; 20   Northing 187850.0000</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; 21    QMEDfse      1.0280</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; 22          N    140.0000</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt; 23 URBEXT1990      0.0426</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; 24    BFIHOST      0.6530</span></span></code></pre></div>
+<p>It’s useful to store them as an ‘object’ for use with other
+functions, in which case you can give them a name. You can assign the
+data to the named object using <code>&lt;-</code>. For example:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Extract catchment descriptors for NRFA gauge 39001 and store in an object called </span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co"># &#39;CDs.39001&#39;</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>CDs<span class="fl">.39001</span> <span class="ot">&lt;-</span> <span class="fu">GetCDs</span>(<span class="dv">39001</span>)</span></code></pre></div>
+<p>Then, when you wish to view them, the object name
+<code>CDs.39001</code> can be entered into the console.</p>
+<p>If you wish to derive CDs from an XML file for catchments that aren’t
+suitable for pooling or QMED, or are not gauged at all, you can use the
+<code>CDsXML()</code> function. The file path will need to be used. For
+Windows operating systems, the backslashes will need to be changed to
+forward slashes, or the file path will need to be stated as follows:
+<code>r&quot;{my\file\path}&quot;</code>. For example, you can import some
+descriptors downloaded from the FEH Web Service as follows:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Extract catchment descriptors from an xml file and store in an object called </span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co"># &#39;CDs.MySite&#39;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>CDs.MySite <span class="ot">&lt;-</span> <span class="fu">CDsXML</span>(<span class="st">&quot;C:/Data/FEH_Catchment_384200_458200.xml&quot;</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># As above but retaining backslashes in the file path</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>CDs.MySite <span class="ot">&lt;-</span> <span class="fu">CDsXML</span>(r<span class="st">&quot;{C:\Data\FEH_Catchment_384200_458200.xml}&quot;</span>)</span></code></pre></div>
+<p>Or if importing CDs from the NRFA Peak Flow Dataset:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Extract catchment descriptors from an xml file and store in an object called </span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co"># &#39;CDs.27003&#39;</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>CDs<span class="fl">.27003</span> <span class="ot">&lt;-</span> <span class="fu">CDsXML</span>(<span class="st">&quot;C:\Data\NRFAPeakFlow_v13-0-2\suitable-for-neither</span><span class="sc">\027003</span><span class="st">.xml&quot;</span>)</span></code></pre></div>
+</div>
+<div id="other-hydrological-data-retrieval-functions-using-apis" class="section level2">
+<h2>Other hydrological data retrieval functions using APIs</h2>
+<p>There are several functions with names starting with
+<code>GetData</code> that extract data from the websites of different
+organisations using their APIs. These are:</p>
+<ul>
+<li><p><code>GetDataEA_QH()</code>: Extracts flow or level data from the
+Environment Agency’s Hydrology Data Explorer.</p></li>
+<li><p><code>GetDataEA_Rain()</code>: Extracts rainfall data from the
+Environment Agency’s Hydrology Data Explorer.</p></li>
+<li><p><code>GetDataMetOffice()</code>: Extracts regional mean (monthly,
+seasonal and annual) temperature or rainfall from the UK Met Office.
+Sunshine duration is also available.</p></li>
+<li><p><code>GetDataNRFA()</code>: Extracts National River Flow Archive
+data (daily mean flow or catchment rainfall, AMAX, POT, gaugings and
+metadata).</p></li>
+<li><p><code>GetDataSEPA_QH()</code>: Extracts flow or level data from
+the Scottish Environment Protection Agency.</p></li>
+<li><p><code>GetDataSEPA_Rain()</code>: Extracts hourly rainfall data
+from the Scottish Environment Protection Agency.</p></li>
+</ul>
+<p>There are examples for all of these within each function’s help
+file.</p>
+</div>
+<div id="qmed" class="section level2">
+<h2>QMED</h2>
+<p>The <code>GetQMED()</code> function can be used to import the QMED
+data from the <code>QMEDData</code> data frame (derived from AMAX data).
+If it is not in that data frame, it automatically imports the AMAX data
+using the <code>GetAM()</code> function and calculates the median.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

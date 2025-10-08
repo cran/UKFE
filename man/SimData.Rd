@@ -22,13 +22,15 @@ A random sample of size n for the chosen distribution.
 Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, Kappa3, or generalised Pareto distributions
 }
 \details{
-The simulated sample can be generated using distribution parameters, or the growth factor (GF) inputs; linear coefficient of variationn (Lcv), linear skewness (LSkew) & the median annual maximum (QMED).
+The simulated sample can be generated using the distribution parameters (pars) location, scale and shape, or the growth factor (GF) inputs linear coefficient of variation (Lcv), linear skewness (LSkew) & median annual maximum (QMED). This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 }
 \examples{
-#Simulate a sample of size 30 using parameters GenLog and parameters 299, 51, -0.042
+# Simulate a sample of size 30 from a GenLog distribution with parameters 299, 51, -0.042
 SimData(30, pars = c(299, 51, -0.042), dist = "GenLog")
-#Now simulate using the Lcv, Lskew, and median (0.17, 0.04, 310)
+
+# Now simulate using the Lcv, Lskew, and median (0.17, 0.04, 310)
 SimData(30, GF = c(0.17, 0.04, 310), dist = "GenLog")
+
 }
 \author{
 Anthony Hammond

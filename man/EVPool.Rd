@@ -28,7 +28,7 @@ EVPool(
 
 \item{Title}{a character string. The user chosen plot title. The default is "Pooled growth curve"}
 
-\item{UrbAdj}{a logical argument with a default of FALSE. If TRUE and urban adjustment is applied to the pooled growth curve}
+\item{UrbAdj}{a logical argument with a default of FALSE. If TRUE an urban adjustment is applied to the pooled growth curve}
 
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML. Only necessary if UrbAdj is TRUE}
 }
@@ -39,23 +39,29 @@ An extreme value plot for gauged or ungauged pooling groups
 Plots the extreme value frequency curve or growth curve for gauged or ungauged pooled groups
 }
 \examples{
-#Get some CDs, form an ungauged pooling group and apply EVPlot.
-CDs.28015 <- GetCDs(28015)
-Pool.28015 <- Pool(CDs.28015, exclude = 28015)
-EVPool(Pool.28015)
-#Do the same for the gauged case, change the title, and convert with a QMED of 105.5.
-PoolG.28015 <- Pool(CDs.28015)
-EVPool(PoolG.28015, gauged = TRUE, Title = "Gauged frequency curve - Site 28015", QMED = 9.8)
-#Pretend we have an extra AMAX for the gauge. Amend the pooling group Lcv and LSkew
-#for the site accordingly then apply EVPool with the updated AMAX.
-#Firstly, get the AMAX sample
-AM.28015 <- GetAM(28015)
-#Add an extra AMAX flow of 15m3/s
-Append28015 <- append(AM.28015$Flow, 15)
-#Amend the Lcv and Lskew in the pooling group
-PoolG.28015[1, c(16, 17)] <- c(Lcv(Append28015), LSkew(Append28015))
-#Now plot gauged with the updated AMAX
-EVPool(PoolG.28015, AMAX = Append28015, gauged = TRUE)
+# Get some CDs, form an ungauged pooling group and apply EVPool
+cds_28015 <- GetCDs(28015)
+pool_28015 <- Pool(cds_28015, exclude = 28015)
+EVPool(pool_28015)
+
+# Do the same for the gauged case, change the title, and convert with a QMED of 9.8
+pool_g_28015 <- Pool(cds_28015)
+EVPool(pool_g_28015, gauged = TRUE, Title = "Gauged frequency curve - Site 28015", QMED = 9.8)
+
+# Pretend we have an extra AMAX for the gauge. Amend the pooling group Lcv and LSkew
+# for the site accordingly, then apply EVPool with the updated AMAX
+# Firstly, get the AMAX sample
+am_28015 <- GetAM(28015)
+
+# Add an extra AMAX flow of 15 m^3/s
+append_28015 <- append(am_28015$Flow, 15)
+
+# Amend the Lcv and Lskew in the pooling group
+pool_g_28015[1, c(16, 17)] <- c(Lcv(append_28015), LSkew(append_28015))
+
+# Now plot gauged with the updated AMAX
+EVPool(pool_g_28015, AMAX = append_28015, gauged = TRUE)
+
 }
 \author{
 Anthony Hammond

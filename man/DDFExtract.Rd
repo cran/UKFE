@@ -26,11 +26,17 @@ The function works by extracting the annual maximum sample (by hydrological year
 To ensure RMED increases with duration a power curve is fit as a function of duration to provide the final RMED estimates. Then the average growth factor for each return period (across the durations) is assumed.
 }
 \examples{
-# We'll extract all available 15 minute rainfall from the St Ives (Cambridgeshire)
-#rain gauge (WISKI ID = 179365).
-\dontrun{StIves <- GetDataEA_Rain(WISKI_ID = "179365", Period = "15Mins")}
-#Then apply the DDF function.
-\dontrun{DDFExtract(StIves)}
+# Extract all available 15-minute rainfall from the St Ives (Cambridgeshire)
+# rain gauge (WISKI ID = 179365).
+\dontrun{
+st_ives <- GetDataEA_Rain(WISKI_ID = "179365", Period = "15Mins")
+}
+
+# Apply the DDF function.
+\dontrun{
+DDFExtract(st_ives)
+}
+
 }
 \author{
 Anthony Hammond

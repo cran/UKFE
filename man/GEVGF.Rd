@@ -23,8 +23,9 @@ Estimated growth factors as a function of return period, with inputs of Lcv & LS
 Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
 }
 \examples{
-#Estimate the 50-year growth factors from Lcv = 0.17 and Lskew = 0.04
+# Estimate the 50-year growth factor from Lcv = 0.17 and Lskew = 0.04
 GEVGF(0.17, 0.04, RP = 50)
+
 }
 \author{
 Anthony Hammond

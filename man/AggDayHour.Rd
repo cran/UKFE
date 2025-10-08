@@ -19,21 +19,27 @@ AggDayHour(x, func, Freq = "Day", hour = 9)
 A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
 }
 \description{
-Aggregates time series data, creating hourly data from 15 minute data for example.
+Aggregates time series data, creating hourly data from 15-minute data for example.
 }
 \details{
 The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
 }
 \examples{
-#Create a data.frame with a normally distributed variable at
-#a 15 minute sampling rate.
-TS <- seq(as.POSIXct("2000-01-01 00:00:00",
-tz = "Europe/London"), as.POSIXct("2001-01-01 00:00:00", tz = "Europe/London"), by = 60*15)
-TS <- data.frame(DateTime = TS, Var = rnorm(length(TS), 10, 2))
-#use the function to aggregate to an hourly sampling rate, taking the maximum of each hour
-Hourly <- AggDayHour(TS, func = max, Freq = "Hour")
-#now aggregate with the mean at a daily scale
-Daily <- AggDayHour(TS, func = mean, Freq = "Day")
+# Create a data frame with a normally distributed variable at
+# a 15 minute sampling rate
+ts_seq <- seq(
+  as.POSIXct("2000-01-01 00:00:00", tz = "Europe/London"),
+  as.POSIXct("2001-01-01 00:00:00", tz = "Europe/London"),
+  by = 60 * 15
+)
+ts_df <- data.frame(DateTime = ts_seq, Var = rnorm(length(ts_seq), 10, 2))
+
+# Aggregate to an hourly sampling rate, taking the maximum of each hour
+hourly <- AggDayHour(ts_df, func = max, Freq = "Hour")
+
+# Aggregate with the mean at a daily scale
+daily <- AggDayHour(ts_df, func = mean, Freq = "Day")
+
 }
 \author{
 Anthony Hammond

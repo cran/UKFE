@@ -66,16 +66,19 @@ A list with two elements, and a plot. First element of the list is a data.frame 
 Provides outputs of the ReFH model from catchment descriptors or user defined inputs
 }
 \details{
-The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D (then a seasonal correction factor is applied). Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1).
+The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D (then a seasonal correction factor is applied). Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1). The scaling approach multiplies all the ordinates of the hydrograph by the peak flow as opposed to extending the rise of the hydrograph. i.e. there is an implicit assumption that the largest peak flow events are from initial flow that is also larger than for lower peak flow events. This ReFH model is not recommended for deterministic design flow estimation. Instead it can be used to analyse the plausible response to an input of rainfall.
 }
 \examples{
-#Get CDs and apply the ReFH function
-CDs.203018 <- GetCDs(203018)
-ReFH(CDs.203018)
-#Apply the ReFH function, scale to a 100-year flow estimate and change the plot title accordingly
-ReFH(CDs.203018, scaled = 182, PlotTitle = "100-Year Design Hydrograph - Site 203018")
-#Apply the ReFH function with a user defined initial baseflow
-ReFH(CDs.203018, BFini = 6)
+# Get CDs and apply the ReFH function
+cds_203018 <- GetCDs(203018)
+ReFH(cds_203018)
+
+# Apply the ReFH function, scale to a 100-year flow estimate and change the plot title accordingly
+ReFH(cds_203018, scaled = 182, PlotTitle = "100-Year Design Hydrograph - Site 203018")
+
+# Apply the ReFH function with a user defined initial baseflow
+ReFH(cds_203018, BFini = 6)
+
 }
 \author{
 Anthony Hammond

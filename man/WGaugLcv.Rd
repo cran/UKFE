@@ -19,10 +19,11 @@ Calculates the gauged weighted Lcv from a pooling group (enhanced single site)
 Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 }
 \examples{
-#Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-CDs.27051 <- GetCDs(27051)
-Pool.27051 <- Pool(CDs.27051)
-WGaugLcv(Pool.27051)
+# Get some CDs, form a gauged pooling group, and estimate gauged Lcv
+cds_27051 <- GetCDs(27051)
+pool_27051 <- Pool(cds_27051)
+WGaugLcv(pool_27051)
+
 }
 \author{
 Anthony Hammond

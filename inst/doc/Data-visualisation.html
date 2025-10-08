@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Data visualisation</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Data visualisation</h1>
+
+
+
+<p>The UKFE package offers a range of functions that can produce plots.
+Some of these help visualise data prior to analysis, while others plot
+results. Examples can be seen throughout the other articles. The
+examples in this article are from the functions’ help files; these also
+contain further details about each function.</p>
+<p>We will start by loading the UKFE package:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(UKFE)</span></code></pre></div>
+<div id="plotting-flow-and-rainfall-data" class="section level1">
+<h1>Plotting flow and rainfall data</h1>
+<p>The following functions can be used to plot annual maxima (AMAX) and
+peaks over threshold (POT) data:</p>
+<ul>
+<li><code>AMplot()</code>: Produces a bar plot of AMAX data.</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co"># Get an AMAX sample and plot</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">AMplot</span>(<span class="fu">GetAM</span>(<span class="dv">58002</span>))</span></code></pre></div>
+<p><img role="img" aria-label="Bar chart of annual maximum (AMAX) flow values. Each bar represents the highest recorded flow in a given year, with year index on the x-axis and flow magnitude on the y-axis. The chart shows variation across years, with particularly large peaks in 1980, 1999, and 2020." src="data:image/png;base64,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" alt="Bar chart of annual maximum (AMAX) flow values. Each bar represents the highest recorded flow in a given year, with year index on the x-axis and flow magnitude on the y-axis. The chart shows variation across years, with particularly large peaks in 1980, 1999, and 2020." /></p>
+<ul>
+<li><code>POTextract()</code> and <code>POTt()</code>: Plot a hydrograph
+with POT data shown. Note that these functions extract the data and then
+plot as a handy by-product. They cannot be used to plot POT data once
+extracted.</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Extract POT flows for the Thames at Kingston (NRFA gauge 39001) and plot. Note that </span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co"># the indexing &#39;ThamesPQ[, c(1, 3)]&#39; is necessary because the date is in the first </span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co"># column of the &#39;ThamesPQ&#39; data frame and the flow is in the third.</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>ThamesQPOT <span class="ot">&lt;-</span> <span class="fu">POTextract</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)], <span class="at">thresh =</span> <span class="fl">0.9</span>, <span class="at">Plot =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Time series plot of flow showing extraction of peaks over threshold events. The x-axis shows time and the y-axis shows flow magnitude. Red circles mark exceedances above the blue threshold line. A green line indicates div, which defines independence between peaks; in this case it is set to the mean. Exceedances occur throughout the record, with a lull around 2005, followed by a marked increase in frequency afterwards." src="data:image/png;base64,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" alt="Time series plot of flow showing extraction of peaks over threshold events. The x-axis shows time and the y-axis shows flow magnitude. Red circles mark exceedances above the blue threshold line. A green line indicates div, which defines independence between peaks; in this case it is set to the mean. Exceedances occur throughout the record, with a lull around 2005, followed by a marked increase in frequency afterwards." /></p>
+<pre><code>#&gt; [1] &quot;Peaks per year: 1.867263&quot;</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co"># Extract POT rainfall for the Thames at Kingston (NRFA gauge 39001) and plot. Note that</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co"># the indexing &#39;ThamesPQ[, 1:2]&#39; is necessary because the date is in the first column </span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># of the &#39;ThamesPQ&#39; data frame and the rainfall is in the second.</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>ThamesPPOT <span class="ot">&lt;-</span> <span class="fu">POTt</span>(ThamesPQ[, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="at">threshold =</span> <span class="fl">0.95</span>, <span class="at">div =</span> <span class="dv">14</span>, <span class="at">Plot =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Plot showing extraction of peaks over threshold (POT) events from a rainfall time series. The x-axis shows time and the y-axis shows flow magnitude. Red circles mark rainfall values exceeding the blue threshold line, which identifies independent extreme events. Exceedances occur throughout, with particularly large peaks around 2000, 2007, and 2014." src="data:image/png;base64,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" alt="Plot showing extraction of peaks over threshold (POT) events from a rainfall time series. The x-axis shows time and the y-axis shows flow magnitude. Red circles mark rainfall values exceeding the blue threshold line, which identifies independent extreme events. Exceedances occur throughout, with particularly large peaks around 2000, 2007, and 2014." /></p>
+<ul>
+<li><code>HydroPlot()</code>: Plots concurrent precipitation and
+discharge from a time series, with a choice of date range (defaulting to
+all the data).</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Plot the 2013 water year precipitation and discharge for the Thames at Kingston </span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co"># (NRFA gauge 39001), adjusting the closeness of the precipitation and discharge </span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co"># on the y-axis to 1.8.</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="fu">HydroPlot</span>(ThamesPQ, <span class="at">From =</span> <span class="st">&quot;2013-10-01&quot;</span>, <span class="at">To =</span> <span class="st">&quot;2014-09-30&quot;</span>, <span class="at">adj.y =</span> <span class="fl">1.8</span>)</span></code></pre></div>
+<p><img role="img" aria-label="“Time series plot showing precipitation and river discharge together. The x-axis shows time. River discharge is shown as a line with flow values on the left y-axis, while precipitation is displayed as inverted bars with rainfall on the right y-axis. This allows comparison of rainfall events with resulting river flows. A sustained period of elevated rainfall and associated discharge is evident from December 2013 through to March 2014.”" src="data:image/png;base64,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omc4JeQH2FZI3Mdv77WlAY3OuHn1VUWA7AEWDb3h/2SEo+s4di/uVGPQFWgBNakuNjpjvq0mH2TLzA+mqZNXDxH7obyE9hUG0D6+yqYkY9HragVk4q3ceuyNK+0AAu97H5vxBK8kspq6i5n3uro392UriXSx5DA2MmO5pSZAri/tHujGfRhl0wGUfITKuIzNA0jnfLzPMOnCiwPecRUmCM0Zjc2Blnslg0fGZSxVVQty53NisOFjt6lPu6rcmc/peog6gAfDj8uYsdoAuWcEcroiwohlCXVzF+V3Tix0PXa4H4zLmFUH6NMVAQIiQEAECIgAAREgIAIERICACBAQAQIiQEAECIgAAREgIAIERICACBAQAQIiQEAECIgAAREgIAIERICACBAQAQIiQECLAmqfRPivaV5FNYMWb0EmMKpWESCgSgDJF6Rs/sS73IUIeJExY6t0hOeRVBUgGTuvn/HdyDcAL0+oKkAXzPyno37LH+5UrKoAbZn9T8XUTfOSvCJVC2jKSNUSVQuo9JU5U6lWQBO9xLRctQJSq1x2y7ejagHJedDyg9jygGoXAQIiQEAECIgAAREgIAIERICACBAQAQIiQEAECIgAAREgIAIERICACBAQAQIiQEAECIgAAREgIAIERICAfga4BmSm5TD0kQAAAABJRU5ErkJggg==" alt="“Time series plot showing precipitation and river discharge together. The x-axis shows time. River discharge is shown as a line with flow values on the left y-axis, while precipitation is displayed as inverted bars with rainfall on the right y-axis. This allows comparison of rainfall events with resulting river flows. A sustained period of elevated rainfall and associated discharge is evident from December 2013 through to March 2014.”" /></p>
+<ul>
+<li><code>MonthlyStats()</code>: Derives monthly statistics from a time
+series. There is an option to plot these.</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Calculate the mean flows for each month for the Thames at Kingston (NRFA gauge 39001)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co"># and set the plot title using the &#39;main&#39; argument</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>QMonThames <span class="ot">&lt;-</span> <span class="fu">MonthlyStats</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)], <span class="at">Stat =</span> mean, <span class="at">ylab =</span> <span class="st">&quot;Discharge (m3/s)&quot;</span>, </span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>                           <span class="at">main =</span> <span class="st">&quot;Thames at Kingston monthly mean flow&quot;</span>, <span class="at">Plot =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Bar plot showing mean river discharge for each calendar month, with the x-axis representing months and mean flow values on the y-axis. Flows are highest in winter, with January showing the maximum, and lowest in late summer, with September showing the minimum. As expected. Discharge is elevated from November through March, and decreases gradually into summer before rising again into autumn." src="data:image/png;base64,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" alt="Bar plot showing mean river discharge for each calendar month, with the x-axis representing months and mean flow values on the y-axis. Flows are highest in winter, with January showing the maximum, and lowest in late summer, with September showing the minimum. As expected. Discharge is elevated from November through March, and decreases gradually into summer before rising again into autumn." /></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Calculate the monthly sums of rainfall for the Thames at Kingston and set the plot </span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co"># title using the &#39;main&#39; argument</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>PMonThames <span class="ot">&lt;-</span> <span class="fu">MonthlyStats</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>)], <span class="at">Stat =</span> sum, <span class="at">ylab =</span> <span class="st">&quot;Rainfall (mm)&quot;</span>, </span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>                           <span class="at">main =</span> <span class="st">&quot;Thames at Kingston monthly rainfall&quot;</span>, <span class="at">Plot =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Bar plot showing the mean total rainfall for each calendar month. The x-axis shows months and the y-axis shows rainfall totals, allowing comparison of rainfall patterns across the year. Rainfall is relatively high throughout, with a clear minimum in September and a maximum in November. The wettest period extends from October through January." src="data:image/png;base64,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" alt="Bar plot showing the mean total rainfall for each calendar month. The x-axis shows months and the y-axis shows rainfall totals, allowing comparison of rainfall patterns across the year. Rainfall is relatively high throughout, with a clear minimum in September and a maximum in November. The wettest period extends from October through January." /></p>
+<ul>
+<li><code>BFI()</code>: Calculates the baseflow index from a daily mean
+flow series and plots the flow time series (black) and the associated
+baseflow (red).</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Calculate the BFI from daily discharge at Kingston upon Thames (which is in the </span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co"># third column of the &#39;ThamesPQ&#39; data)</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">BFI</span>(ThamesPQ[, <span class="dv">3</span>])</span></code></pre></div>
+<p><img role="img" aria-label="Line plot showing river discharge over time. The x-axis shows time in days and the y-axis shows daily mean flow. Total flow is shown in black, and baseflow is shown in red. Flows are relatively constant overall, with peaks occurring at fairly regular intervals. Baseflow rises and falls with total flow, but remains lower in magnitude." src="data:image/png;base64,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" alt="Line plot showing river discharge over time. The x-axis shows time in days and the y-axis shows daily mean flow. Total flow is shown in black, and baseflow is shown in red. Flows are relatively constant overall, with peaks occurring at fairly regular intervals. Baseflow rises and falls with total flow, but remains lower in magnitude." /></p>
+<pre><code>#&gt; [1] 0.5814248</code></pre>
+<ul>
+<li><code>FlowSplit()</code>: Separates baseflow from runoff (intended
+for event-scale rather than long-term flow series). Plots the flow time
+series in black and the baseflow in red.</li>
+</ul>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Extract a wet six-month period at the Thames at Kingston (NRFA gauge 39001) during </span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co"># the 2006-2007 water year (flow is in the third column of ThamesPQ)</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>ThamesQ <span class="ot">&lt;-</span> <span class="fu">subset</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)], Date <span class="sc">&gt;=</span> <span class="st">&quot;2006-11-04&quot;</span> <span class="sc">&amp;</span> Date <span class="sc">&lt;=</span> <span class="st">&quot;2007-05-06&quot;</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co"># Apply the flow split with default settings</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>QSplit <span class="ot">&lt;-</span> <span class="fu">FlowSplit</span>(ThamesQ<span class="sc">$</span>Q)</span></code></pre></div>
+<p><img role="img" aria-label="Time series plot of streamflow and baseflow. The x-axis shows time and the y-axis shows flow. Total flow is shown in black, and baseflow is shown in red. During events, total flow increases sharply, whereas baseflow rises more gradually and remains much lower in magnitude, highlighting the contrast between quick flow responses and the slower baseflow contribution." src="data:image/png;base64,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" alt="Time series plot of streamflow and baseflow. The x-axis shows time and the y-axis shows flow. Total flow is shown in black, and baseflow is shown in red. During events, total flow increases sharply, whereas baseflow rises more gradually and remains much lower in magnitude, highlighting the contrast between quick flow responses and the slower baseflow contribution." /></p>
+<ul>
+<li><code>DesHydro()</code>: Extracts a mean hydrograph from a flow
+series.</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Extract a design hydrograph from the Thames at Kingston (NRFA gauge 39001) daily </span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co"># mean flow and print the resulting hydrograph</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>ThamesDesHydro <span class="ot">&lt;-</span> <span class="fu">DesHydro</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)], <span class="at">EventSep =</span> <span class="dv">10</span>, <span class="at">N =</span> <span class="dv">10</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Time series plot showing a black line representing the averaged design hydrograph, derived by aligning individual hydrographs on their peak flow and then averaging. The observed hydrographs are shown as coloured and patterned lines. The x-axis represents time and the y-axis shows scaled discharge. The individual hydrographs vary considerably: some display additional smaller peaks around the main one, while others differ in steepness and shape. In general, hydrographs with higher pre-peak discharge also exhibit higher post-peak discharge. All converge at the peak, and the overall mean hydrograph follows the typical triangular, inverted-V shape." src="data:image/png;base64,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" alt="Time series plot showing a black line representing the averaged design hydrograph, derived by aligning individual hydrographs on their peak flow and then averaging. The observed hydrographs are shown as coloured and patterned lines. The x-axis represents time and the y-axis shows scaled discharge. The individual hydrographs vary considerably: some display additional smaller peaks around the main one, while others differ in steepness and shape. In general, hydrographs with higher pre-peak discharge also exhibit higher post-peak discharge. All converge at the peak, and the overall mean hydrograph follows the typical triangular, inverted-V shape." /></p>
+<ul>
+<li><code>FlowDurationCurve()</code>: Plots flow duration curves for a
+single flow series or from multiple flow series. These can be winter,
+summer or annual curves.</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Plot a flow duration curve for the Thames at Kingston (NRFA gauge 39001) using </span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># data from Oct 2000 to Sep 2015</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">FlowDurationCurve</span>(ThamesPQ[, <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)])</span></code></pre></div>
+<p><img role="img" aria-label="Plot showing flow duration curves for a single flow series with seasonal variations. The x-axis shows the percentage of time flow is exceeded, and the y-axis shows discharge. The annual curve is shown as a black line, the winter curve as a blue line, and the summer curve as a green line. Winter flows are consistently highest, followed by annual, then summer. All curves follow the expected pattern of high discharges at low exceedance percentages and progressively lower discharges as exceedance percentages increase." src="data:image/png;base64,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" alt="Plot showing flow duration curves for a single flow series with seasonal variations. The x-axis shows the percentage of time flow is exceeded, and the y-axis shows discharge. The annual curve is shown as a black line, the winter curve as a blue line, and the summer curve as a green line. Winter flows are consistently highest, followed by annual, then summer. All curves follow the expected pattern of high discharges at low exceedance percentages and progressively lower discharges as exceedance percentages increase." /></p>
+<ul>
+<li><code>Rating()</code>: Optimises a power law rating equation from
+observed discharge and stage and plots the resulting rating curve.</li>
+</ul>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Make up some flow (Q) and stage data to act as gaugings</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>Q <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">177.685</span>, <span class="fl">240.898</span>, <span class="fl">221.954</span>, <span class="fl">205.55</span>, <span class="fl">383.051</span>, <span class="fl">154.061</span>, <span class="fl">216.582</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>Stage <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.855</span>, <span class="fl">2.109</span>, <span class="fl">2.037</span>, <span class="fl">1.972</span>, <span class="fl">2.574</span>, <span class="fl">1.748</span>, <span class="fl">2.016</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>Observations <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(Q, Stage)</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># Apply the rating function</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="fu">Rating</span>(Observations)</span></code></pre></div>
+<p><img role="img" aria-label="Plot showing the relationship between discharge (x-axis) and stage (y-axis). Observed measurements are shown as open circles with black borders, and a red line represents the optimised power law rating equation fitted to these observations. For this dataset, stage and discharge exhibit an almost linear relationship, with the fitted curve close to straight but showing a very gradual downward concavity while remaining continuously increasing.”" src="data:image/png;base64,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" alt="Plot showing the relationship between discharge (x-axis) and stage (y-axis). Observed measurements are shown as open circles with black borders, and a red line represents the optimised power law rating equation fitted to these observations. For this dataset, stage and discharge exhibit an almost linear relationship, with the fitted curve close to straight but showing a very gradual downward concavity while remaining continuously increasing.”" /></p>
+<pre><code>#&gt; $Parameters
+#&gt; [1] 5.6020901 0.9504756 3.3562578
+#&gt; 
+#&gt; $`Discharge as a function of stage`
+#&gt; [1] &quot;Q = 5.602(h+0.95)^3.356&quot;
+#&gt; 
+#&gt; $`Stage as a function of discharge`
+#&gt; [1] &quot;h = ((Q/5.602)^(1/3.356))-0.95&quot;</code></pre>
+<ul>
+<li><code>DDFImport()</code> and <code>DDFExtract()</code>: Plot
+depth-duration-frequency curves. The former imports the
+depth-duration-frequency 2013 or 2022 results from XML files from either
+the FEH Web Service or the NRFA Peak Flow Dataset. The latter derives
+depth-duration-frequency curves from a rainfall time series (assuming
+that the AMAX data follow a GEV distribution).</li>
+</ul>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Extract 15-minute rainfall from the St Ives (Cambridgeshire) rain gauge</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>StIves <span class="ot">&lt;-</span> <span class="fu">GetDataEA_Rain</span>(<span class="at">WISKI_ID =</span> <span class="st">&quot;179365&quot;</span>, <span class="at">Period =</span> <span class="st">&quot;15Mins&quot;</span>, <span class="at">From =</span> <span class="st">&quot;2022-01-01&quot;</span>, <span class="at">To =</span> <span class="st">&quot;2025-01-31&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co"># Apply the DDF function.</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">DDFExtract</span>(StIves)</span></code></pre></div>
+<p><img role="img" aria-label="Depth–Duration–Frequency (DDF) plot showing rainfall depth in millimetres (y-axis) as a function of storm duration in hours (x-axis) for a range of return periods. Each curve represents a different return period. All curves follow the characteristic DDF shape, with rainfall depth increasing as event rarity increases and with longer storm durations, particularly at the higher return periods." src="data:image/png;base64,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" alt="Depth–Duration–Frequency (DDF) plot showing rainfall depth in millimetres (y-axis) as a function of storm duration in hours (x-axis) for a range of return periods. Each curve represents a different return period. All curves follow the characteristic DDF shape, with rainfall depth increasing as event rarity increases and with longer storm durations, particularly at the higher return periods." /></p>
+<pre><code>#&gt;    Hrs   X2   X5  X10  X20   X50  X100  X200  X500 X1000
+#&gt; 1    1  8.5 12.5 15.4 18.4  23.1  27.4  32.9  43.1  54.4
+#&gt; 2    3 14.9 22.0 27.0 32.3  40.5  48.2  57.9  75.8  95.6
+#&gt; 3    6 18.5 27.3 33.5 40.2  50.4  59.9  71.9  94.2 118.8
+#&gt; 4   12 22.5 33.2 40.8 48.8  61.2  72.8  87.5 114.5 144.4
+#&gt; 5   24 27.2 39.9 49.1 58.8  73.7  87.7 105.3 137.9 173.9
+#&gt; 6   36 30.2 44.4 54.6 65.4  82.0  97.6 117.2 153.4 193.5
+#&gt; 7   48 32.6 47.9 58.9 70.5  88.4 105.2 126.3 165.4 208.6
+#&gt; 8   60 34.5 50.7 62.4 74.8  93.7 111.4 133.8 175.2 221.0
+#&gt; 9   72 36.2 53.2 65.4 78.4  98.2 116.8 140.3 183.7 231.7
+#&gt; 10  84 37.6 55.4 68.1 81.6 102.2 121.6 146.0 191.2 241.2
+#&gt; 11  96 39.0 57.3 70.4 84.4 105.8 125.8 151.2 197.9 249.6</code></pre>
+</div>
+<div id="plotting-results" class="section level1">
+<h1>Plotting results</h1>
+<p>The following functions can be used to plot results from functions
+used in Flood Estimation Handbook (FEH) Statistical or Revitalised Flood
+Hydrograph (ReFH) analyses. Examples can be seen in the respective
+articles.</p>
+<div id="pooling-group-diagnostic-plots" class="section level2">
+<h2>Pooling group diagnostic plots</h2>
+<ul>
+<li><code>DiagPlots()</code></li>
+</ul>
+</div>
+<div id="distribution-fits-growth-curves-and-flood-frequency-curves" class="section level2">
+<h2>Distribution fits, growth curves and flood frequency curves</h2>
+<ul>
+<li><p><code>ERPlot()</code></p></li>
+<li><p><code>EVPlot()</code> and <code>EVPlotAdd()</code></p></li>
+<li><p><code>EVPool()</code></p></li>
+<li><p><code>QuickResults()</code></p></li>
+</ul>
+</div>
+<div id="uncertainty-plots" class="section level2">
+<h2>Uncertainty plots</h2>
+<ul>
+<li><code>Uncertainty()</code></li>
+</ul>
+</div>
+<div id="refh-plots" class="section level2">
+<h2>ReFH plots</h2>
+<ul>
+<li><code>ReFH()</code></li>
+</ul>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

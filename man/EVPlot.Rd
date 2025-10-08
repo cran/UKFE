@@ -39,9 +39,10 @@ Plots the extreme value frequency curve or growth curve with observed sample poi
 The plotting has the option of generalised extreme value (GEV), generalised Pareto (GenPareto), Gumbel, or generalised logistic (GenLog) distributions. The uncertainty is quantified by bootstrapping.
 }
 \examples{
-#Get an AMAX sample and plot the growth curve with the GEV distribution
-AM.203018 <- GetAM(203018)
-EVPlot(AM.203018$Flow, dist = "GEV")
+# Get an AMAX sample and plot the growth curve with the GEV distribution
+am_203018 <- GetAM(203018)
+EVPlot(am_203018$Flow, dist = "GEV")
+
 }
 \author{
 Anthony Hammond

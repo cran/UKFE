@@ -15,7 +15,7 @@ DesHydro(
 )
 }
 \arguments{
-\item{x}{a dataframe with Date or POSIXct in the first coumn and the numeric vector of discharge in the second}
+\item{x}{a dataframe with Date or POSIXct in the first column and the numeric vector of discharge in the second}
 
 \item{Threshold}{The threshold above which the peaks of the hydrograph are first identified. The default is 0.975.}
 
@@ -36,11 +36,12 @@ a list of length three. The first element is a dataframe of the peaks of the hyd
 Extracts a mean hydrograph from a flow series
 }
 \details{
-All the peaks over the threshold (default 0.975th) are identified and separated by a user defined value 'EventSep', which is a number of timesteps (peaks are separated by EventSep * 3). The top N peaks are selected and the hydrographs are then extracted. The hydrograph start is the time of peak minus EventsSep. The End of the hydrograph is time of peak plus EventSep times 1.5. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph.
+All the peaks over the threshold (default 0.975th) are identified and separated by a user defined value 'EventSep', which is a number of timesteps (peaks are separated by EventSep * 3). The top N peaks are selected and the hydrographs are then extracted. The hydrograph start is the time of peak minus EventSep. The End of the hydrograph is time of peak plus EventSep times 1.5. All events are scaled to have a peak flow of one, and the mean of these is taken as the scaled design hydrograph.
 }
 \examples{
-#Extract a design hydrograph from the Thames daily mean flow. Then print the resulting hydrograph
-ThamesDesHydro <- DesHydro(ThamesPQ[,c(1,3)], EventSep = 10, N = 10)
+# Extract a design hydrograph from the Thames daily mean flow and print the resulting hydrograph
+thames_des_hydro <- DesHydro(ThamesPQ[, c(1, 3)], EventSep = 10, N = 10)
+
 }
 \author{
 Anthony Hammond

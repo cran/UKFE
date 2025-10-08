@@ -20,11 +20,13 @@ Adjusts all the values in the sample, of size n, by the difference between the l
 }
 \examples{
 # Get an annual maximum (AM) sample that looks to have a significant trend
-AM.21025 <- GetAM(21025)
-# plot the resulting AM as a bar plot. Then detrend and compare with another plot
-plot(AM.21025$Flow, type = "h", ylab = "Discharge (m3/s)")
-AM.Detrend <- DeTrend(AM.21025$Flow)
-plot(AM.Detrend, type = "h", ylab = "Discharge (m3/s)")
+am_21025 <- GetAM(21025)
+
+# Plot the resulting AM as a bar plot. Then detrend and compare with another plot
+plot(am_21025$Flow, type = "h", ylab = "Discharge (m^3/s)")
+am_detrend <- DeTrend(am_21025$Flow)
+plot(am_detrend, type = "h", ylab = "Discharge (m^3/s)")
+
 }
 \author{
 Anthony Hammond

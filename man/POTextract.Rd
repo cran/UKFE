@@ -42,7 +42,7 @@ Extracts independent peaks over a threshold from a sample
 If the x argument is a numeric vector, the peaks will be extracted with no time information.
  x can instead be a data.frame with dates in the first column and the numeric vector in the second.
  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
- The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
+ The method of extracting independent peaks assumes that there is a value either side of which events can be considered independent.
  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of time-steps either side of the peaks.
@@ -51,18 +51,21 @@ If the x argument is a numeric vector, the peaks will be extracted with no time 
  When plotted, the blue line is the threshold, and the green line is the independence line (div).
 }
 \examples{
-#Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
-#div = mean and threshold = 0.95. Then display the first six rows
-ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
-head(ThamesQPOT)
-#Extract Thames POT from only the numeric vector of flows and display the
-#first six rows
-ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.9)
-head(ThamesQPOT)
-#Extract the Thames POT precipitation with a div of 0, the default
-#threshold, and 5 timesteps (days) either side of the peak. Then display the first six rows
-ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0, TimeDiv = 5)
-head(ThamesPPOT)
+# Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
+# div = mean (default) and threshold = 0.95, and display the first six rows
+thames_q_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.95)
+head(thames_q_pot)
+
+# Extract Thames POT from only the numeric vector of flows and display the
+# first six rows
+thames_q_pot <- POTextract(ThamesPQ[, 3], thresh = 0.9)
+head(thames_q_pot)
+
+# Extract the Thames POT precipitation with a div of 0, the default
+# threshold, and five timesteps (days) either side of the peak, and display the first six rows
+thames_p_pot <- POTextract(ThamesPQ[, c(1, 2)], div = 0, TimeDiv = 5)
+head(thames_p_pot)
+
 }
 \author{
 Anthony Hammond

@@ -19,9 +19,10 @@ Calculates the Lmoments and Lmoment ratios from a sample of data
 Lmoments calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 }
 \examples{
-#Get an AMAX sample and calculate the Lmoments
-AM.27051 <- GetAM(27051)
-LMoments(AM.27051$Flow)
+# Get an AMAX sample and calculate the L-moments
+am_27051 <- GetAM(27051)
+LMoments(am_27051$Flow)
+
 }
 \author{
 Anthony Hammond

@@ -19,46 +19,50 @@ Uncertainty(
 )
 }
 \arguments{
-\item{x}{the pooled group derived from the Pool() or PoolSmall function}
+\item{x}{the pooled group derived from the Pool() or PoolSmall() function.}
 
-\item{Gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case}
+\item{Gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case.}
 
 \item{qmed}{the QMED estimate for the ungauged case. It is derived from the observed AMAX if Gauged equals TRUE.}
 
-\item{Dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog" ,"Gumbel", or "Kappa3". The default is "GenLog"}
+\item{Dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog", "Gumbel", or "Kappa3". The default is "GenLog".}
 
 \item{Conf}{the confidence level of the uncertainty intervals. Default is 0.95. Must be between 0 and 1.}
 
-\item{fseQMED}{The factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.}
+\item{fseQMED}{the factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.}
 
-\item{UrbAdj}{applies an urban adjustment to the growth curves}
+\item{UrbAdj}{applies an urban adjustment to the growth curves.}
 
-\item{URBEXT}{URBEXT value for the site of interest. This is necessary if a UrbAdj equals TRUE.}
+\item{URBEXT}{URBEXT value for the site of interest. This is necessary if UrbAdj equals TRUE.}
 
 \item{Plot}{logical argument with a default of TRUE. If TRUE a return level plot with results and margin of error is plotted. If FALSE, it is not.}
 
 \item{IncAMest}{logical argument with a default of TRUE. Sometimes when doing gauged (enhanced single site analysis), the central estimate of the single site estimate is outside the intervals of the ESS estimate. When this argument is true the confidence interval is expanded to include the central estimate for the single site. If FALSE, it is not.}
 
-\item{Parametric}{logical argument with a default of TRUE. If TRUE, the bootsrapping is done by simulation with the distribution of choice. If FALSE the bootsrapping is done by resampling with replacement.}
+\item{Parametric}{logical argument with a default of TRUE. If TRUE, the bootstrapping is done by simulation with the distribution of choice. If FALSE the bootstrapping is done by resampling with replacement.}
 }
 \value{
 A dataframe with 10 rows and four columns. Return period in the first column, central estimate in the second, lower in the third, and upper in the fourth. If Plot = TRUE, a return level plot is also returned.
 }
 \description{
-Quantification of uncertainty for pooling results for the gauged and ungauged case
+Quantification of aleatoric uncertainty for pooling results for the gauged and ungauged case
 }
 \details{
-Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6).
+Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6). Note that this function only quantifies sampling (aleatoric) uncertainty. It does not quantify uncertainty associated with models, model choices applied or hydrometric data. Lastly, the method assumes that AMAX samples within the pooling group are independent of each other and serially independent and identically distributed.
 }
 \examples{
-#Get an ungauged pooling group:
-Pool.203018 <- Pool(GetCDs(203018), exclude = 203018)
-#Use the function to quantify the central estimate and uncertainty
-Uncertainty(Pool.203018, qmed  = QMED(GetCDs(203018)))
-#Form a pooling group with subject site included.
- Pool.203018 <- Pool(GetCDs(203018))
-#Quantify the central estimate and uncertainty
- Uncertainty(Pool.203018, Gauged = TRUE)
+# Get an ungauged pooling group
+pool_203018 <- Pool(GetCDs(203018), exclude = 203018)
+
+# Quantify the central estimate and uncertainty
+Uncertainty(pool_203018, qmed = QMED(GetCDs(203018)))
+
+# Get a pooling group with subject site included
+pool_203018 <- Pool(GetCDs(203018))
+
+# Quantify the central estimate and uncertainty
+Uncertainty(pool_203018, Gauged = TRUE)
+
 }
 \author{
 Anthony Hammond

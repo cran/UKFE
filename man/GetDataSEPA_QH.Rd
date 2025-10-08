@@ -46,15 +46,30 @@ Function to extract flow or level data from SEPA.
 To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function. The lat and lon option will provide all flow or level gauges within a specified range (default of 50km). This provides gauged details including the StationID. You can get data from specific gauges using the StationID. Note that flow gauges also have level data available. You can get data from a date range using the From and To arguments. If the From and To arguments are left as NULL the full range of available data are returned.
 }
 \examples{
-#Find gauges on the river Spey
-\dontrun{GetDataSEPA_QH(RiverName = "Spey")}
-#Find gauges within 20km of a latlon grid reference somewhere near the centre of Scotland
-\dontrun{GetDataSEPA_QH(lat = 56, lon = -4, Range = 20)}
-#Get all available daily mean flow data from the Boat o Brig gauge on the Spey
-\dontrun{SpeyDaily <- GetDataSEPA_QH(StationID = "37174")}
-#Get 15-minute data from the Boat o Brig for the highest recorded peak
-\dontrun{BoatOBrigAug1970 <- GetDataSEPA_QH(StationID = "37174",
-From = "1970-08-16", To = "1970-08-19", Period = "15Mins")}
+# Find gauges on the River Spey
+\dontrun{
+GetDataSEPA_QH(RiverName = "Spey")
+}
+
+# Find gauges within 20km of a latitude/longitude coordinate somewhere near the centre of Scotland
+# This example causes a fatal session error in this version of the UKFE package
+\dontrun{
+GetDataSEPA_QH(lat = 56, lon = -4, Range = 20)
+}
+
+# Get all available daily mean flow data from the Boat o Brig gauge on the Spey
+\dontrun{
+spey_daily <- GetDataSEPA_QH(StationID = "37174")
+}
+
+# Get 15-minute data from the Boat o Brig for the highest recorded peak
+\dontrun{
+boatobrig_aug_1970 <- GetDataSEPA_QH(
+  StationID = "37174",
+  From = "1970-08-16", To = "1970-08-19", Period = "15Mins"
+)
+}
+
 }
 \author{
 Anthony Hammond

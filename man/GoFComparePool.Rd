@@ -24,9 +24,10 @@ It first standardises the pooled AMAX samples (by dividing them by median) and t
 Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
 }
 \examples{
-# Get a pooling group then compare the fit..
-Pool60009 <- Pool(GetCDs(60009))
-GoFComparePool(Pool60009)
+# Get a pooling group and then compare the fit
+pool_60009 <- Pool(GetCDs(60009))
+GoFComparePool(pool_60009)
+
 }
 \author{
 Anthony Hammond

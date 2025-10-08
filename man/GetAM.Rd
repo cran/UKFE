@@ -16,10 +16,12 @@ A data.frame with columns; Date, Flow, and id
 Extracts the annual maximum peak flow sample and associated dates for the site of interest.
 }
 \examples{
-#Get an AMAX sample and display it in the console
+# Get an AMAX sample and display it in the console
 GetAM(203018)
-#Save an AMAX sample as an object
-AM.203018 <- GetAM(203018)
+
+# Save an AMAX sample as an object
+am_203018 <- GetAM(203018)
+
 }
 \author{
 Anthony Hammond

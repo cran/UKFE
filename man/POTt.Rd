@@ -45,14 +45,16 @@ This provides a quicker option than the POTextract function - useful for very lo
  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
 }
 \examples{
-#Extract POT data from Thames catchment daily rainfall 2000-10-01 to 2015-09-30 with
-#div = 14 (14 days) and threshold = 0.975. Then display the first six rows
-ThamesPPOT <- POTt(ThamesPQ[, c(1,2)], div = 14)
-head(ThamesPPOT)
-#Extract Thames rainfall POT from only the numeric vector of rainfall, with threshold
-#set to 0.95 and div set to 14. Then display the first six rows
-ThamesPPOT <- POTt(ThamesPQ[, 2], threshold = 0.95, div = 14)
-head(ThamesPPOT)
+# Extract POT data from Thames catchment daily rainfall 2000-10-01 to 2015-09-30 with
+# div = 14 (14 days) and threshold = 0.975, and display the first six rows
+thames_p_pot <- POTt(ThamesPQ[, c(1, 2)], div = 14, threshold = 0.975)
+head(thames_p_pot)
+
+# Extract Thames rainfall POT from the numeric vector of rainfall, with threshold
+# set to 0.95 and div set to 14, and display the first six rows
+thames_p_pot <- POTt(ThamesPQ[, 2], threshold = 0.95, div = 14)
+head(thames_p_pot)
+
 }
 \author{
 Anthony Hammond

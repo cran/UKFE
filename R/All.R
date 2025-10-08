@@ -1,7 +1,3 @@
-
-
-
-
 globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id", "URBEXT2000"))
 
 
@@ -11,77 +7,103 @@ globalVariables(c("ThamesPQ", "NRFAData", "QMEDData", "UKOutline", "AMSP", "id",
 #'
 #' Provides pooled gauged, ungauged, or fake ungauged results, directly from the catchment descriptors
 #'
-#' The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result will be erroneous.
-#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
-#'@param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
-#'@param dons number of donors required with a choice of 0, 1, or 2
-#'@param Qmed user supplied QMED which overrides the default QMED estimate
-#'@param FUngauged logical argument with a default of FALSE. TRUE provides an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs)
-#'@param plot logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"
-#'@examples
-#'#Get some catchment descriptors
-#'CDs.73005 <- GetCDs(73005)
-#'#Get default ungauged results
-#'QuickResults(CDs.73005)
-#'#Get gauged results with a GEV distribution
-#'QuickResults(CDs.73005, gauged = TRUE, dist = "GEV")
-#'#Get fake ungauged results with one donor
-#'QuickResults(CDs.73005, FUngauged = TRUE, dons = 1)
+#' The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation adjusted with the 2 closest non-urban gauged sites as donors (though 0 or 1 donors can instead be used if specified) and the growth curve is formed from the ungauged pooling group. If the ungauged site is urban (URBEXT > 0.03), an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. If the gauged catchment is urban (URBEXT > 0.03), it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. However, the urban expansion (UEF) is not applied. Note that gauged = TRUE should only be applied where the site is suitable for pooling. If FUngauged = TRUE, the top site in the pooling group is excluded and the QMED and growth curve estimates are performed henceforth in the manner of gauged = FALSE. Note that FUngauged = TRUE should only be applied where the site is suitable for pooling and in conjunction with the argument gauged = FALSE.
 #'
+#' This function applies the index flood procedure in a quick way and therefore encompasses all the associated assumptions. Note that it is recommended that the default results should only be used for broad-scale and/or initial assessments.
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
+#' @param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
+#' @param dons number of donors required with a choice of 0, 1, or 2
+#' @param Qmed user supplied QMED which overrides the default QMED estimate
+#' @param FUngauged logical argument with a default of FALSE. TRUE provides a fake ungauged estimate (an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs))
+#' @param plot logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot
+#' @param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"
+#' @examples
+#' # Get some catchment descriptors
+#' cds_73005 <- GetCDs(73005)
 #'
-#'@return A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). Two additional columns quantify the uncertainty. The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). By default an extreme value plot is also returned
-#'@author Anthony Hammond
-QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
-                          FUngauged = FALSE, plot = TRUE, dist = "GenLog")
-{
-  if(is.data.frame(CDs) == FALSE) {stop("CDs doesn't appear to be a CDs object")}
-  if(is.na(CDs[20,1]) == TRUE | CDs[20,1] != "Northing") {stop("CDs doesn't appear to be a CDs object")}
+#' # Get default ungauged results
+#' QuickResults(cds_73005)
+#'
+#' # Get gauged results with a GEV distribution
+#' QuickResults(cds_73005, gauged = TRUE, dist = "GEV")
+#'
+#' # Get fake ungauged results with one donor
+#' QuickResults(cds_73005, FUngauged = TRUE, dons = 1)
+#'
+#' @return A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). Two additional columns quantify the uncertainty. The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). By default an extreme value plot is also returned
+#' @author Anthony Hammond
+QuickResults <- function(CDs, gauged = FALSE, dons = 2, Qmed = NULL,
+                         FUngauged = FALSE, plot = TRUE, dist = "GenLog") {
+  if (is.data.frame(CDs) == FALSE) {
+    stop("CDs doesn't appear to be a CDs object")
+  }
+  if (is.na(CDs[20, 1]) == TRUE | CDs[20, 1] != "Northing") {
+    stop("CDs doesn't appear to be a CDs object")
+  }
+
   Donor1 <- function(CDs, DonSite) {
-    QMED.cd <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000/CDs[15,
-                                                           2]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
+    QMED.cd <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000 / CDs[
+      15,
+      2
+    ]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
     Site <- DonSite
     Donors <- DonAdj(CDs = CDs, rows = 500)
     Rw <- which(rownames(Donors) == DonSite)
-    Result <- Donors[Rw, 27]
+    Result <- Donors[Rw, "QMED.adj"]
     return(Result)
   }
   Donor2 <- function(CDs, Sites) {
     rij <- function(d) {
       0.4598 * exp(-0.02 * d) + (1 - 0.4598) * exp(-0.4785 *
-                                                     d)
+        d)
     }
     NGRDist <- function(i, j) {
-      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2)/1000
+      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
     }
     Site1 <- Sites[1]
     Site2 <- Sites[2]
     CDs.Site1 <- GetCDs(Site1)
     CDs.Site2 <- GetCDs(Site2)
-    Dist1 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site1[19,
-                                                            2], CDs.Site1[20, 2]))
-    Dist2 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site2[19,
-                                                            2], CDs.Site2[20, 2]))
-    Dist12 <- NGRDist(c(CDs.Site1[19, 2], CDs.Site1[20, 2]),
-                      c(CDs.Site2[19, 2], CDs.Site2[20, 2]))
+    Dist1 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site1[
+      19,
+      2
+    ], CDs.Site1[20, 2]))
+    Dist2 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site2[
+      19,
+      2
+    ], CDs.Site2[20, 2]))
+    Dist12 <- NGRDist(
+      c(CDs.Site1[19, 2], CDs.Site1[20, 2]),
+      c(CDs.Site2[19, 2], CDs.Site2[20, 2])
+    )
     ps1 <- rij(Dist1)
     p12 <- rij(Dist12)
     ps2 <- rij(Dist2)
-    a1 <- (ps1 - p12 * ps2)/(1 - p12^2)
-    a2 <- (ps2 - p12 * ps1)/(1 - p12^2)
-    QMEDscd <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000/CDs[15,
-                                                           2]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
-    QMED1cd <- 8.3062 * CDs.Site1[1, 2]^0.851 * 0.1536^(1000/CDs.Site1[15,
-                                                                       2]) * CDs.Site1[8, 2]^3.4451 * 0.046^(CDs.Site1[5,
-                                                                                                                       2]^2)
-    QMED2cd <- 8.3062 * CDs.Site2[1, 2]^0.851 * 0.1536^(1000/CDs.Site2[15,
-                                                                       2]) * CDs.Site2[8, 2]^3.4451 * 0.046^(CDs.Site2[5,
-                                                                                                                       2]^2)
+    a1 <- (ps1 - p12 * ps2) / (1 - p12^2)
+    a2 <- (ps2 - p12 * ps1) / (1 - p12^2)
+    QMEDscd <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000 / CDs[
+      15,
+      2
+    ]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
+    QMED1cd <- 8.3062 * CDs.Site1[1, 2]^0.851 * 0.1536^(1000 / CDs.Site1[
+      15,
+      2
+    ]) * CDs.Site1[8, 2]^3.4451 * 0.046^(CDs.Site1[
+      5,
+      2
+    ]^2)
+    QMED2cd <- 8.3062 * CDs.Site2[1, 2]^0.851 * 0.1536^(1000 / CDs.Site2[
+      15,
+      2
+    ]) * CDs.Site2[8, 2]^3.4451 * 0.046^(CDs.Site2[
+      5,
+      2
+    ]^2)
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) ==
-                                      Site1)]
+      Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) ==
-                                      Site2)]
-    QMEDs.adj <- QMEDscd * (QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
+      Site2)]
+    QMEDs.adj <- QMEDscd * (QMED1obs / QMED1cd)^a1 * (QMED2obs / QMED2cd)^a2
     return(QMEDs.adj)
   }
   if (gauged == TRUE & FUngauged == TRUE) {
@@ -91,15 +113,16 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
     PoolGroup <- Pool(CDs = CDs)
     if (CDs[18, 2] > 0.03) {
       Ptemp <- Pool(CDs = CDs, iug = TRUE)
-    }
-    else {
+    } else {
       Ptemp <- Pool(CDs = CDs)
     }
     Ex <- as.numeric(rownames(Ptemp)[1])
     PoolGroupFun <- Pool(CDs = CDs, exclude = Ex)
     if (is.null(Qmed) == TRUE) {
-      qmed <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000/CDs[15,
-                                                          2]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
+      qmed <- 8.3062 * CDs[1, 2]^0.851 * 0.1536^(1000 / CDs[
+        15,
+        2
+      ]) * CDs[8, 2]^3.4451 * 0.046^(CDs[5, 2]^2)
       DonQMED <- DonAdj(CDs = CDs, rows = 500)
       if (FUngauged == TRUE) {
         DonQMED <- DonQMED[-1, ]
@@ -107,8 +130,7 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
       UrbInd <- which(DonQMED$URBEXT2000 > 0.03)
       if (length(UrbInd) < 1) {
         DonQMED <- DonQMED
-      }
-      else {
+      } else {
         DonQMED <- DonQMED[-UrbInd, ]
       }
       D2Result <- Donor2(CDs = CDs, Sites = rownames(DonQMED)[1:2])
@@ -123,67 +145,75 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
         if (dons == 2) {
           qmed <- D2Result
         }
-      }
-      else {
+      } else {
         if (dons == 0) {
           qmed <- QMED(CDs = CDs, UrbAdj = TRUE)[[1]]
         }
         if (dons == 1) {
-          qmed <- QMED(CDs = CDs, Don1 = rownames(DonQMED)[1],
-                       UrbAdj = TRUE)[[1]]
+          qmed <- QMED(
+            CDs = CDs, Don1 = rownames(DonQMED)[1],
+            UrbAdj = TRUE
+          )[[1]]
         }
         if (dons == 2) {
-          qmed <- QMED(CDs = CDs, Don2 = rownames(DonQMED)[1:2],
-                       UrbAdj = TRUE)[[1]]
+          qmed <- QMED(
+            CDs = CDs, Don2 = rownames(DonQMED)[1:2],
+            UrbAdj = TRUE
+          )[[1]]
         }
       }
-    }
-    else {
-      qmed = Qmed
+    } else {
+      qmed <- Qmed
     }
     if (FUngauged == FALSE) {
       if (CDs[18, 2] <= 0.03) {
-        Est <- PoolEst(PoolGroup, QMED = qmed,
-                       dist = dist)
+        Est <- PoolEst(PoolGroup,
+          QMED = qmed,
+          dist = dist
+        )
+      } else {
+        Est <- PoolEst(PoolGroup,
+          QMED = qmed, UrbAdj = TRUE,
+          CDs = CDs, dist = dist
+        )
       }
-      else {
-        Est <- PoolEst(PoolGroup, QMED = qmed, UrbAdj = TRUE,
-                       CDs = CDs, dist = dist)
-      }
-    }
-    else {
+    } else {
       if (CDs[18, 2] <= 0.03) {
-        Est <- PoolEst(PoolGroupFun, QMED = qmed,
-                       dist = dist)
-      }
-      else {
-        Est <- PoolEst(PoolGroupFun, QMED = qmed, UrbAdj = TRUE,
-                       CDs = CDs, dist = dist)
+        Est <- PoolEst(PoolGroupFun,
+          QMED = qmed,
+          dist = dist
+        )
+      } else {
+        Est <- PoolEst(PoolGroupFun,
+          QMED = qmed, UrbAdj = TRUE,
+          CDs = CDs, dist = dist
+        )
       }
     }
   }
   if (gauged == TRUE) {
     if (CDs[18, 2] > 0.03) {
       PoolGroup <- Pool(CDs = CDs, iug = TRUE, DeUrb = TRUE)
-    }
-    else {
+    } else {
       PoolGroup <- Pool(CDs = CDs)
     }
     Site <- rownames(PoolGroup)[1]
     AMAX <- GetAM(Site)
     if (is.null(Qmed) == TRUE) {
       qmed <- median(AMAX$Flow)
-    }
-    else {
+    } else {
       qmed <- Qmed
     }
     if (CDs[18, 2] <= 0.03) {
-      Est <- PoolEst(PoolGroup, gauged = TRUE, QMED = qmed,
-                     dist = dist)
-    }
-    else {
-      Est <- PoolEst(PoolGroup, gauged = TRUE, QMED = qmed,
-                     UrbAdj = TRUE, CDs = CDs, dist = dist)
+      Est <- PoolEst(PoolGroup,
+        gauged = TRUE, QMED = qmed,
+        dist = dist
+      )
+    } else {
+      Est <- PoolEst(PoolGroup,
+        gauged = TRUE, QMED = qmed,
+        UrbAdj = TRUE, CDs = CDs, dist = dist
+      )
     }
   }
   if (plot == TRUE) {
@@ -194,45 +224,50 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
       if (gauged == TRUE) {
         EVPool(PoolGroup, gauged = TRUE, dist = dist)
       }
-    }
-    else {
+    } else {
       if (gauged == FALSE) {
         EVPool(PoolGroup, UrbAdj = TRUE, CDs = CDs, dist = dist)
       }
       if (gauged == TRUE) {
-        EVPool(PoolGroup, gauged = TRUE, UrbAdj = TRUE,
-               CDs = CDs, dist = dist)
+        EVPool(PoolGroup,
+          gauged = TRUE, UrbAdj = TRUE,
+          CDs = CDs, dist = dist
+        )
       }
     }
   }
   SEess <- function(x, RP) {
-    VAR <-  (((median(x) * Lcv(x))^2)/length(x))* exp(1.3125 + 0.599*(log(RP-1)) + 0.00399*(log(RP-1)^2))
+    VAR <- (((median(x) * Lcv(x))^2) / length(x)) * exp(1.3125 + 0.599 * (log(RP - 1)) + 0.00399 * (log(RP - 1)^2))
     SE <- sqrt(VAR)
     return(SE)
   }
-  fseUGAH <- function(RP, Dons) {
-    y <- -log(-log(1-1/RP))
-    if(Dons == 2) {Result <- 1.4149 - 0.0163*y + 0.0102*y^2}
-    if(Dons == 1) {Result <- 1.427 - 0.0134*y + 0.0098*y^2}
-    if(Dons == 0) {Result <- 1.4665 - 0.0135*y + 0.0096*y^2}
+  fseUGAH <- function(RP) {
+    if (RP == 2) {
+      Result <- 1
+    } else {
+      Y <- -log(-log(1 - 1 / RP))
+      Result <- round(0.0069 * Y^2 - 0.0099 * Y + 1.0039, 3)
+    }
     return(Result)
   }
-  if(gauged == FALSE) {
-    fses <- fseUGAH(RP = Est[[1]][,1], Dons = dons)
-    lower68 <- round(Est[[1]][,2]/(fses), 3)
-    upper68 <- round(Est[[1]][,2]*(fses), 3)
-    Est[[1]] <- data.frame(Est[[1]][,-c(4,5)], lower68, upper68)
+  if (gauged == FALSE) {
+    RP <- Est[[1]][, 1]
+    fses <- NULL
+    for (i in 1:length(RP)) {
+      fses[i] <- fseUGAH(RP[i])
+    }
+    lower68 <- round(Est[[1]][, 2] / (fses), 3)
+    upper68 <- round(Est[[1]][, 2] * (fses), 3)
+    Est[[1]] <- data.frame(Est[[1]][, -c(4, 5)], lower68, upper68)
   }
-  if(gauged == TRUE) {
-    SEs <- SEess(AMAX[,2], RP = Est[[1]][,1])
-    lower95 <- round(Est[[1]][,2]-SEs*1.96, 3)
-    upper95 <- round(Est[[1]][,2]+SEs*1.96, 3)
-    Est[[1]] <- data.frame(Est[[1]][,-c(4,5)], lower95, upper95)
+  if (gauged == TRUE) {
+    SEs <- SEess(AMAX[, 2], RP = Est[[1]][, 1])
+    lower95 <- round(Est[[1]][, 2] - SEs * 1.96, 3)
+    upper95 <- round(Est[[1]][, 2] + SEs * 1.96, 3)
+    Est[[1]] <- data.frame(Est[[1]][, -c(4, 5)], lower95, upper95)
   }
   return(Est)
 }
-
-
 
 
 # Pool --------------------------------------------------------------------
@@ -241,129 +276,167 @@ QuickResults <- function (CDs, gauged = FALSE, dons = 2, Qmed = NULL,
 #'
 #' Function to develop a pooling group based on catchment descriptors
 #'
-#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default and this can be adjusted with UrbMax. If a gauged assessment is required and the site of interest is > UrbMax it can be included by setting iug = TRUE. De-urbanise the Lcv and Lskew (L-moment ratios) for sites with URBEXT2000 > UrbMax by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below. The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation.
-#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
-#'@param AREA catchment area in km2
-#'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
-#'@param FARL catchment flood attenuation from reservoirs & lakes
-#'@param FPEXT catchment floodplain extent. The proportion of the catchment that is estimated to be inundated by a 100-year flood
-#'@param N minimum Number of total gauged record years for the pooling group
-#'@param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
-#'@param iug iug stands for 'include urban gauge' - which refers to a gauged subject site if it's > UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
-#'@param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
-#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
-#'@examples
-#'#Get some catchment descriptors
-#'CDs.73005 <- GetCDs(73005)
-#'#Set up a pooling group object called Pool.73005 excluding sites 79005 & 71011.
-#'#Then print the group to the console
-#'Pool.73005 <- Pool(CDs.73005, exclude = c(79005, 71011))
-#'Pool.73005
-#'#Form a pooling group, called PoolGroup, with the catchment descriptors specifically
-#'PoolGroup <- Pool(AREA = 1000, SAAR = 800, FARL = 1, FPEXT = 0.01)
-#'#Form a pooling group using an urban catchment which is intended for enhanced
-#'#single site estimation - by including it in the group.
-#'CDs.39001 <- GetCDs(39001)
-#'Pool.39001 <- Pool(CDs.39001, iug = TRUE, DeUrb = TRUE)
-#'#Change the Lcv and LSkew of the top site in the pooling group to 0.19 & 0.18,
-#'#respectively.
-#'PoolUpdate <- LRatioChange(Pool.39001, SiteID = 39001, 0.19, 0.18)
-#'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
-#'@author Anthony Hammond
-Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, UrbMax = 0.03, DeUrb = FALSE){
-  if(is.null(exclude) == FALSE) {
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded from the pooling group by default.  This threshold can be adjusted with UrbMax. If a gauged assessment is required and URBEXT2000 at the site of interest is > UrbMax, the site should be included by setting iug = TRUE. The Lcv and Lskew (L-moment ratios) for sites in the pooling group with URBEXT2000 > 0.03 can be de-urbanised by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below.
+#'
+#' The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The de-urbanisation functionality assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The method for pooling the catchments together is based on the similarity of AREA, SAAR, FARL, and FPEXT. These were seen to have the most significant impact on the LCV and LSKEW - and ultimately to provide the lowest 'Pooling Uncertainty Measure' (a statistic for assessing the similarity between pooled and single site gauged estimates).
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
+#' @param AREA catchment area in km2
+#' @param SAAR catchment standard average annual rainfall (1961-1990) in mm
+#' @param FARL catchment flood attenuation from reservoirs & lakes
+#' @param FPEXT catchment floodplain extent. The proportion of the catchment that is estimated to be inundated by a 100-year flood
+#' @param N minimum Number of total gauged record years for the pooling group
+#' @param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
+#' @param iug iug stands for 'include urban gauge' - which refers to a gauged subject site with URBEXT2000 >= UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
+#' @param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
+#' @param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
+#' @examples
+#' # Get some catchment descriptors
+#' cds_73005 <- GetCDs(73005)
+#'
+#' # Set up a pooling group object called pool_73005 excluding sites 79005 & 71011
+#' # Then print the group to the console
+#' pool_73005 <- Pool(cds_73005, exclude = c(79005, 71011))
+#' pool_73005
+#'
+#' # Form a pooling group, called pool_group, with the catchment descriptors specifically
+#' pool_group <- Pool(AREA = 1000, SAAR = 800, FARL = 1, FPEXT = 0.01)
+#'
+#' # Form a pooling group using an urban catchment which is intended for enhanced
+#' # single site estimation - by including it in the group.
+#' cds_39001 <- GetCDs(39001)
+#' pool_39001 <- Pool(cds_39001, iug = TRUE, DeUrb = TRUE)
+#'
+#' # Change the Lcv and LSkew of the top site in the pooling group to 0.19 & 0.18,
+#' # respectively.
+#' pool_update <- LRatioChange(pool_39001, SiteID = 39001, 0.19, 0.18)
+#'
+#' @return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
+#' @author Anthony Hammond
+Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, iug = FALSE, UrbMax = 0.03, DeUrb = FALSE) {
+  if (is.null(exclude) == FALSE) {
     Site.id <- match(exclude, row.names(NRFAData))
-    if(any(is.na(Site.id)) == TRUE) stop ("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")}
-  suppressWarnings(if(is.null(CDs) == TRUE){
-
-    SDMs <- function(x, AREA, SAAR, FARL, FPEXT)
-    {
+    if (any(is.na(Site.id)) == TRUE) stop("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")
+  }
+  suppressWarnings(if (is.null(CDs) == TRUE) {
+    SDMs <- function(x, AREA, SAAR, FARL, FPEXT) {
       sqrt(
-        (3.2*((log(AREA) - log(x[,1]))/1.28)^2)
-        + (0.5*((log(SAAR) - log(x[,15]))/0.37)^2)
-        + (0.1*((FARL - x[,8])/0.05)^2)
-        + (0.2*((FPEXT - x[,9])/0.04)^2))
+        (3.2 * ((log(AREA) - log(x[, 1])) / 1.28)^2)
+        + (0.5 * ((log(SAAR) - log(x[, 15])) / 0.37)^2)
+          + (0.1 * ((FARL - x[, 8]) / 0.05)^2)
+          + (0.2 * ((FPEXT - x[, 9]) / 0.04)^2)
+      )
     }
-    suppressWarnings(if (is.null(exclude) == TRUE) {NRFAData <- NRFAData} else
-    {
+    suppressWarnings(if (is.null(exclude) == TRUE) {
+      NRFAData <- NRFAData
+    } else {
       index <- NULL
-      for (i in 1:length(exclude)) {index[i] <- which(row.names(NRFAData) == exclude[i])}
-      NRFAData <- NRFAData[-index,]})
+      for (i in 1:length(exclude)) {
+        index[i] <- which(row.names(NRFAData) == exclude[i])
+      }
+      NRFAData <- NRFAData[-index, ]
+    })
     Site <- SDMs(NRFAData, AREA, SAAR, FARL, FPEXT)
     Refs <- data.frame(row.names(NRFAData), Site)
     colnames(Refs) <- c("Site", "SDM")
-    Refs.Order <- Refs[order(Refs$SDM),]
+    Refs.Order <- Refs[order(Refs$SDM), ]
     Char.Sites <- Refs.Order$Site
     Char.Sites <- as.character(Char.Sites)
     Site.NRFA <- NRFAData[Char.Sites, ]
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
-    UrbUrbInd <- NRFAData[ug.index,22]
+    UrbUrbInd <- NRFAData[ug.index, 22]
     Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
-    if(iug == FALSE) {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd > UrbMax) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd <= UrbMax) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <UrbMax. Group formed as if iug = FALSE")}
-    SDM <- SDMs(Site.NRFA,AREA, SAAR, FARL, FPEXT)
+    if (iug == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd > UrbMax) {
+      Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
+    } else {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd <= UrbMax) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 <= UrbMax. Group formed as if iug = FALSE")
+    }
+    SDM <- SDMs(Site.NRFA, AREA, SAAR, FARL, FPEXT)
     Site.NRFA <- cbind(Site.NRFA, SDM)
     Cum.N <- NULL
-    for (i in 1:length(Site.NRFA$N)) {Cum.N[i] <- sum(Site.NRFA$N[1:i])}
+    for (i in 1:length(Site.NRFA$N)) {
+      Cum.N[i] <- sum(Site.NRFA$N[1:i])
+    }
     min(which(Cum.N >= 500))
-    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)),]
-    Ds <-  function(x)
-    {
+    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)), ]
+    Ds <- function(x) {
       u.hat <- apply(tf, 2, mean)
       Res <- numeric(1)
-      for (i in 1:length(Site.NRFA$N)) {Res <- Res+as.numeric(tf[i,]-u.hat)%*%t(as.numeric((tf[i,]-u.hat)))}
+      for (i in 1:length(Site.NRFA$N)) {
+        Res <- Res + as.numeric(tf[i, ] - u.hat) %*% t(as.numeric((tf[i, ] - u.hat)))
+      }
       D <- NULL
-      for (i in 1:length(Site.NRFA$N)) {D[i] <- ((1/3)*length(Site.NRFA$N))*as.numeric(tf[i,]-u.hat)%*%solve(Res)%*%(as.numeric((tf[i,]-u.hat)))}
+      for (i in 1:length(Site.NRFA$N)) {
+        D[i] <- ((1 / 3) * length(Site.NRFA$N)) * as.numeric(tf[i, ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i, ] - u.hat)))
+      }
       return(D)
     }
     tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
     Discordancy <- Ds(tf)
     crit.vs <- c(1.333, 1.648, 1.917, 2.140, 2.329, 2.491, 2.632, 2.757, 2.869, 2.971, 3)
-    xd <- seq(5,15)
+    xd <- seq(5, 15)
     Crit.frame <- data.frame(xd, crit.vs)
     Nsize <- nrow(Site.NRFA)
     CritInd <- which.min(abs(Nsize - Crit.frame$xd))
     C.V <- Crit.frame$crit.vs[CritInd]
-    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
+    # C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
-    for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
+    for (i in 1:length(Discordancy)) {
+      Discordant[i] <- isTRUE(Discordancy[i] > C.V)
+    }
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
-    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,19,20)]
+    Site.NRFA <- Site.NRFA[, -c(12, 13, 14, 16, 19, 20)]
     colnames(Site.NRFA)[24] <- "Discordant?"
-    if(DeUrb == FALSE) {Site.NRFA <- Site.NRFA} else
-    { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
-    LskewCol <- which(colnames(Site.NRFA) == "LSkew")
-    UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-    UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
-    if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
-    DeUrbesLCV <- NULL
-    for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-    DeUrbesLSKEW <- NULL
-    for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-    Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
-    Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
+    if (DeUrb == FALSE) {
+      Site.NRFA <- Site.NRFA
+    } else {
+      LcvCol <- which(colnames(Site.NRFA) == "Lcv")
+      LskewCol <- which(colnames(Site.NRFA) == "LSkew")
+      UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
+      UrbInd0.03 <- which(Site.NRFA[, UrbCol] > 0.03)
+      if (length(UrbInd0.03) < 1) {
+        stop("DeUrb is TRUE, but there are no sites with URBEXT2000 > 0.03")
+      }
+      DeUrbesLCV <- NULL
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      DeUrbesLSKEW <- NULL
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      Site.NRFA[UrbInd0.03, LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03, LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   } else {
-    SDMs <- function(x, AREA, SAAR, FARL, FPEXT)
-    {
+    SDMs <- function(x, AREA, SAAR, FARL, FPEXT) {
       sqrt(
-        (3.2*((log(AREA) - log(x[,1]))/1.28)^2)
-        + (0.5*((log(SAAR) - log(x[,15]))/0.37)^2)
-        + (0.1*((FARL - x[,8])/0.05)^2)
-        + (0.2*((FPEXT - x[,9])/0.04)^2))
+        (3.2 * ((log(AREA) - log(x[, 1])) / 1.28)^2)
+        + (0.5 * ((log(SAAR) - log(x[, 15])) / 0.37)^2)
+          + (0.1 * ((FARL - x[, 8]) / 0.05)^2)
+          + (0.2 * ((FPEXT - x[, 9]) / 0.04)^2)
+      )
     }
-    suppressWarnings(if (is.null(exclude) == TRUE) {NRFAData <- NRFAData} else
-    {
+    suppressWarnings(if (is.null(exclude) == TRUE) {
+      NRFAData <- NRFAData
+    } else {
       index <- NULL
-      for (i in 1:length(exclude)) {index[i] <- which(row.names(NRFAData) == exclude[i])}
-      NRFAData <- NRFAData[-index,]})
-    Site <- SDMs(NRFAData, CDs[1,2], CDs[15,2], CDs[8,2], CDs[9,2])
+      for (i in 1:length(exclude)) {
+        index[i] <- which(row.names(NRFAData) == exclude[i])
+      }
+      NRFAData <- NRFAData[-index, ]
+    })
+    Site <- SDMs(NRFAData, CDs[1, 2], CDs[15, 2], CDs[8, 2], CDs[9, 2])
     Refs <- data.frame(row.names(NRFAData), Site)
     colnames(Refs) <- c("Site", "SDM")
-    Refs.Order <- Refs[order(Refs$SDM),]
+    Refs.Order <- Refs[order(Refs$SDM), ]
     Char.Sites <- Refs.Order$Site
     Char.Sites <- as.character(Char.Sites)
     Site.NRFA <- NRFAData[Char.Sites, ]
@@ -371,55 +444,77 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) == "URBEXT2000")]
     Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
-    if(iug == FALSE) {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd > UrbMax) {Site.NRFA <- rbind(NRFAData[ug.index,], Site.NRFA)} else {Site.NRFA <- Site.NRFA}
-    if(iug == TRUE & UrbUrbInd <= UrbMax) {print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 < UrbMax. Group formed as if iug = FALSE")}
-    SDM <- SDMs(Site.NRFA,CDs[1,2], CDs[15,2], CDs[8,2], CDs[9,2])
+    if (iug == FALSE) {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd > UrbMax) {
+      Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
+    } else {
+      Site.NRFA <- Site.NRFA
+    }
+    if (iug == TRUE & UrbUrbInd <= UrbMax) {
+      print("Warning: iug = TRUE and the closest site in catchment descriptor space has URBEXT2000 < UrbMax. Group formed as if iug = FALSE")
+    }
+    SDM <- SDMs(Site.NRFA, CDs[1, 2], CDs[15, 2], CDs[8, 2], CDs[9, 2])
     Site.NRFA <- cbind(Site.NRFA, SDM)
     Cum.N <- NULL
-    for (i in 1:length(Site.NRFA$N)) {Cum.N[i] <- sum(Site.NRFA$N[1:i])}
+    for (i in 1:length(Site.NRFA$N)) {
+      Cum.N[i] <- sum(Site.NRFA$N[1:i])
+    }
     min(which(Cum.N >= 500))
-    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)),]
-    Ds <-  function(x)
-    {
+    Site.NRFA <- Site.NRFA[1:min(which(Cum.N >= N)), ]
+    Ds <- function(x) {
       u.hat <- apply(tf, 2, mean)
       Res <- numeric(1)
-      for (i in 1:length(Site.NRFA$N)) {Res <- Res+as.numeric(tf[i,]-u.hat)%*%t(as.numeric((tf[i,]-u.hat)))}
+      for (i in 1:length(Site.NRFA$N)) {
+        Res <- Res + as.numeric(tf[i, ] - u.hat) %*% t(as.numeric((tf[i, ] - u.hat)))
+      }
       D <- NULL
-      for (i in 1:length(Site.NRFA$N)) {D[i] <- ((1/3)*length(Site.NRFA$N))*as.numeric(tf[i,]-u.hat)%*%solve(Res)%*%(as.numeric((tf[i,]-u.hat)))}
+      for (i in 1:length(Site.NRFA$N)) {
+        D[i] <- ((1 / 3) * length(Site.NRFA$N)) * as.numeric(tf[i, ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i, ] - u.hat)))
+      }
       return(D)
     }
     tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
     Discordancy <- Ds(tf)
     crit.vs <- c(1.333, 1.648, 1.917, 2.140, 2.329, 2.491, 2.632, 2.757, 2.869, 2.971, 3)
-    xd <- seq(5,15)
+    xd <- seq(5, 15)
     Crit.frame <- data.frame(xd, crit.vs)
     Nsize <- nrow(Site.NRFA)
     CritInd <- which.min(abs(Nsize - Crit.frame$xd))
     C.V <- Crit.frame$crit.vs[CritInd]
-    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
+    # C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
-    for (i in 1:length(Discordancy)) {Discordant[i] <- isTRUE(Discordancy[i] > C.V)}
+    for (i in 1:length(Discordancy)) {
+      Discordant[i] <- isTRUE(Discordancy[i] > C.V)
+    }
     Site.NRFA <- cbind(Site.NRFA, Discordancy, Discordant)
-    Site.NRFA <- Site.NRFA[,-c(12,13,14,16,19,20)]
+    Site.NRFA <- Site.NRFA[, -c(12, 13, 14, 16, 19, 20)]
     colnames(Site.NRFA)[24] <- "Discordant?"
-    if(DeUrb == FALSE) {Site.NRFA <- Site.NRFA} else
-    { LcvCol <- which(colnames(Site.NRFA) == "Lcv")
-    LskewCol <- which(colnames(Site.NRFA) == "LSkew")
-    UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-    UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
-    if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
-    DeUrbesLCV <- NULL
-    for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-    DeUrbesLSKEW <- NULL
-    for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-    Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
-    Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
+    if (DeUrb == FALSE) {
+      Site.NRFA <- Site.NRFA
+    } else {
+      LcvCol <- which(colnames(Site.NRFA) == "Lcv")
+      LskewCol <- which(colnames(Site.NRFA) == "LSkew")
+      UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
+      UrbInd0.03 <- which(Site.NRFA[, UrbCol] > 0.03)
+      if (length(UrbInd0.03) < 1) {
+        stop("DeUrb is TRUE, but there are no sites with URBEXT2000 > 0.03")
+      }
+      DeUrbesLCV <- NULL
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      DeUrbesLSKEW <- NULL
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      Site.NRFA[UrbInd0.03, LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03, LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
-  } )
+  })
 }
-
 
 
 # Pool Small catchments--------------------------------------------------------------------
@@ -428,43 +523,47 @@ Pool <- function(CDs = NULL, AREA, SAAR, FARL, FPEXT, N = 500, exclude = NULL, i
 #'
 #' Function to develop a small catchments pooling group based on catchment descriptors
 #'
-#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the necessary catchment descriptors (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded by default and this can be adjusted with the UrbMax argument. If a gauged assessment is required and the site of interest is > UrbMax it can be included by setting iug = TRUE. De-urbanise the Lcv and Lskew (L-moment ratios) of sites with URBEXT2000 > 0.03 by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised.
-#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
-#'@param AREA catchment area in km2
-#'@param SAAR catchment standard average annual rainfall (1961-1990) in mm
-#'@param N minimum Number of total gauged record years for the pooling group
-#'@param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
-#'@param iug iug stands for 'include urban gauge' - which refers to a gauged subject site if it's > UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
-#'@param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
-#'@param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
-#'@examples
-#'#Get some catchment descriptors
-#'CDs.21001 <- GetCDs(21001)
-#'#Set up a pooling group object called Pool.21001 excluding site 206006
-#'#Then print the group to the console
-#'Pool.21001 <- PoolSmall(CDs.21001, exclude = 206006)
-#'Pool.21001
-#'#Form a pooling group, called PoolGroup, with the catchment descriptors specifically
-#'PoolGroup <- PoolSmall(AREA = 22, SAAR = 1702)
-#'@return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
-#'@author Anthony Hammond
-PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
-                       iug = FALSE, UrbMax = 0.03, DeUrb = FALSE)
-{
+#' A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the necessary catchment descriptors (see arguments). To change the default pooling group one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded from the pooling group by default. This threshold can be adjusted with the UrbMax argument. If a gauged assessment is required and URBEXT2000 at the site of interest is > UrbMax, the site should be included by setting iug = TRUE. The Lcv and Lskew (L-moment ratios) for sites in the pooling group with URBEXT2000 > 0.03 can be deurbanised by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised.
+#'
+#' The de-urbanisation functionality assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The method for pooling the catchments together is based on the similarity of AREA and SAAR. These were seen to have the most significant impact on the LCV and LSKEW - and ultimately to provide the lowest 'Pooling Uncertainty Measure' (a statistic for assessing the similarity between pooled and single site gauged estimates).
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
+#' @param AREA catchment area in km2
+#' @param SAAR catchment standard average annual rainfall (1961-1990) in mm
+#' @param N minimum Number of total gauged record years for the pooling group
+#' @param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)
+#' @param iug iug stands for 'include urban gauge' - which refers to a gauged subject site with URBEXT2000 >= UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax
+#' @param UrbMax Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group
+#' @param DeUrb logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised
+#' @examples
+#' # Get some catchment descriptors
+#' cds_21001 <- GetCDs(21001)
+#'
+#' # Set up a pooling group object called pool_21001 excluding site 206006.
+#' # Then print the group to the console
+#' pool_21001 <- PoolSmall(cds_21001, exclude = 206006)
+#' pool_21001
+#'
+#' # Form a pooling group, called pool_group, with the catchment descriptors specifically
+#' pool_group <- PoolSmall(AREA = 22, SAAR = 1702)
+#'
+#' @return A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
+#' @author Anthony Hammond
+PoolSmall <- function(CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
+                      iug = FALSE, UrbMax = 0.03, DeUrb = FALSE) {
   if (is.null(exclude) == FALSE) {
     Site.id <- match(exclude, row.names(NRFAData))
-    if (any(is.na(Site.id)) == TRUE)
+    if (any(is.na(Site.id)) == TRUE) {
       stop("Site ID/s not within the set of sites considered suitable for pooling, therefore it is/they are already excluded")
+    }
   }
   suppressWarnings(if (is.null(CDs) == TRUE) {
     SDMs <- function(x, AREA, SAAR) {
-      sqrt((((log(AREA) - log(x[, 1]))/1.264)^2) +
-             (((log(SAAR) - log(x[, 15]))/0.349)^2))
+      sqrt((((log(AREA) - log(x[, 1])) / 1.264)^2) +
+        (((log(SAAR) - log(x[, 15])) / 0.349)^2))
     }
     suppressWarnings(if (is.null(exclude) == TRUE) {
       NRFAData <- NRFAData
-    }
-    else {
+    } else {
       index <- NULL
       for (i in 1:length(exclude)) {
         index[i] <- which(row.names(NRFAData) == exclude[i])
@@ -487,8 +586,7 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     }
     if (iug == TRUE & UrbUrbInd > UrbMax) {
       Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
-    }
-    else {
+    } else {
       Site.NRFA <- Site.NRFA
     }
     if (iug == TRUE & UrbUrbInd <= UrbMax) {
@@ -511,22 +609,22 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
       }
       D <- NULL
       for (i in 1:length(Site.NRFA$N)) {
-        D[i] <- ((1/3) * length(Site.NRFA$N)) * as.numeric(tf[i,
-        ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i,
-        ] - u.hat)))
+        D[i] <- ((1 / 3) * length(Site.NRFA$N)) * as.numeric(tf[i, ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i, ] - u.hat)))
       }
       return(D)
     }
     tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
     Discordancy <- Ds(tf)
-    crit.vs <- c(1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
-                 2.632, 2.757, 2.869, 2.971, 3)
+    crit.vs <- c(
+      1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
+      2.632, 2.757, 2.869, 2.971, 3
+    )
     xd <- seq(5, 15)
     Crit.frame <- data.frame(xd, crit.vs)
     Nsize <- nrow(Site.NRFA)
     CritInd <- which.min(abs(Nsize - Crit.frame$xd))
     C.V <- Crit.frame$crit.vs[CritInd]
-    #C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
+    # C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),2]
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {
       Discordant[i] <- isTRUE(Discordancy[i] > C.V)
@@ -536,31 +634,32 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     colnames(Site.NRFA)[24] <- "Discordant?"
     if (DeUrb == FALSE) {
       Site.NRFA <- Site.NRFA
-    }
-    else {
+    } else {
       LcvCol <- which(colnames(Site.NRFA) == "Lcv")
       LskewCol <- which(colnames(Site.NRFA) == "LSkew")
       UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-      UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
-      if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+      UrbInd0.03 <- which(Site.NRFA[, UrbCol] > 0.03)
+      if (length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
       DeUrbesLCV <- NULL
-      for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
       DeUrbesLSKEW <- NULL
-      for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-      Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
-      Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      Site.NRFA[UrbInd0.03, LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03, LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
-  }
-  else {
+  } else {
     SDMs <- function(x, AREA, SAAR) {
-      sqrt((((log(AREA) - log(x[, 1]))/1.264)^2) +
-             (((log(SAAR) - log(x[, 15]))/0.349)^2))
+      sqrt((((log(AREA) - log(x[, 1])) / 1.264)^2) +
+        (((log(SAAR) - log(x[, 15])) / 0.349)^2))
     }
     suppressWarnings(if (is.null(exclude) == TRUE) {
       NRFAData <- NRFAData
-    }
-    else {
+    } else {
       index <- NULL
       for (i in 1:length(exclude)) {
         index[i] <- which(row.names(NRFAData) == exclude[i])
@@ -577,15 +676,14 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     UrbInd <- Char.Sites[1]
     ug.index <- which(row.names(NRFAData) == UrbInd)
     UrbUrbInd <- NRFAData[ug.index, which(colnames(NRFAData) ==
-                                            "URBEXT2000")]
+      "URBEXT2000")]
     Site.NRFA <- subset(Site.NRFA, URBEXT2000 <= UrbMax)
     if (iug == FALSE) {
       Site.NRFA <- Site.NRFA
     }
     if (iug == TRUE & UrbUrbInd > UrbMax) {
       Site.NRFA <- rbind(NRFAData[ug.index, ], Site.NRFA)
-    }
-    else {
+    } else {
       Site.NRFA <- Site.NRFA
     }
     if (iug == TRUE & UrbUrbInd <= UrbMax) {
@@ -608,20 +706,22 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
       }
       D <- NULL
       for (i in 1:length(Site.NRFA$N)) {
-        D[i] <- ((1/3) * length(Site.NRFA$N)) * as.numeric(tf[i,
-        ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i,
-        ] - u.hat)))
+        D[i] <- ((1 / 3) * length(Site.NRFA$N)) * as.numeric(tf[i, ] - u.hat) %*% solve(Res) %*% (as.numeric((tf[i, ] - u.hat)))
       }
       return(D)
     }
     tf <- data.frame(Site.NRFA$Lcv, Site.NRFA$LSkew, Site.NRFA$LKurt)
     Discordancy <- Ds(tf)
-    crit.vs <- c(1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
-                 2.632, 2.757, 2.869, 2.971, 3)
+    crit.vs <- c(
+      1.333, 1.648, 1.917, 2.14, 2.329, 2.491,
+      2.632, 2.757, 2.869, 2.971, 3
+    )
     xd <- seq(5, 15)
     Crit.frame <- data.frame(xd, crit.vs)
-    C.V <- Crit.frame[min(which(Crit.frame$xd >= length(Site.NRFA$N))),
-                      2]
+    C.V <- Crit.frame[
+      min(which(Crit.frame$xd >= length(Site.NRFA$N))),
+      2
+    ]
     Discordant <- NULL
     for (i in 1:length(Discordancy)) {
       Discordant[i] <- isTRUE(Discordancy[i] > C.V)
@@ -631,19 +731,22 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
     colnames(Site.NRFA)[24] <- "Discordant?"
     if (DeUrb == FALSE) {
       Site.NRFA <- Site.NRFA
-    }
-    else {
+    } else {
       LcvCol <- which(colnames(Site.NRFA) == "Lcv")
       LskewCol <- which(colnames(Site.NRFA) == "LSkew")
       UrbCol <- which(colnames(Site.NRFA) == "URBEXT2000")
-      UrbInd0.03 <- which(Site.NRFA[,UrbCol] > 0.03)
-      if(length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
+      UrbInd0.03 <- which(Site.NRFA[, UrbCol] > 0.03)
+      if (length(UrbInd0.03) < 1) stop("DeUrb is not FALSE, but there are no sites with URBEXT2000 > 0.03")
       DeUrbesLCV <- NULL
-      for(i in 1:length(UrbInd0.03)) {DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLCV[i] <- LcvUrb(Site.NRFA[UrbInd0.03[i], LcvCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
       DeUrbesLSKEW <- NULL
-      for(i in 1:length(UrbInd0.03)) {DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)}
-      Site.NRFA[UrbInd0.03,LcvCol] <- DeUrbesLCV
-      Site.NRFA[UrbInd0.03,LskewCol] <- DeUrbesLSKEW
+      for (i in 1:length(UrbInd0.03)) {
+        DeUrbesLSKEW[i] <- LSkewUrb(Site.NRFA[UrbInd0.03[i], LskewCol], Site.NRFA[UrbInd0.03[i], UrbCol], DeUrb = TRUE)
+      }
+      Site.NRFA[UrbInd0.03, LcvCol] <- DeUrbesLCV
+      Site.NRFA[UrbInd0.03, LskewCol] <- DeUrbesLSKEW
     }
     return(Site.NRFA)
   })
@@ -656,86 +759,127 @@ PoolSmall <- function (CDs = NULL, AREA, SAAR, N = 500, exclude = NULL,
 #'
 #' Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
 #'
-#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from CDsXML or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'.
+#' PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. The UrbAdj argument can be set to TRUE to provide urbanised results. If this is done, either URBEXT(urban & suburban extent) or CDs (the catchment descriptors derived from CDsXML or GetCDs) need to be provided. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. The gauged argument can be set to TRUE to form the growth curve with the gauged weighting procedure (often known as enhanced single site).  Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. It is important to check that this is the case because if the site is urban it may not be included by default. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The estimation procedure assumes that the pooled AMAX samples are from the same underlying distribution (aside from the QMED scaling factor), that the distribution is correctly specified, that the individual samples are all independent and identically distributed, and that the samples are independent of each other.  The urban adjustment assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The confidence intervals are different between the gauged and ungauged pooling. This is because the intervals for the ungauged site are uncomfortably large, and therefore 68% intervals are applied. Whereas 95% intervals are applied for the gauged case.
 #'
-#'@param x pooling group derived from the Pool function
-#'@param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
-#'@param QMED estimate of the median annual maximum flow
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel"; the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
-#'@param RP return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000
-#'@param UrbAdj logical argument with a default of FALSE. When TRUE, an urban adjustment is applied to the pooled Lcv and LSkew
-#'@param CDs catchment descriptors derived from either GetCDs or CDsXML
-#'@param URBEXT the catchment URBEXT2000, to be supplied if UrbAdj is TRUE and if CDs have not been
-#'@param fseQMED factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46
-#'@examples
-#'#Get some catchment descriptors and form a pooling group. It's urban and
-#'#therefore the site of interest is not included.
-#'CDs.27083 <- GetCDs(27083)
-#'Pool.27083 <- Pool(CDs.27083)
-#'#Get results for the ungauged case, with urban adjustment
-#'PoolEst(Pool.27083, QMED = 12, UrbAdj = TRUE, CDs = CDs.27083)
-#'#Form the group again with the urban gauge included & undertake a gauged estimate
-#'#with urban adjustment. QMED in this example is estimated as the median of the annual
-#'#maximum series for site 27083.
-#'PoolG.27083 <- PoolG.27083 <- Pool(CDs.27083, iug = TRUE, DeUrb = TRUE)
-#'PoolEst(PoolG.27083, QMED = 12.5, UrbAdj = TRUE, CDs = CDs.27083)
+#' @param x pooling group derived from the Pool function
+#' @param gauged logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged
+#' @param QMED estimate of the median annual maximum flow
+#' @param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel"; the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
+#' @param RP return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000
+#' @param UrbAdj logical argument with a default of FALSE. When TRUE, an urban adjustment is applied to the pooled Lcv and LSkew
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
+#' @param URBEXT the catchment URBEXT2000, to be supplied if UrbAdj is TRUE and if CDs have not been
+#' @param fseQMED factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46
+#' @examples
+#' # Get some catchment descriptors and form a pooling group. It's urban and
+#' # therefore the site of interest is not included
+#' cds_27083 <- GetCDs(27083)
+#' pool_27083 <- Pool(cds_27083)
 #'
-#'@return If RP is default then a list of length 4. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve. If RP is not the default only the first two elements are returned.
-#'@author Anthony Hammond
-PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,50,75,100,200,500,1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, fseQMED = 1.46) {
-  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3. Other growth curve functions can be applied separately to the resulting LCV and LSKEW")
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  if(UrbAdj == TRUE) {
-    if(is.null(URBEXT) == TRUE & is.null(CDs) == TRUE) stop("if Urbadj = TRUE, URBEXT or CDs must be provided")
-    if(is.null(URBEXT) == TRUE) {URBEXT2000 <- CDs[18,2]} else {URBEXT2000 <- URBEXT}}
-  if(dist == "GenLog") {func <- GenLogGF}
-  if(dist == "GEV") {func <- GEVGF}
-  if(dist == "Kappa3") {func <- Kappa3GF}
-  if(dist == "Gumbel") {func <- GumbelGF}
-  if(gauged == FALSE) {lcv <- WungLcv(x)} else {lcv <- WGaugLcv(x)}
-  if(gauged == FALSE) {lskew <- WungLSkew(x)} else {lskew <- WGaugLSkew(x)}
-  if(UrbAdj == TRUE) {lcv <- lcv*0.68654^(1.567*URBEXT2000)} else {lcv <- lcv}
-  if(UrbAdj == TRUE) {lskew <- ((lskew+1)*1.096017^(1.567*URBEXT2000))-1} else {lskew <- lskew}
-  if(dist == "Gumbel") {Zt <- func(lcv, RP = RP)} else {Zt <- func(lcv, lskew, RP = RP)}
+#' # Get results for the ungauged case, with urban adjustment
+#' PoolEst(pool_27083, QMED = 12, UrbAdj = TRUE, CDs = cds_27083)
+#'
+#' # Form the group again with the urban gauge included & undertake a gauged estimate
+#' # with urban adjustment. QMED in this example is estimated as the median of the annual
+#' # maximum series for site 27083.
+#' pool_g_27083 <- Pool(cds_27083, iug = TRUE, DeUrb = TRUE)
+#' PoolEst(pool_g_27083, QMED = 12.5, UrbAdj = TRUE, CDs = cds_27083)
+#'
+#' @return If RP is default then a list of length 4. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve. If RP is not the default only the first two elements are returned.
+#' @author Anthony Hammond
+PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000), UrbAdj = FALSE, CDs = NULL, URBEXT = NULL, fseQMED = 1.46) {
+  if (dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3. Other growth curve functions can be applied separately to the resulting LCV and LSKEW")
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  if (UrbAdj == TRUE) {
+    if (is.null(URBEXT) == TRUE & is.null(CDs) == TRUE) stop("if Urbadj = TRUE, URBEXT or CDs must be provided")
+    if (is.null(URBEXT) == TRUE) {
+      URBEXT2000 <- CDs[18, 2]
+    } else {
+      URBEXT2000 <- URBEXT
+    }
+  }
+  if (dist == "GenLog") {
+    func <- GenLogGF
+  }
+  if (dist == "GEV") {
+    func <- GEVGF
+  }
+  if (dist == "Kappa3") {
+    func <- Kappa3GF
+  }
+  if (dist == "Gumbel") {
+    func <- GumbelGF
+  }
+  if (gauged == FALSE) {
+    lcv <- WungLcv(x)
+  } else {
+    lcv <- WGaugLcv(x)
+  }
+  if (gauged == FALSE) {
+    lskew <- WungLSkew(x)
+  } else {
+    lskew <- WGaugLSkew(x)
+  }
+  if (UrbAdj == TRUE) {
+    lcv <- lcv * 0.68654^(1.567 * URBEXT2000)
+  } else {
+    lcv <- lcv
+  }
+  if (UrbAdj == TRUE) {
+    lskew <- ((lskew + 1) * 1.096017^(1.567 * URBEXT2000)) - 1
+  } else {
+    lskew <- lskew
+  }
+  if (dist == "Gumbel") {
+    Zt <- func(lcv, RP = RP)
+  } else {
+    Zt <- func(lcv, lskew, RP = RP)
+  }
   GF <- as.numeric(format(round(Zt, 3), nsmall = 3))
-  Qt <- Zt*QMED
+  Qt <- Zt * QMED
   Q <- as.numeric(format(round(Qt, 3), nsmall = 3))
   PooledLcv <- lcv
   PooledLSkew <- lskew
-  if(gauged == TRUE) {
-    VAR <-  (((median(x[1,15]) * x[1,16])^2)/x[1,21])* exp(1.3125 + 0.599*(log(RP-1)) + 0.00399*(log(RP-1)^2))
-    SE <-sqrt(VAR)
-    lower95 <- round(Q-SE*1.96, 3)
-    upper95 <- round(Q+SE*1.96, 3)
+  if (gauged == TRUE) {
+    VAR <- (((median(x[1, 15]) * x[1, 16])^2) / x[1, 21]) * exp(1.3125 + 0.599 * (log(RP - 1)) + 0.00399 * (log(RP - 1)^2))
+    SE <- sqrt(VAR)
+    lower95 <- round(Q - SE * 1.96, 3)
+    upper95 <- round(Q + SE * 1.96, 3)
     res <- data.frame(RP, Q, GF, lower95, upper95)
   }
-  if(gauged == FALSE){
+  if (gauged == FALSE) {
     fseGFfunc <- function(RP) {
-      if(RP == 2) {fse <- 1} else {
-        Y <- -log(-log(1-1/RP))
-        fse <- round(0.0069*Y^2 - 0.0099*Y + 1.0039, 3)
+      if (RP == 2) {
+        fse <- 1
+      } else {
+        Y <- -log(-log(1 - 1 / RP))
+        fse <- round(0.0069 * Y^2 - 0.0099 * Y + 1.0039, 3)
       }
       return(fse)
     }
     fseGF <- NULL
-    for(i in 1:length(RP)) {fseGF[i] <- fseGFfunc(RP[i])}
-    fse <- fseGF*fseQMED
-    lower68 <- round(Q/fse, 3)
-    upper68 <- round(Q*fse, 3)
+    for (i in 1:length(RP)) {
+      fseGF[i] <- fseGFfunc(RP[i])
+    }
+    fse <- fseGF * fseQMED
+    lower68 <- round(Q / fse, 3)
+    upper68 <- round(Q * fse, 3)
     res <- data.frame(RP, Q, GF, lower68, upper68)
   }
 
   Pars <- cbind(PooledLcv, PooledLSkew)
-  if(suppressWarnings(sd(RP - c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000))) == 0) {
-  ResLocScaSha <- OptimPars(res[,c(1,3)], dist = dist)
-  ResLocScaSha <- signif(ResLocScaSha[1,],3)
-  ResLocScaShaDist <- OptimPars(res[,c(1,2)], dist = dist)
-  ResLocScaShaDist <- signif(ResLocScaShaDist[1,],3)
-  return(list(res, Pars, ResLocScaSha, ResLocScaShaDist))} else {
+  if (suppressWarnings(sd(RP - c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000))) == 0) {
+    ResLocScaSha <- OptimPars(res[, c(1, 3)], dist = dist)
+    ResLocScaSha <- signif(ResLocScaSha[1, ], 3)
+    ResLocScaShaDist <- OptimPars(res[, c(1, 2)], dist = dist)
+    ResLocScaShaDist <- signif(ResLocScaShaDist[1, ], 3)
+    return(list(res, Pars, ResLocScaSha, ResLocScaShaDist))
+  } else {
     return(list(res, Pars))
   }
-
 }
 
 
@@ -748,51 +892,58 @@ PoolEst <- function(x, gauged = FALSE, QMED, dist = "GenLog", RP = c(2,5,10,20,5
 #' Estimates the parameters of the Generalised extreme value, generalised logistic, Kappa3, or Gumbel distribution from known return period estimates
 #'
 #' Given a dataframe with return periods (RPs) in the first column and associated estimates in the second column, this function provides an estimate of the distribution parameters. Ideally the first RP should be 2. Extrapolation outside the RPs used for calibration comes with greater uncertainty.
-#'@param x a data.frame with RPs in the first column and associated estimates in the second column
-#'@param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel" - the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
-#'@examples
-#'#Get some catchment descriptors and some quick results. Then estmate the GenLog parameters
-#'Results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
-#'OptimPars(Results[,1:2])
+#' @param x a data.frame with RPs in the first column and associated estimates in the second column
+#' @param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel" - the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"
+#' @examples
+#' # Get some catchment descriptors and some quick results
+#' # Then estimate the GenLog parameters
+#' results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
+#' OptimPars(results[, 1:2])
 #'
-#'@return The parameters of one of four user chosen distributions; Generalised logistic, generalised extreme value, Gumbel, and Kappa3.
+#' @return The parameters of one of four user chosen distributions; Generalised logistic, generalised extreme value, Gumbel, and Kappa3.
 #' @author Anthony Hammond
-OptimPars <-  function(x, dist = "GenLog") {
-  if(is.data.frame(x) == FALSE) {stop("x must be a data.frame with RPs in the first column and associated variable in the second")}
-  if(dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3.")
+OptimPars <- function(x, dist = "GenLog") {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a data.frame with RPs in the first column and associated variable in the second")
+  }
+  if (dist != "GenLog" & dist != "GEV" & dist != "Gumbel" & dist != "Kappa3") stop("dist must equal one of the following, GEV, GenLog, Gumbel, Kappa3.")
   res <- x
-  RP <- x[,1]
-  Q <- x[,2]
-  if(dist == "GenLog") {
+  RP <- x[, 1]
+  Q <- x[, 2]
+  if (dist == "GenLog") {
     min.GL <- function(data, par) {
-      with(data, sum(((par[1]+par[2]/par[3]*(1-(RP-1)^-par[3])-Q)^2)))}
-    result <- optim(par = c(x[1,2], mean((x[1,2]/4),(x[1,2]/3)), 0.01), fn = min.GL, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
+      with(data, sum(((par[1] + par[2] / par[3] * (1 - (RP - 1)^-par[3]) - Q)^2)))
+    }
+    result <- optim(par = c(x[1, 2], mean((x[1, 2] / 4), (x[1, 2] / 3)), 0.01), fn = min.GL, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
     Pars <- result$par
     Pars <- data.frame(Pars[1], Pars[2], Pars[3])
     colnames(Pars) <- c("loc", "scale", "shape")
   }
-  if(dist == "GEV"){
+  if (dist == "GEV") {
     min.GEV <- function(data, par) {
-      with(data, sum(((par[1]+par[2]/par[3]*(1-(-log(1-1/RP))^par[3])-Q)^2)))}
-    result <- optim(par = c(x[1,2], mean((x[1,2]/4),(x[1,2]/3)), 0.01), fn = min.GEV, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
+      with(data, sum(((par[1] + par[2] / par[3] * (1 - (-log(1 - 1 / RP))^par[3]) - Q)^2)))
+    }
+    result <- optim(par = c(x[1, 2], mean((x[1, 2] / 4), (x[1, 2] / 3)), 0.01), fn = min.GEV, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
     Pars <- result$par
     Pars <- data.frame(Pars[1], Pars[2], Pars[3])
     colnames(Pars) <- c("loc", "scale", "shape")
   }
-  if(dist == "Kappa3"){
+  if (dist == "Kappa3") {
     h <- -0.4
     min.Kappa <- function(data, par) {
-      with(data, sum(((par[1] + (par[2]/par[3]) * (1 - ((1 - (1-(1/RP))^h)/h)^par[3])-Q)^2)))}
-    result <- optim(par = c(x[1,2], mean((x[1,2]/4),(x[1,2]/3)), 0.01), fn = min.Kappa, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
+      with(data, sum(((par[1] + (par[2] / par[3]) * (1 - ((1 - (1 - (1 / RP))^h) / h)^par[3]) - Q)^2)))
+    }
+    result <- optim(par = c(x[1, 2], mean((x[1, 2] / 4), (x[1, 2] / 3)), 0.01), fn = min.Kappa, data = res, lower = c(NA, NA, -1), upper = c(NA, NA, 1), method = "L-BFGS-B")
     Pars <- result$par
     Pars <- data.frame(Pars[1], Pars[2], Pars[3])
     colnames(Pars) <- c("loc", "scale", "shape")
   }
 
-  if(dist == "Gumbel"){
+  if (dist == "Gumbel") {
     min.Gum <- function(data, par) {
-      with(data, sum((((par[1]+par[2]*(-log(-log(1-(1/RP)))))-Q)^2)))}
-    result <- optim(par = c(x[1,2], (x[1,2]/3)), fn = min.Gum, data = res, method = "L-BFGS-B")
+      with(data, sum((((par[1] + par[2] * (-log(-log(1 - (1 / RP))))) - Q)^2)))
+    }
+    result <- optim(par = c(x[1, 2], (x[1, 2] / 3)), fn = min.Gum, data = res, method = "L-BFGS-B")
     Pars <- result$par
     Pars <- data.frame(Pars[1], Pars[2])
     colnames(Pars) <- c("loc", "scale")
@@ -805,340 +956,439 @@ OptimPars <-  function(x, dist = "GenLog") {
 
 # DistFuncs ---------------------------------------------------------------
 
-#'Generalised logistic distribution growth factors
+#' Generalised logistic distribution growth factors
 #'
-#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#' Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
 #'
-#'@details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
+#' @details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
 #'
 #' @param lcv linear coefficient of variation
 #' @param lskew linear skewness
 #' @param RP return period
 #' @examples
-#' #Estimate the 50-year growth factors from an Lcv and Lskew of 0.17 and 0.04, respectively.
+#' # Estimate the 50-year growth factor from an Lcv and Lskew of 0.17 and 0.04, respectively
 #' GenLogGF(0.17, 0.04, RP = 50)
+#'
 #' @return Generalised logistic estimated growth factor
 #' @author Anthony Hammond
 
 GenLogGF <- function(lcv, lskew, RP) {
   k <- -lskew
-  B <- lcv*k*sin((pi)*k)/(k*pi*(k+lcv)-lcv*sin((pi)*k))
-  zt <- 1+(B/k)*(1-(RP-1)^lskew)
+  B <- lcv * k * sin((pi) * k) / (k * pi * (k + lcv) - lcv * sin((pi) * k))
+  zt <- 1 + (B / k) * (1 - (RP - 1)^lskew)
   return(zt)
 }
 
-#'Generalised extreme value distribution growth factors
+#' Generalised extreme value distribution growth factors
 #'
-#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#' Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
 #'
-#'@details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
+#' @details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
 #' @param lcv linear coefficient of variation
 #' @param lskew linear skewness
 #' @param RP return period
 #' @examples
-#' #Estimate the 50-year growth factors from Lcv = 0.17 and Lskew = 0.04
+#' # Estimate the 50-year growth factor from Lcv = 0.17 and Lskew = 0.04
 #' GEVGF(0.17, 0.04, RP = 50)
+#'
 #' @return Generalised extreme value estimated growth factor
 #' @author Anthony Hammond
-GEVGF <- function(lcv,lskew, RP) {
-  C <- (2/(3+lskew)) - (log(2)/log(3))
-  kgev <- 7.859*C+2.95548*C^2
-  Bgev <- (kgev*lcv)/(lcv*(gamma(1+kgev)-(log(2))^kgev)+gamma(1+kgev)*(1-2^-kgev))
-  zt <- 1+(Bgev/kgev)*(log(2)^kgev - (log(RP/(RP-1)))^kgev)
+GEVGF <- function(lcv, lskew, RP) {
+  C <- (2 / (3 + lskew)) - (log(2) / log(3))
+  kgev <- 7.859 * C + 2.9554 * C^2
+  Bgev <- (kgev * lcv) / (lcv * (gamma(1 + kgev) - (log(2))^kgev) + gamma(1 + kgev) * (1 - 2^-kgev))
+  zt <- 1 + (Bgev / kgev) * (log(2)^kgev - (log(RP / (RP - 1)))^kgev)
   return(zt)
 }
 
-#'Generalised Pareto distribution growth factors
+#' Generalised Pareto distribution growth factors
 #'
-#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#' Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness). The Lcv and LSkew in this case should be calculated from peaks over threshold data and the ppy argument is necessary where the average number of peaks per year is not 1.
 #'
-#'@details Growth factors (GF) are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01.
+#' @details Growth factors (GF) are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01.
 #' @param lcv linear coefficient of variation
 #' @param lskew linear skewness
 #' @param RP return period
 #' @param ppy peaks per year
 #' @examples
-#' #Get POT flow data from the Thames at Kingston (noting the no. peaks per year).
-#' #Then estimate the 100-year growth factor with lcv and lskew estimates
-#' TPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-#' GenParetoGF(Lcv(TPOT$peak), LSkew(TPOT$peak), RP = 100, ppy = 1.867)
-#' #multiply by the median of the POT data for an estimate of the 100-yr flood
-#' GenParetoGF(Lcv(TPOT$peak), LSkew(TPOT$peak), RP = 100, ppy = 1.867)*median(TPOT$peak)
+#' # Get POT flow data from the Thames at Kingston (noting the no. peaks per year).
+#' # Then estimate the 100-year growth factor with lcv and lskew estimates
+#' tpot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+#' GenParetoGF(Lcv(tpot$peak), LSkew(tpot$peak), RP = 100, ppy = 1.867)
+#'
+#' # Multiply by the median of the POT data for an estimate of the 100-year flood
+#' GenParetoGF(Lcv(tpot$peak), LSkew(tpot$peak), RP = 100, ppy = 1.867) * median(tpot$peak)
+#'
 #' @return Generalised Pareto estimated growth factor
 #' @author Anthony Hammond
 GenParetoGF <- function(lcv, lskew, RP, ppy = 1) {
-  k <- (1-3*lskew)/(1+lskew)
-  Bgp <- (lcv*k*(1+k)*(2+k))/(k-lcv*(2+k)*(2^-k*(1+k)-1))
-  RPppy <- 1/((1/RP)/ppy)
-  Zt <- 1 + (Bgp/k) *((2^-k)-(1-(1-(1/RPppy)))^k)
+  k <- (1 - 3 * lskew) / (1 + lskew)
+  Bgp <- (lcv * k * (1 + k) * (2 + k)) / (k - lcv * (2 + k) * (2^-k * (1 + k) - 1))
+  RPppy <- 1 / ((1 / RP) / ppy)
+  Zt <- 1 + (Bgp / k) * ((2^-k) - (1 - (1 - (1 / RPppy)))^k)
   return(Zt)
 }
 
 
-#'Gumbel distribution growth factors
+#' Gumbel distribution growth factors
 #'
-#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#' Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
 #'
-#'@details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
+#' @details Growth factors are calculated by the method outlined in the Flood Estimation Handbook, volume 3, 1999.
 #'
 #' @param lcv linear coefficient of variation
 #' @param RP return period
 #' @examples
-#' #Estimate the 50-year growth factors from an Lcv of 0.17.
+#' # Estimate the 50-year growth factor from an Lcv of 0.17
 #' GumbelGF(0.17, RP = 50)
+#'
 #' @return Gumbel estimated growth factor
 #' @author Anthony Hammond
 
-GumbelGF <- function(lcv, RP){
-  B <- lcv/(log(2)-lcv*(0.5772+log(log(2))))
-  gf <- 1+B*(log(log(2))-log(-log(1-(1/RP))))
+GumbelGF <- function(lcv, RP) {
+  B <- lcv / (log(2) - lcv * (0.5772 + log(log(2))))
+  gf <- 1 + B * (log(log(2)) - log(-log(1 - (1 / RP))))
   return(gf)
 }
 
 
-#'Kappa3 distribution growth factors
+#' Kappa3 distribution growth factors
 #'
-#'Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
+#' Estimated growth factors as a function of return period, with inputs of Lcv & LSkew (linear coefficient of variation & linear skewness)
 #'
 #' @details Growth factors are calculated by the method outlined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142
 #' @param lcv linear coefficient of variation
 #' @param lskew linear skewness
 #' @param RP return period
 #' @examples
-#' #Get a ungauged pooled Lcv and LSkew for catchment 15006
-#' PooledRes <- as.numeric(QuickResults(GetCDs(15006), plot = FALSE)[[2]])
-#' #Calculate Kappa growth factor for the 100-year flood
-#' Kappa3GF(PooledRes[1], PooledRes[2], RP = 100)
+#' # Get an ungauged pooled Lcv and LSkew for catchment 15006
+#' pooled_res <- as.numeric(QuickResults(GetCDs(15006), plot = FALSE)[[2]])
+#'
+#' # Calculate Kappa growth factor for the 100-year flood
+#' Kappa3GF(pooled_res[1], pooled_res[2], RP = 100)
+#'
 #' @return Kappa3 distribution estimated growth factor
 #' @author Anthony Hammond
 Kappa3GF <- function(lcv, lskew, RP) {
-  gr <- function(k){
-    g1 <- (1*gamma(1+k)*gamma(-k-1/-0.4))/((0.4)^(1+k)*gamma(1-1/-0.4))
-    g2 <- (2*gamma(1+k)*gamma(-k-2/-0.4))/((0.4)^(1+k)*gamma(1-2/-0.4))
-    g3 <- (3*gamma(1+k)*gamma(-k-3/-0.4))/((0.4)^(1+k)*gamma(1-3/-0.4))
-    vec <- c(g1,g2,g3)
+  gr <- function(k) {
+    g1 <- (1 * gamma(1 + k) * gamma(-k - 1 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 1 / -0.4))
+    g2 <- (2 * gamma(1 + k) * gamma(-k - 2 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 2 / -0.4))
+    g3 <- (3 * gamma(1 + k) * gamma(-k - 3 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 3 / -0.4))
+    vec <- c(g1, g2, g3)
     return(vec)
   }
   KSolve <- function(k) {
-    abs(((- gr(k)[1] + 3*gr(k)[2] - 2*gr(k)[3])/ (gr(k)[1] - gr(k)[2])) - lskew)
+    abs(((-gr(k)[1] + 3 * gr(k)[2] - 2 * gr(k)[3]) / (gr(k)[1] - gr(k)[2])) - lskew)
   }
   k <- 0.01
-  KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
+  KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -1, upper = 2.5)$par[1]
   GrRes <- gr(KRes)
-  B <- (lcv * KRes) / ((GrRes[1]-GrRes[2]) + lcv*(GrRes[1] - (log(2.22)^KRes)))
-  xT <- 1 + (B/KRes) *(log(2.22)^KRes - ((1-((RP-1)/RP)^-0.4)/-0.4)^KRes)
+  B <- (lcv * KRes) / ((GrRes[1] - GrRes[2]) + lcv * (GrRes[1] - (log(2.22)^KRes)))
+  xT <- 1 + (B / KRes) * (log(2.22)^KRes - ((1 - ((RP - 1) / RP)^-0.4) / -0.4)^KRes)
   return(xT)
 }
 
 
 
-#'Generalised logistic distribution - estimates directly from sample
+#' Generalised logistic distribution - estimates directly from sample
 #'
-#'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
+#' Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
 #' @examples
-#' #Get an annual maximum sample and estimate the 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' GenLogAM(AM.27090$Flow, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GenLogAM(AM.27090$Flow, q = 600)
+#' # Get an annual maximum sample and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' GenLogAM(am_27090$Flow, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GenLogAM(am_27090$Flow, q = 600)
+#'
 #' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
-GenLogAM <- function(x, RP = 100, q = NULL)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+GenLogAM <- function(x, RP = 100, q = NULL) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
+  n <- length(x)
   b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
   L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  L4 <- 20*b3-30*b2+12*b1-b0
-  Lcv <- L2/L1
-  LSkew <- L3/L2
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  L4 <- 20 * b3 - 30 * b2 + 12 * b1 - b0
+  Lcv <- L2 / L1
+  LSkew <- L3 / L2
   k <- -LSkew
-  a <- (L2*sin(k*pi))/(k*pi)
-  loc <- b0-a*((1/k)-(pi/sin(k*pi)))
-  if(is.null(q) == TRUE) {res <- loc+ a/k * (1-(RP-1) ^-k)}
-  else {
-    y <- -k^(-1) * log(1 - k * (q - loc)/a)
-    P <- 1-(1/(1+exp(-y)))
-    res <- 1/P
+  if (is.null(q)) {
+    if (k == 0) {
+      loc <- median(x)
+      a <- Lcv * loc
+      res <- loc + a * log(RP - 1)
+    } else {
+      a <- (L2 * sin(k * pi)) / (k * pi)
+      loc <- b0 - a * ((1 / k) - (pi / sin(k * pi)))
+      res <- loc + a / k * (1 - (RP - 1)^-k)
+    }
+  } else {
+    if (k == 0) {
+      loc <- median(x)
+      a <- Lcv * loc
+      res <- 1 + exp((q - loc) / a)
+    } else {
+      a <- (L2 * sin(k * pi)) / (k * pi)
+      loc <- b0 - a * ((1 / k) - (pi / sin(k * pi)))
+      y <- -k^(-1) * log(1 - k * (q - loc) / a)
+      P <- 1 - (1 / (1 + exp(-y)))
+      res <- 1 / P
+    }
+  }
+
+  return(res)
+}
+
+
+
+#' Generalised extreme value distribution - estimates directly from sample
+#'
+#' Estimated quantiles as function of return period (RP) and vice versa, directly from the data
+#'
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
+#' @param x numeric vector (block maxima sample)
+#' @param RP return period (default = 100)
+#' @param q quantile (magnitude of variable)
+#' @examples
+#' # Get an annual maximum sample and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' GEVAM(am_27090$Flow, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GEVAM(am_27090$Flow, q = 600)
+#'
+#' @return quantile as a function of RP or vice versa.
+#' @author Anthony Hammond
+GEVAM <- function(x, RP = 100, q = NULL) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  Sort.x <- sort(x)
+  n <- length(x)
+  b0 <- mean(x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
+  L1 <- b0
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  L4 <- 20 * b3 - 30 * b2 + 12 * b1 - b0
+  Lcv <- L2 / L1
+  LSkew <- L3 / L2
+  C <- (2 / (3 + LSkew)) - (log(2) / log(3))
+  k <- 7.859 * C + 2.9554 * C^2
+  a <- (L2 * k) / ((1 - 2^-k) * gamma(1 + k))
+  loc <- b0 - a * ((1 - gamma(1 + k)) / k)
+  if (is.null(q) == TRUE) {
+    res <- loc + a / k * (1 - (-log(1 - 1 / RP))^k)
+  } else {
+    y <- -k^(-1) * log(1 - k * (q - loc) / a)
+    P <- 1 - (exp(-exp(-y)))
+    res <- 1 / P
   }
   return(res)
 }
 
 
 
-#'Generalised extreme value distribution - estimates directly from sample
+#' Generalised Pareto distribution - estimates directly from sample
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, directly from the data
+#' Estimated quantiles as function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
-#' @param x numeric vector (block maxima sample)
-#' @param RP return period (default = 100)
-#' @param q quantile (magnitude of variable)
-#' @examples
-#' #Get an annual maximum sample and estimate the 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' GEVAM(AM.27090$Flow, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GEVAM(AM.27090$Flow, q = 600)
-#' @return quantile as a function of RP or vice versa.
-#' @author Anthony Hammond
-GEVAM <- function(x, RP = 100, q = NULL)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
-  b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
-  L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  L4 <- 20*b3-30*b2+12*b1-b0
-  Lcv <- L2/L1
-  LSkew <- L3/L2
-  C <- (2/(3+LSkew)) - (log(2)/log(3))
-  k <- 7.859*C+2.95548*C^2
-  a <- (L2*k)/((1-2^-k)*gamma(1+k))
-  loc <- b0-a*((1-gamma(1+k))/k)
-  if(is.null(q) == TRUE) {res <- loc+a/k*(1-(-log(1-1/RP))^k)} else {
-    y <- -k^(-1) * log(1 - k * (q - loc)/a)
-    P <- 1-(exp(-exp(-y)))
-    res <- 1/P}
-  return(res)
-}
-
-
-
-#'Generalised Pareto distribution - estimates directly from sample
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, directly from the data
-#'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
-#' @param x numeric vector (block maxima sample)
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
+#' @param x numeric vector (peaks over threshold sample)
 #' @param ppy peaks per year
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
 #' @examples
-#' #Get a POT series and estimate the 50-year RP
-#' ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-#' GenParetoPOT(ThamesPOT$peak, ppy = 1.867, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GenParetoPOT(ThamesPOT$peak, ppy = 1.867, q = 600)
+#' # Get a POT series and estimate the 50-year RP
+#' thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+#' GenParetoPOT(thames_pot$peak, ppy = 1.867, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GenParetoPOT(thames_pot$peak, ppy = 1.867, q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
-GenParetoPOT <- function(x, ppy = 1, RP = 100, q = NULL)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+GenParetoPOT <- function(x, ppy = 1, RP = 100, q = NULL) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
+  n <- length(x)
   b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
   L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  L4 <- 20*b3-30*b2+12*b1-b0
-  Lcv <- L2/L1
-  LSkew <- L3/L2
-  k <- (1-3*LSkew)/(1+LSkew)
-  a <- (1+k)*(2+k)*L2
-  loc <- L1-(2+k)*L2
-  if(is.null(q) == TRUE) {res <- loc+a*(1-(1-(1-(1/RP)/ppy))^k)/k} else {
-    y <- -k^-1*log(1-k*(q-loc)/a)
-    P <- 1-(1-exp(-y))
-    RPPOT <- 1/P
-    res <- RPPOT/ppy
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  L4 <- 20 * b3 - 30 * b2 + 12 * b1 - b0
+  Lcv <- L2 / L1
+  LSkew <- L3 / L2
+  k <- (1 - 3 * LSkew) / (1 + LSkew)
+  a <- (1 + k) * (2 + k) * L2
+  loc <- L1 - (2 + k) * L2
+  if (is.null(q) == TRUE) {
+    res <- loc + a * (1 - (1 - (1 - (1 / RP) / ppy))^k) / k
+  } else {
+    y <- -k^-1 * log(1 - k * (q - loc) / a)
+    P <- 1 - (1 - exp(-y))
+    RPPOT <- 1 / P
+    res <- RPPOT / ppy
   }
   return(res)
 }
 
-#'Gumbel distribution - estimates directly from sample
+#' Gumbel distribution - estimates directly from sample
 #'
 #' @description Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
-#' @details If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
+#' @details If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
 #' @examples
-#' #Get an annual maximum sample and estimate the 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' GumbelAM(AM.27090$Flow, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GumbelAM(AM.27090$Flow, q = 600)
+#' # Get an annual maximum sample and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' GumbelAM(am_27090$Flow, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GumbelAM(am_27090$Flow, q = 600)
+#'
 #' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
-GumbelAM <- function(x, RP = 100, q = NULL)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
-  b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  L1 <- b0
-  L2 <- 2*b1-b0
-  a <- L2/log(2)
-  loc <- L1 - 0.5772*a
-  if(is.null(q) == TRUE) {res <- loc - a * log(-log(1-(1/RP)))}
-  else {
-    Prob <- 1- exp(-exp(-(q - loc)/a))
-    res <- 1/Prob
+GumbelAM <- function(x, RP = 100, q = NULL) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
   }
- return(res)
+  Sort.x <- sort(x)
+  n <- length(x)
+  b0 <- mean(x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  L1 <- b0
+  L2 <- 2 * b1 - b0
+  a <- L2 / log(2)
+  loc <- L1 - 0.5772 * a
+  if (is.null(q) == TRUE) {
+    res <- loc - a * log(-log(1 - (1 / RP)))
+  } else {
+    Prob <- 1 - exp(-exp(-(q - loc) / a))
+    res <- 1 / Prob
+  }
+  return(res)
 }
 
 
 
-#'Generalised logistic distribution estimates from parameters
+#' Generalised logistic distribution estimates from parameters
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#' Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param loc location parameter
 #' @param scale scale parameter
 #' @param shape shape parameter
 #' @param q quantile. magnitude of the variable under consideration
 #' @param RP return period
 #' @examples
-#' #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' GenLogPars(AM.27090$Flow)
-#' #Store parameters in an object
-#' Pars <- as.numeric(GenLogPars(AM.27090$Flow))
-#' #get estimate of 50-yr flow
-#' GenLogEst(Pars[1], Pars[2], Pars[3], RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GenLogEst(Pars[1], Pars[2], Pars[3], q = 600)
+#' # Get an annual maximum sample, estimate the parameters, and estimate 50-year RP
+#' am_27090 <- GetAM(27090)
+#' GenLogPars(am_27090$Flow)
+#'
+#' # Store the parameters in an object
+#' pars <- as.numeric(GenLogPars(am_27090$Flow))
+#'
+#' # Get an estimate of 50-year flow
+#' GenLogEst(pars[1], pars[2], pars[3], RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GenLogEst(pars[1], pars[2], pars[3], q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
 GenLogEst <- function(loc, scale, shape, q = NULL, RP = 100) {
-  if(is.null(q) == TRUE) {res <- loc+ scale/shape * (1-(RP-1) ^-shape)}
-  else {
-    y <- -shape^(-1) * log(1 - shape * (q - loc)/scale)
-    P <- 1-(1/(1+exp(-y)))
-    res <- 1/P
+  if (scale <= 0) stop("Scale parameter must be positive.")
+
+  if (isTRUE(all.equal(shape, 0))) {
+    if (is.null(q)) {
+      # Logistic quantile
+      p <- 1 / RP
+      res <- loc + scale * log(p / (1 - p))
+    } else {
+      # Logistic RP
+      z <- (q - loc) / scale
+      p <- exp(z) / (1 + exp(z))
+      res <- 1 / p
+    }
+  } else {
+    if (is.null(q)) {
+      res <- loc + (scale / shape) * (1 - (RP - 1)^(-shape))
+    } else {
+      z <- 1 - shape * (q - loc) / scale
+      if (z <= 0) stop("Quantile exceeds theoretical bound for given parameters.")
+      y <- -(1 / shape) * log(z)
+      P <- 1 - 1 / (1 + exp(-y))
+      res <- 1 / P
+    }
   }
+
   return(res)
 }
 
 
-#'Generalised Pareto distribution estimates from parameters
+
+#' Generalised Pareto distribution estimates from parameters
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#' Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is necessary when ppy is not equal to 1.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param loc location parameter
 #' @param scale scale parameter
 #' @param shape shape parameter
@@ -1146,90 +1396,148 @@ GenLogEst <- function(loc, scale, shape, q = NULL, RP = 100) {
 #' @param RP return period
 #' @param ppy peaks per year. Default is one
 #' @examples
-#' #Get a POT sample, estimate the parameters, and estimate 50-year RP
-#' ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-#' GenParetoPars(ThamesPOT$peak)
-#' #Store parameters in an object
-#' Pars <- as.numeric(GenParetoPars(ThamesPOT$peak))
-#' #get estimate of 50-yr flow
-#' GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, q = 600)
+#' # Get a POT sample, estimate the parameters, and estimate the 50-year RP
+#' thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+#' GenParetoPars(thames_pot$peak)
+#'
+#' # Store the parameters in an object
+#' pars <- as.numeric(GenParetoPars(thames_pot$peak))
+#'
+#' # Get an estimate of 50-year flow
+#' GenParetoEst(pars[1], pars[2], pars[3], ppy = 1.867, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GenParetoEst(pars[1], pars[2], pars[3], ppy = 1.867, q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
 GenParetoEst <- function(loc, scale, shape, q = NULL, RP = 100, ppy = 1) {
-  if(is.null(q) == TRUE) {res <- loc+scale*(1-(1-(1-(1/RP)/ppy))^shape)/shape} else {
-    y <- -shape^-1*log(1-shape*(q-loc)/scale)
-    P <- 1-(1-exp(-y))
-    RPPOT <- 1/P
-    res <- RPPOT/ppy
+  if (shape == 0) {
+    if (is.null(q)) {
+      res <- loc - scale * log(1 - (1 / RP) / ppy)
+    } else {
+      P <- 1 - exp(-(q - loc) / scale)
+      RPPOT <- 1 / P
+      res <- RPPOT / ppy
+    }
+  } else {
+    if (is.null(q)) {
+      res <- loc + scale * (1 - (1 - (1 - 1 / RP) / ppy)^shape) / shape
+    } else {
+      y <- -1 / shape * log(1 - shape * (q - loc) / scale)
+      P <- 1 - exp(-y)
+      RPPOT <- 1 / P
+      res <- RPPOT / ppy
+    }
   }
   return(res)
 }
 
 
-#'Generalised extreme value distribution estimates from parameters
+
+#' Generalised extreme value distribution estimates from parameters
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#' Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param loc location parameter
 #' @param scale scale parameter
 #' @param shape shape parameter
 #' @param q quantile. magnitude of the variable under consideration
 #' @param RP return period
 #' @examples
-#' #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' GEVPars(AM.27090$Flow)
-#' #Store parameters in an object
-#' Pars <- as.numeric(GEVPars(AM.27090$Flow))
-#' #get estimate of 50-yr flow
-#' GEVEst(Pars[1], Pars[2], Pars[3], RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GEVEst(Pars[1], Pars[2], Pars[3], q = 600)
+#' # Get an annual maximum sample, estimate the parameters, and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' GEVPars(am_27090$Flow)
+#'
+#' # Store the parameters in an object
+#' pars <- as.numeric(GEVPars(am_27090$Flow))
+#'
+#' # Get an estimate of 50-year flow
+#' GEVEst(pars[1], pars[2], pars[3], RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GEVEst(pars[1], pars[2], pars[3], q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
 GEVEst <- function(loc, scale, shape, q = NULL, RP = 100) {
-  if(is.null(q) == TRUE) {res <- loc+scale/shape*(1-(-log(1-1/RP))^shape)} else {
-    y <- -shape^(-1) * log(1 - shape * (q - loc)/scale)
-    P <- 1-(exp(-exp(-y)))
-    res <- 1/P}
+  if (scale <= 0) stop("Scale parameter must be positive.")
+  if (is.null(q) && any(RP <= 1)) stop("Return period must be greater than 1.")
+
+  # Use GumbelEst if shape is 0
+  if (isTRUE(all.equal(shape, 0))) {
+    return(GumbelEst(loc = loc, scale = scale, q = q, RP = RP))
+  }
+
+  if (is.null(q)) {
+    z <- -log(1 - 1 / RP)
+    res <- loc + (scale / shape) * (1 - z^shape)
+  } else {
+    z <- 1 - shape * (q - loc) / scale
+    if (z <= 0) stop("Quantile exceeds theoretical bound for given parameters.")
+    y <- -1 / shape * log(z)
+    P <- 1 - exp(-exp(-y))
+    res <- 1 / P
+  }
+
   return(res)
 }
 
-#'Gumbel distribution estimates from parameters
+
+
+#' Gumbel distribution estimates from parameters
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#' Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param loc location parameter
 #' @param scale scale parameter
 #' @param q quantile. magnitude of the variable under consideration
 #' @param RP return period
 #' @examples
-#' #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' Pars <- as.numeric(GumbelPars(AM.27090$Flow))
-#' GumbelEst(Pars[1], Pars[2], RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' GumbelEst(Pars[1], Pars[2], q = 600)
+#' # Get an annual maximum sample, estimate the parameters, and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' pars <- as.numeric(GumbelPars(am_27090$Flow))
+#' GumbelEst(pars[1], pars[2], RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' GumbelEst(pars[1], pars[2], q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
-GumbelEst <- function(loc, scale, q = NULL,RP = 100){
-  if(is.null(q) == TRUE) {res <- loc+scale*(-log(-log(1-(1/RP))))}
-  else {
-    Prob <- 1- exp(-exp(-(q - loc)/scale))
-    res <- 1/Prob}
+GumbelEst <- function(loc, scale, q = NULL, RP = 100) {
+  if (scale <= 0) stop("Scale parameter must be positive.")
+
+  if (is.null(q)) {
+    if (any(RP <= 1)) stop("Return period must be greater than 1.")
+    p <- 1 - 1 / RP
+    z <- -log(-log(p))
+    res <- loc + scale * z
+  } else {
+    z <- (q - loc) / scale
+    P <- exp(-exp(-z))
+    Prob <- 1 - P
+    if (Prob <= 0) stop("Estimated exceedance probability is zero or negative.")
+    res <- 1 / Prob
+  }
+
   return(res)
 }
 
 
-#'Generalised extreme value distribution parameter estimates
+
+#' Generalised extreme value distribution parameter estimates
 #'
-#'Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
+#' Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
 #'
-#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'
+#' @details The L-moment estimated parameters are by the method detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #'
 #' @param x numeric vector. The sample
 #' @param mle logical argument with a default of FALSE. If FALSE the parameters are estimated with Lmoments, if TRUE the parameters are estimated by maximum likelihood estimation
@@ -1237,45 +1545,61 @@ GumbelEst <- function(loc, scale, q = NULL,RP = 100){
 #' @param LCV linear coefficient of variation
 #' @param LSKEW linear skewness
 #' @examples
-#' #Get an annual maximum sample and estimate the parameters using Lmoments
-#' AM.27090 <- GetAM(27090)
-#' GEVPars(AM.27090$Flow)
-#' #Estimate parameters using MLE
-#' GEVPars(AM.27090$Flow, mle = TRUE)
-#' #calculate Lmoments and estimate the parmeters with L1, Lcv and Lskew
-#' LMoments(AM.27090$Flow)
-#' #store linear moments in an object
-#' LPars <- as.numeric(LMoments(AM.27090$Flow))[c(1,5,6)]
-#' GEVPars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
+#' # Get an annual maximum sample and estimate the parameters using L-moments
+#' am_27090 <- GetAM(27090)
+#' GEVPars(am_27090$Flow)
+#'
+#' # Estimate parameters using MLE
+#' GEVPars(am_27090$Flow, mle = TRUE)
+#'
+#' # Calculate L-moments and estimate the parameters with L1, Lcv, and Lskew
+#' LMoments(am_27090$Flow)
+#'
+#' # Store L-moments in an object
+#' l_pars <- as.numeric(LMoments(am_27090$Flow))[c(1, 5, 6)]
+#' GEVPars(L1 = l_pars[1], LCV = l_pars[2], LSKEW = l_pars[3])
+#'
 #' @return Parameter estimates (location, scale, shape)
 #' @author Anthony Hammond
-GEVPars <- function(x = NULL, mle = FALSE, L1, LCV, LSKEW) {
-  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  if(mle == FALSE){
-    if(is.null(x)) {C <- (2/(3+LSKEW)) - (log(2)/log(3))
-    Shape <- 7.859*C+2.95548*C^2
-    L2 <- L1*LCV
-    Scale <- (L2*Shape)/((1-2^-Shape)*gamma(1+Shape))
-    Loc <- L1-Scale*((1-gamma(1+Shape))/Shape)
-    return(data.frame(Loc, Scale, Shape))}
-    else {
+GEVPars <- function(x = NULL, mle = FALSE, L1 = NULL, LCV = NULL, LSKEW = NULL) {
+  if (is.null(x) == FALSE & is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  if (mle == FALSE) {
+    if (is.null(x)) {
+      if (any(is.null(c(L1, LCV, LSKEW)))) {
+        warning("L1, LCV, and LSKEW must be supplied when x is NULL and mle = FALSE. Returning empty.")
+        return(data.frame(Loc = numeric(0), Scale = numeric(0), Shape = numeric(0)))
+      }
+      C <- (2 / (3 + LSKEW)) - (log(2) / log(3))
+      Shape <- 7.859 * C + 2.9554 * C^2
+      L2 <- L1 * LCV
+      Scale <- (L2 * Shape) / ((1 - 2^-Shape) * gamma(1 + Shape))
+      Loc <- L1 - Scale * ((1 - gamma(1 + Shape)) / Shape)
+      return(data.frame(Loc, Scale, Shape))
+    } else {
       L1 <- mean(x, na.rm = TRUE)
       LCV <- Lcv(x)
       LSKEW <- LSkew(x)
-      C <- (2/(3+LSKEW)) - (log(2)/log(3))
-      Shape <- 7.859*C+2.95548*C^2
-      L2 <- L1*LCV
-      Scale <- (L2*Shape)/((1-2^-Shape)*gamma(1+Shape))
-      Loc <- L1-Scale*((1-gamma(1+Shape))/Shape)
-      return(data.frame(Loc, Scale, Shape))}}
-  else {
-    pars <- c(mean(x), sd(x)/1.5, 0.01)
+      C <- (2 / (3 + LSKEW)) - (log(2) / log(3))
+      Shape <- 7.859 * C + 2.9554 * C^2
+      L2 <- L1 * LCV
+      Scale <- (L2 * Shape) / ((1 - 2^-Shape) * gamma(1 + Shape))
+      Loc <- L1 - Scale * ((1 - gamma(1 + Shape)) / Shape)
+      return(data.frame(Loc, Scale, Shape))
+    }
+  } else {
+    if (is.null(x)) {
+      warning("x must be supplied when mle = TRUE. Returning empty.")
+      return(data.frame(loc = numeric(0), scale = numeric(0), shape = numeric(0), log.likelihood = numeric(0)))
+    }
+    pars <- c(mean(x), sd(x) / 1.5, 0.01)
     max.lhd <- function(q, par) {
       abs(sum(log(gev.pdf(q, loc = par[1], scale = par[2], shape = par[3]))))
     }
     gev.pdf <- function(q, loc, scale, shape) {
-      y <- -shape^-1*log(1-shape*(q-loc)/scale)
-      p <- scale^-1*exp(1)^(-(1-shape)*y-exp(1)^(-y))
+      y <- -shape^-1 * log(1 - shape * (q - loc) / scale)
+      p <- scale^-1 * exp(-(1 - shape) * y - exp(-y))
       return(p)
     }
     result <- suppressWarnings(optim(par = pars, fn = max.lhd, q = x))
@@ -1289,55 +1613,64 @@ GEVPars <- function(x = NULL, mle = FALSE, L1, LCV, LSKEW) {
   }
 }
 
-#'Generalised logistic distribution parameter estimates
+#' Generalised logistic distribution parameter estimates
 #'
-#'Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
+#' Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
 #'
-#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'
+#' @details The L-moment estimated parameters are by the method detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param x numeric vector. The sample
 #' @param mle logical argument with a default of FALSE. If FALSE the parameters are estimated with Lmoments, if TRUE the parameters are estimated by maximum likelihood estimation.
 #' @param L1 first Lmoment
 #' @param LCV linear coefficient of variation
 #' @param LSKEW linear skewness
 #' @examples
-#' #Get an annual maximum sample and estimate the parameters using Lmoments
-#' AM.27090 <- GetAM(27090)
-#' GenLogPars(AM.27090$Flow)
-#' #Estimate parameters using MLE
-#' GenLogPars(AM.27090$Flow, mle = TRUE)
-#' #calculate Lmoments and estimate the parmeters with L1, Lcv and Lskew
-#' LMoments(AM.27090$Flow)
-#' #store linear moments in an object
-#' LPars <- as.numeric(LMoments(AM.27090$Flow))[c(1,5,6)]
-#' GenLogPars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
+#' # Get an annual maximum sample and estimate the parameters using L-moments
+#' am_27090 <- GetAM(27090)
+#' GenLogPars(am_27090$Flow)
+#'
+#' # Estimate parameters using MLE
+#' GenLogPars(am_27090$Flow, mle = TRUE)
+#'
+#' # Calculate L-moments and estimate the parameters with L1, Lcv, and Lskew
+#' LMoments(am_27090$Flow)
+#'
+#' # Store L-moments in an object
+#' l_pars <- as.numeric(LMoments(am_27090$Flow))[c(1, 5, 6)]
+#' GenLogPars(L1 = l_pars[1], LCV = l_pars[2], LSKEW = l_pars[3])
+#'
 #' @return Parameter estimates (location, scale, shape)
 #' @author Anthony Hammond
 GenLogPars <- function(x = NULL, mle = FALSE, L1, LCV, LSKEW) {
-  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  if(mle == FALSE){
-    if(is.null(x)) {
+  if (is.null(x) == FALSE & is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  if (mle == FALSE) {
+    if (is.null(x)) {
       Shape <- -LSKEW
-      L2 <- L1*LCV
-      Scale <- (L2*sin(Shape*pi))/(Shape*pi)
-      Loc <- L1-Scale*((1/Shape)-(pi/sin(Shape*pi)))
-      return(data.frame(Loc, Scale, Shape))}
-    else {
+      L2 <- L1 * LCV
+      Scale <- (L2 * sin(Shape * pi)) / (Shape * pi)
+      Loc <- L1 - Scale * ((1 / Shape) - (pi / sin(Shape * pi)))
+      return(data.frame(Loc, Scale, Shape))
+    } else {
       L1 <- mean(x, na.rm = TRUE)
       LCV <- Lcv(x)
       LSKEW <- LSkew(x)
       Shape <- -LSKEW
-      L2 <- L1*LCV
-      Scale <- (L2*sin(Shape*pi))/(Shape*pi)
-      Loc <- L1-Scale*((1/Shape)-(pi/sin(Shape*pi)))
-      return(data.frame(Loc, Scale, Shape))}}
-  else {
-    pars <- c(mean(x), sd(x)/1.5, 0.01)
+      L2 <- L1 * LCV
+      Scale <- (L2 * sin(Shape * pi)) / (Shape * pi)
+      Loc <- L1 - Scale * ((1 / Shape) - (pi / sin(Shape * pi)))
+      return(data.frame(Loc, Scale, Shape))
+    }
+  } else {
+    pars <- c(mean(x), sd(x) / 1.5, 0.01)
     min.SLS <- function(q, par) {
       abs(sum(log(gl.pdf(q, loc = par[1], scale = par[2], shape = par[3]))))
     }
     gl.pdf <- function(q, loc, scale, shape) {
-      y <- -shape^-1*log(1-shape*(q-loc)/scale)
-      f <- (scale^-1*exp(1)^(-(1-shape)*y))/(1+exp(1)^-y)^2
+      y <- -shape^-1 * log(1 - shape * (q - loc) / scale)
+      f <- (scale^-1 * exp(-(1 - shape) * y)) / (1 + exp(-y))^2
       return(f)
     }
     result <- suppressWarnings(optim(par = pars, fn = min.SLS, q = x))
@@ -1349,112 +1682,105 @@ GenLogPars <- function(x = NULL, mle = FALSE, L1, LCV, LSKEW) {
     Res <- data.frame(loc, scale, shape, log.likelihood)
     return(Res)
   }
-
 }
 
-#'Generalised Pareto distribution parameter estimates
+#' Generalised Pareto distribution parameter estimates
 #'
-#'Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
+#' Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
 #'
-#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'
+#' @details The L-moment estimated parameters are by the method detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #'
 #' @param x numeric vector. The sample
-#' @param mle logical argument with a default of FALSE. If FALSE the parameters are estimated with Lmoments, if TRUE the parameters are estimated by maximum likelihood estimation
 #' @param L1 first Lmoment
 #' @param LCV linear coefficient of variation
 #' @param LSKEW linear skewness
 #' @examples
-#' #Get a peaks over threshold sample and estimate the parameters using Lmoments
-#' ThamesPOT <- ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-#' GenParetoPars(ThamesPOT$peak)
-#' #Estimate parameters using MLE
-#' GenParetoPars(ThamesPOT$peak, mle = TRUE)
-#' #calculate Lmoments and estimate the parmeters with L1, Lcv and Lskew
-#' LMoments(ThamesPOT$peak)
-#' #store linear moments in an object
-#' LPars <- as.numeric(LMoments(ThamesPOT$peak))[c(1,5,6)]
-#' GenParetoPars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
+#' # Get a peaks over threshold sample and estimate the parameters using L-moments
+#' thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+#' GenParetoPars(thames_pot$peak)
+#'
+#' # Calculate L-moments and estimate the parameters with L1, Lcv, and Lskew
+#' LMoments(thames_pot$peak)
+#'
+#' # Store L-moments in an object
+#' l_pars <- as.numeric(LMoments(thames_pot$peak))[c(1, 5, 6)]
+#' GenParetoPars(L1 = l_pars[1], LCV = l_pars[2], LSKEW = l_pars[3])
+#'
 #' @return Parameter estimates (location, scale, shape)
 #' @author Anthony Hammond
-GenParetoPars <- function(x = NULL, mle = FALSE, L1, LCV, LSKEW) {
-  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  if(mle == FALSE){
-    if(is.null(x)) {
-      Shape <- (1-3*LSKEW)/(1+LSKEW)
-      L2 <- L1*LCV
-      Scale <- (1+Shape)*(2+Shape)*L2
-      Loc <- L1-(2+Shape)*L2
-      return(data.frame(Loc, Scale, Shape))}
-    else {
-      L1 <- mean(x, na.rm = TRUE)
-      LCV <- Lcv(x)
-      LSKEW <- LSkew(x)
-      Shape <- (1-3*LSKEW)/(1+LSKEW)
-      L2 <- L1*LCV
-      Scale <- (1+Shape)*(2+Shape)*L2
-      Loc <- L1-(2+Shape)*L2
-      return(data.frame(Loc, Scale, Shape))}
+GenParetoPars <- function(x = NULL, L1, LCV, LSKEW) {
+  if (is.null(x) == FALSE & is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  if (is.null(x)) {
+    Shape <- (1 - 3 * LSKEW) / (1 + LSKEW)
+    L2 <- L1 * LCV
+    Scale <- (1 + Shape) * (2 + Shape) * L2
+    Loc <- L1 - (2 + Shape) * L2
+    return(data.frame(Loc, Scale, Shape))
   } else {
-    pars <- c(sd(x)/1.5, 0.01)
-    max.lhd <- function(q, par) {
-      abs(sum(log(gp.pdf(q, loc = min(x), scale = par[1], shape = par[2]))))}
-    gp.pdf <- function(q, loc, scale, shape) {
-      y <- -shape^-1*log(1-shape*(q-loc)/scale)
-      p <- scale^-1*exp(1)^(-(1-shape)*y)
-      return(p)
-    }
-    result <- suppressWarnings(optim(par = pars, fn = max.lhd, q = x))
-    loc <- min(x)
-    scale <- result$par[1]
-    shape <- result$par[2]
-    log.likelihood <- -result$value[1]
-    message <- result$message
-    Res <- data.frame(loc, scale, shape, log.likelihood)
-    return(Res)
+    L1 <- mean(x, na.rm = TRUE)
+    LCV <- Lcv(x)
+    LSKEW <- LSkew(x)
+    Shape <- (1 - 3 * LSKEW) / (1 + LSKEW)
+    L2 <- L1 * LCV
+    Scale <- (1 + Shape) * (2 + Shape) * L2
+    Loc <- L1 - (2 + Shape) * L2
+    return(data.frame(Loc, Scale, Shape))
   }
 }
 
-#'Gumbel distribution parameter estimates
+#' Gumbel distribution parameter estimates
 #'
-#'Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation)
+#' Estimated parameters from a sample (with Lmoments or maximum likelihood estimation) or from L1 (first L-moment), Lcv (linear coefficient of variation)
 #'
-#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'
+#' @details The L-moment estimated parameters are by the method detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #'
 #' @param x numeric vector. The sample
 #' @param mle logical argument with a default of FALSE. If FALSE the parameters are estimated with Lmoments, if TRUE the parameters are estimated by maximum likelihood estimation
 #' @param L1 first Lmoment
 #' @param LCV linear coefficient of variation
 #' @examples
-#' #Get an annual maximum sample and estimate the parameters using Lmoments
-#' AM.27090 <- GetAM(27090)
-#' GumbelPars(AM.27090$Flow)
-#' #Estimate parameters using MLE
-#' GumbelPars(AM.27090$Flow, mle = TRUE)
-#' #calculate Lmoments and estimate the parmeters with L1 and Lcv
-#' Pars <- as.numeric(LMoments(AM.27090$Flow)[c(1,5)])
-#' GumbelPars(L1 = Pars[1], LCV = Pars[2])
+#' # Get an annual maximum sample and estimate the parameters using L-moments
+#' am_27090 <- GetAM(27090)
+#' GumbelPars(am_27090$Flow)
+#'
+#' # Estimate parameters using MLE
+#' GumbelPars(am_27090$Flow, mle = TRUE)
+#'
+#' # Calculate L-moments and estimate the parameters with L1 and Lcv
+#' pars <- as.numeric(LMoments(am_27090$Flow)[c(1, 5)])
+#' GumbelPars(L1 = pars[1], LCV = pars[2])
+#'
 #' @return Parameter estimates (location, scale)
 #' @author Anthony Hammond
-GumbelPars <- function(x = NULL, mle = FALSE, L1, LCV){
-  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  if(mle == FALSE) {
-    if(is.null(x)) {Scale <- (L1*LCV)/log(2)
-    Loc <- L1 - 0.5772*Scale
-    return(data.frame(Loc, Scale))
+GumbelPars <- function(x = NULL, mle = FALSE, L1, LCV) {
+  if (is.null(x) == FALSE & is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  if (mle == FALSE) {
+    if (is.null(x)) {
+      Scale <- (L1 * LCV) / log(2)
+      Loc <- L1 - 0.5772 * Scale
+      return(data.frame(Loc, Scale))
     } else {
       L1 <- mean(x, na.rm = TRUE)
       LCV <- Lcv(x)
-      Scale <- (L1*LCV)/log(2)
-      Loc <- L1 - 0.5772*Scale
+      Scale <- (L1 * LCV) / log(2)
+      Loc <- L1 - 0.5772 * Scale
       return(data.frame(Loc, Scale))
     }
   } else {
-    pars <- c(mean(x), sd(x)/1.5)
+    pars <- c(mean(x), sd(x) / 1.5)
     max.lhd <- function(q, par) {
       abs(sum(log(gum.pdf(q, loc = par[1], scale = par[2]))))
     }
     gum.pdf <- function(q, loc, scale) {
-      p <- scale^-1 * exp(-(q-loc)/scale)*exp(-exp(-(q-loc)/scale))
+      p <- scale^-1 * exp(-(q - loc) / scale) * exp(-exp(-(q - loc) / scale))
       return(p)
     }
     result <- suppressWarnings(optim(par = pars, fn = max.lhd, q = x))
@@ -1468,64 +1794,98 @@ GumbelPars <- function(x = NULL, mle = FALSE, L1, LCV){
 }
 
 
-#'Data simulator
+#' Data simulator
 #'
-#'Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, Kappa3, or generalised Pareto distributions
+#' Simulation of a random sample from the generalised extreme value, generalised logistic, Gumbel, Kappa3, or generalised Pareto distributions
 #'
-#'The simulated sample can be generated using distribution parameters, or the growth factor (GF) inputs; linear coefficient of variationn (Lcv), linear skewness (LSkew) & the median annual maximum (QMED).
+#' The simulated sample can be generated using the distribution parameters (pars) location, scale and shape, or the growth factor (GF) inputs linear coefficient of variation (Lcv), linear skewness (LSkew) & median annual maximum (QMED). This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param n sample size to be simulated
 #' @param pars vector of parameters in the order of location, scale, shape (only location and shape for Gumbel)
 #' @param dist choice of distribution. Either "GEV", "GenLog", "Gumbel", "Kappa3", or "GenPareto"
 #' @param GF vector of GF inputs in the order of Lcv, LSkew, QMED (only Lcv and QMED if dist = "Gumbel")
 #' @examples
-#' #Simulate a sample of size 30 using parameters GenLog and parameters 299, 51, -0.042
+#' # Simulate a sample of size 30 from a GenLog distribution with parameters 299, 51, -0.042
 #' SimData(30, pars = c(299, 51, -0.042), dist = "GenLog")
-#' #Now simulate using the Lcv, Lskew, and median (0.17, 0.04, 310)
+#'
+#' # Now simulate using the Lcv, Lskew, and median (0.17, 0.04, 310)
 #' SimData(30, GF = c(0.17, 0.04, 310), dist = "GenLog")
+#'
 #' @return A random sample of size n for the chosen distribution.
 #' @author Anthony Hammond
 SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
   MatchDist <- match(dist, c("GEV", "GenLog", "GenPareto", "Gumbel", "Kappa3"))
-  if(is.na(MatchDist)) stop("dist must be one of GEV, GenLog, GenPareto, Gumbel, or Kappa3")
-  if(is.null(GF) == TRUE){
-    if(dist == "Gumbel") {if(length(pars) != 2) stop("The Gumbel distribution should have two parameters")}
-    if(dist != "Gumbel") {if(length(pars) != 3) stop("Your disribution choice requires three parameters")}
+  if (is.na(MatchDist)) stop("dist must be one of GEV, GenLog, GenPareto, Gumbel, or Kappa3")
+  if (is.null(GF) == TRUE) {
+    if (dist == "Gumbel") {
+      if (length(pars) != 2) stop("The Gumbel distribution should have two parameters")
+    }
+    if (dist != "Gumbel") {
+      if (length(pars) != 3) stop("Your disribution choice requires three parameters")
+    }
 
-    if(dist == "GenPareto") {res <- GenParetoEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n), ppy = 1)}
-    if(dist == "GEV") {res <- GEVEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
-    if(dist == "GenLog") {res <- GenLogEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
-    if(dist == "Kappa3") {res <- Kappa3Est(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1/runif(n))}
-    if(dist == "Gumbel") {res <- GumbelEst(loc = pars[1], scale = pars[2], RP = 1/runif(n))}
-    return(res)} else
-    {
-      if(dist == "Gumbel") {if(length(GF) != 2) stop("The Gumbel distribution should have two parameters")}
-      if(dist != "Gumbel") {if(length(GF) != 3) stop("Your disribution choice requires three parameters")}
+    if (dist == "GenPareto") {
+      res <- GenParetoEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1 / runif(n), ppy = 1)
+    }
+    if (dist == "GEV") {
+      res <- GEVEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1 / runif(n))
+    }
+    if (dist == "GenLog") {
+      res <- GenLogEst(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1 / runif(n))
+    }
+    if (dist == "Kappa3") {
+      res <- Kappa3Est(loc = pars[1], scale = pars[2], shape = pars[3], RP = 1 / runif(n))
+    }
+    if (dist == "Gumbel") {
+      res <- GumbelEst(loc = pars[1], scale = pars[2], RP = 1 / runif(n))
+    }
+    return(res)
+  } else {
+    if (dist == "Gumbel") {
+      if (length(GF) != 2) stop("The Gumbel distribution should have two parameters")
+    }
+    if (dist != "Gumbel") {
+      if (length(GF) != 3) stop("Your disribution choice requires three parameters")
+    }
 
-      if(dist == "GenPareto") {res <- GenParetoGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
-      if(dist == "GEV") {res <- GEVGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
-      if(dist == "GenLog") {res <- GenLogGF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
-      if(dist == "Kappa3") {res <- Kappa3GF(lcv = GF[1], lskew = GF[2], RP = 1/runif(n))}
-      if(dist == "Gumbel") {res <- GumbelGF(lcv = GF[1], RP = 1/runif(n))}
-      if(dist == "Gumbel"){
-        return(res*GF[2])
-      } else
-        return(res*GF[3])}
+    if (dist == "GenPareto") {
+      res <- GenParetoGF(lcv = GF[1], lskew = GF[2], RP = 1 / runif(n))
+    }
+    if (dist == "GEV") {
+      res <- GEVGF(lcv = GF[1], lskew = GF[2], RP = 1 / runif(n))
+    }
+    if (dist == "GenLog") {
+      res <- GenLogGF(lcv = GF[1], lskew = GF[2], RP = 1 / runif(n))
+    }
+    if (dist == "Kappa3") {
+      res <- Kappa3GF(lcv = GF[1], lskew = GF[2], RP = 1 / runif(n))
+    }
+    if (dist == "Gumbel") {
+      res <- GumbelGF(lcv = GF[1], RP = 1 / runif(n))
+    }
+    if (dist == "Gumbel") {
+      return(res * GF[2])
+    } else {
+      return(res * GF[3])
+    }
+  }
 }
 
 
 # QMED --------------------------------------------------------------------
 
-#'QMED (median annual maximum flow) estimate from catchment descriptors
+#' QMED (median annual maximum flow) estimate from catchment descriptors
 #'
-#'Estimated median annual maximum flow from catchment descriptors and donor sites
+#' Estimated median annual maximum flow from catchment descriptors and donor sites
 #'
-#'QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that an urban donor is considered appropriate the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
+#' QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'.  This QMED model is a multiple linear regression with transformed predictor variables and is trained on log transformed observed QMED values. The following assumptions are therefore applied: the relationship between the transformed independent variables (predictors) and the logarithmically transformed dependent variable (QMED) is linear, observations (observed QMEDs used in calibration) are independent of each other, model and sampling errors are independent of each other, model and sampling errors are normally distributed and have a mean of zero, predictor variables are independent, the cross-correlation of model errors can be described by distance between catchment centroids and the form of the associated correlation matrix is known prior to and for the calibration process. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'.  The use of the urban adjustment factor (UrbAdj) assumes that QMED is impacted by urbanisation and this impact can be determined by the URBEXT2000 catchment descriptor. Urban donors should be avoided, but in the case that an urban donor is considered appropriate the QMEDcd estimate of the donor (or donors) should be urban adjusted by setting the DonUrbAdj argument to TRUE. Use of the uef option applies a nationally averaged urban expansion factor to the URBEXT2000 value, tending to overall underestimated urbanisation in more urban catchments and overestimated urbanisation in more rural catchments. Note that the distance-dependent moderation term (alpha) in the one-donor adjustment is not always appropriate, for example in some situations where the subject site is on the same watercourse as the donor. Similarly the two-donor distance-weighting method can give unsuitable results in some situations, for example where a subject site is in between the two donors on the same watercourse.  Finally, for flexibility there is the option to input the relevant catchment descriptors directly rather than using a CDs object.
+#'
+#' To derive an appropriate estimate when the donor catchment is urban ensure that DonUrbAdj is TRUE.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
-#' @param Don1 numeric site reference for the a single donor (for donor candidates see DonAdj function)
+#' @param Don1 numeric site reference for a single donor (for donor candidates see DonAdj function)
 #' @param Don2 vector of two site references for two donors (for donor candidates see DonAdj function)
 #' @param UrbAdj logical argument with a default of FALSE. True applies an urban adjustment
 #' @param uef logical argument with a default of FALSE. If true an urban expansion factor is applied to the URBEXT2000 value - using the current year.
-#' @param DonUrbAdj logical argument with a default of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.
+#' @param DonUrbAdj logical argument with a default of FALSE. If TRUE, an urban adjustment is applied to the donor/s QMEDcds estimate.
 #' @param AREA catchment area in km2
 #' @param SAAR standard average annual rainfall (mm)
 #' @param FARL flood attenuation from reservoirs and lakes
@@ -1534,127 +1894,172 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' @param Easting Easting. A six digit Easting (British national grid reference).
 #' @param Northing Northing. A six digit Northing (British national grid reference).
 #' @examples
-#' #Get some catchment descriptors and calculate QMED as if it was ungauged, with
-#' #no donors, one donor, and two donors
-#' CDs.55004 <- GetCDs(55004)
-#' QMED(CDs.55004)
-#' QMED(CDs.55004, Don1 = 55012)
-#' QMED(CDs.55004, Don2 = c(55012, 60007))
-#' #Get CDs for urban gauge and calculate QMED with urban adjustment
-#' CDs.27083 <- GetCDs(27083)
-#' QMED(CDs.27083, UrbAdj = TRUE)
+#' # Get some catchment descriptors and calculate QMED as if it was ungauged, with
+#' # no donors, with one donor, and with two donors
+#' cds_55004 <- GetCDs(55004)
+#' QMED(cds_55004)
+#' QMED(cds_55004, Don1 = 55012)
+#' QMED(cds_55004, Don2 = c(55012, 60007))
+#'
+#' # Get CDs for urban gauge and calculate QMED with urban adjustment
+#' cds_27083 <- GetCDs(27083)
+#' QMED(cds_27083, UrbAdj = TRUE)
+#'
 #' @return An estimate of QMED from catchment descriptors. If two donors are used the associated weights are also returned
 #' @author Anthony Hammond
-QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, uef = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL, Easting= NULL, Northing = NULL){
-  if(is.null(CDs)) {
-    if(is.null(Don1) == FALSE | is.null(Don2) == FALSE) {
-      if(is.null(Easting)) stop("if you use the Don1 or Don2 arguments with no CDs object you need to add the easting and northing")
+QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, uef = FALSE, DonUrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT2000 = NULL, Easting = NULL, Northing = NULL) {
+  if (is.null(CDs)) {
+    if (is.null(Don1) == FALSE | is.null(Don2) == FALSE) {
+      if (is.null(Easting)) stop("if you use the Don1 or Don2 arguments with no CDs object you need to add the easting and northing")
     }
-
   }
-  if(is.null(Don1) == FALSE) {
-    if(length(Don1) != 1) stop("The Don1 argument has length that is not 1")
+  if (is.null(Don1) == FALSE) {
+    if (length(Don1) != 1) stop("The Don1 argument has length that is not 1")
   }
-  if(is.null(Don2) == FALSE) {
-    if(length(Don2) != 2) stop("The Don2 argument has length that is not 2")
+  if (is.null(Don2) == FALSE) {
+    if (length(Don2) != 2) stop("The Don2 argument has length that is not 2")
   }
-  if(uef == TRUE){
+  if (uef == TRUE) {
     DateTime <- as.POSIXlt(Sys.Date())
     Yr <- DateTime$year + 1900
   }
-  if(is.null(CDs) == FALSE) {
-    if(class(CDs) != class(data.frame(seq(1,4)))) stop("The argument used for CDs is not a CDs object. Use the individual descriptor arguments or get CDs using CDsXML or GetCDs")
-    AREA <- CDs[1,2]
-    SAAR <- CDs[15,2]
-    FARL <- CDs[8,2]
+  if (is.null(CDs) == FALSE) {
+    if (class(CDs) != class(data.frame(seq(1, 4)))) stop("The argument used for CDs is not a CDs object. Use the individual descriptor arguments or get CDs using CDsXML or GetCDs")
+    AREA <- CDs[1, 2]
+    SAAR <- CDs[15, 2]
+    FARL <- CDs[8, 2]
     BFIHOST <- CDs[5, 2]
-    Easting <- CDs[19,2]
-    Northing <- CDs[20,2]
-    URBEXT2000 <- CDs[18,2]
-    if(uef == TRUE) {
-      URBEXT2000 <- URBEXT2000*UEF(Year = Yr)
+    Easting <- CDs[19, 2]
+    Northing <- CDs[20, 2]
+    URBEXT2000 <- CDs[18, 2]
+    if (uef == TRUE) {
+      URBEXT2000 <- URBEXT2000 * UEF(Year = Yr)
     }
-  } else {AREA <- AREA
-  SAAR <- SAAR
-  FARL <- FARL
-  BFIHOST <- BFIHOST
-  URBEXT2000 <- URBEXT2000
-  if(uef == TRUE) {
-    URBEXT2000 <- URBEXT2000*UEF(Year = Yr)
-  }
-  Easting <- Easting
-  Northing <- Northing
+  } else {
+    AREA <- AREA
+    SAAR <- SAAR
+    FARL <- FARL
+    BFIHOST <- BFIHOST
+    URBEXT2000 <- URBEXT2000
+    if (uef == TRUE) {
+      URBEXT2000 <- URBEXT2000 * UEF(Year = Yr)
+    }
+    Easting <- Easting
+    Northing <- Northing
   }
 
-  Donor1 <- function(CDs = NULL, DonSite){
-    QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
+  Donor1 <- function(CDs = NULL, DonSite) {
+    QMED.cd <- 8.3062 * AREA^0.8510 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.0460^(BFIHOST^2)
     Site <- DonSite
     Donors <- DonAdj(x = Easting, y = Northing, QMEDscd = QMED.cd, rows = nrow(QMEDData))
     Rw <- which(rownames(Donors) == DonSite)
     DonCDs <- GetCDs(rownames(Donors)[Rw])
-    if(DonUrbAdj == TRUE) {
+    if (DonUrbAdj == TRUE) {
       DonQMEDcdUrb <- as.numeric(UAF(CDs = DonCDs)[2]) * Donors$QMEDcd[Rw]
       Result <- QMEDDonEq(AREA, SAAR, FARL, BFIHOST, Donors$QMED[Rw], DonQMEDcdUrb,
-                          xSI = Easting, ySI = Northing, xDon = DonCDs[19,2],
-                          yDon = DonCDs[20,2], alpha = TRUE)
+        xSI = Easting, ySI = Northing, xDon = DonCDs[19, 2],
+        yDon = DonCDs[20, 2], alpha = TRUE
+      )
     }
-    if(DonUrbAdj == FALSE) {
-      Result <- Donors$QMED.adj[Rw]}
+    if (DonUrbAdj == FALSE) {
+      Result <- Donors$QMED.adj[Rw]
+    }
     return(Result)
   }
   Donor2 <- function(CDs = NULL, Sites) {
-    rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
-    NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
+    rij <- function(d) {
+      0.4598 * exp(-0.0200 * d) + (1 - 0.4598) * exp(-0.4785 * d)
+    }
+    NGRDist <- function(i, j) {
+      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
+    }
     Site1 <- Sites[1]
     Site2 <- Sites[2]
     CDs.Site1 <- GetCDs(Site1)
     CDs.Site2 <- GetCDs(Site2)
-    Dist1 <- NGRDist(c(Easting, Northing), c(CDs.Site1[19,2], CDs.Site1[20,2]))
-    Dist2 <- NGRDist(c(Easting, Northing), c(CDs.Site2[19,2], CDs.Site2[20,2]))
-    Dist12 <- NGRDist(c(CDs.Site1[19,2], CDs.Site1[20,2]), c(CDs.Site2[19,2], CDs.Site2[20,2]))
+    Dist1 <- NGRDist(c(Easting, Northing), c(CDs.Site1[19, 2], CDs.Site1[20, 2]))
+    Dist2 <- NGRDist(c(Easting, Northing), c(CDs.Site2[19, 2], CDs.Site2[20, 2]))
+    Dist12 <- NGRDist(c(CDs.Site1[19, 2], CDs.Site1[20, 2]), c(CDs.Site2[19, 2], CDs.Site2[20, 2]))
     ps1 <- rij(Dist1)
     p12 <- rij(Dist12)
     ps2 <- rij(Dist2)
-    a1 <- (ps1-p12*ps2)/(1-p12^2)
-    a2 <- (ps2-p12*ps1)/(1-p12^2)
-    QMEDscd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
-    QMED1cd <- 8.3062*CDs.Site1[1,2]^0.8510*0.1536^(1000/CDs.Site1[15,2])*CDs.Site1[8,2]^3.4451*0.0460^(CDs.Site1[5,2]^2)
-    QMED2cd <- 8.3062*CDs.Site2[1,2]^0.8510*0.1536^(1000/CDs.Site2[15,2])*CDs.Site2[8,2]^3.4451*0.0460^(CDs.Site2[5,2]^2)
-    if(DonUrbAdj == TRUE) {
+    a1 <- (ps1 - p12 * ps2) / (1 - p12^2)
+    a2 <- (ps2 - p12 * ps1) / (1 - p12^2)
+    QMEDscd <- 8.3062 * AREA^0.8510 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.0460^(BFIHOST^2)
+    QMED1cd <- 8.3062 * CDs.Site1[1, 2]^0.8510 * 0.1536^(1000 / CDs.Site1[15, 2]) * CDs.Site1[8, 2]^3.4451 * 0.0460^(CDs.Site1[5, 2]^2)
+    QMED2cd <- 8.3062 * CDs.Site2[1, 2]^0.8510 * 0.1536^(1000 / CDs.Site2[15, 2]) * CDs.Site2[8, 2]^3.4451 * 0.0460^(CDs.Site2[5, 2]^2)
+    if (DonUrbAdj == TRUE) {
       QMED1cd <- as.numeric(UAF(CDs = CDs.Site1)[2]) * QMED1cd
       QMED2cd <- as.numeric(UAF(CDs = CDs.Site2)[2]) * QMED2cd
     }
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) == Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) == Site2)]
-    QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
+    QMEDs.adj <- QMEDscd * (QMED1obs / QMED1cd)^a1 * (QMED2obs / QMED2cd)^a2
     ResultDF <- data.frame(QMEDs.adj, a1, a2)
     return(ResultDF)
   }
-  if(is.null(CDs) == TRUE) {
-    QMED.cd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
-    if(is.null(Don1) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor1(DonSite = Don1)}
-    if(is.null(Don2) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor2(Sites = Don2)}
+  if (is.null(CDs) == TRUE) {
+    QMED.cd <- 8.3062 * AREA^0.8510 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.0460^(BFIHOST^2)
+    if (is.null(Don1) == TRUE) {
+      QMED.cd <- QMED.cd
+    } else {
+      QMED.cd <- Donor1(DonSite = Don1)
+    }
+    if (is.null(Don2) == TRUE) {
+      QMED.cd <- QMED.cd
+    } else {
+      QMED.cd <- Donor2(Sites = Don2)
+    }
 
-    if(is.null(URBEXT2000) == TRUE & UrbAdj == TRUE) stop ("If UrbAdj is TRUE, URBEXT2000 is required")
-    if(is.null(URBEXT2000) == TRUE & uef == TRUE) stop ("If uef is TRUE, URBEXT2000 is required")
-    if(UrbAdj == TRUE) {
-    if(uef == TRUE){URBEXT2000 <-  URBEXT2000*UEF(Year = Yr)}
-        Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT2000, BFIHOST = BFIHOST)[2])*QMED.cd}
-    if (UrbAdj == FALSE) {QMED <- QMED.cd} else {QMED <- Q.ua}
-    if (is.null(URBEXT2000) == TRUE & UrbAdj == FALSE) {print("No input for URBEXT2000. If it is above > 0.03, urban adjustment is recommended")}
-    if(is.null(URBEXT2000) == FALSE){
-      if(UrbAdj == FALSE & URBEXT2000 > 0.03){print("URBEXT > 0.03, urban adjustment is recommended")}}
+    if (is.null(URBEXT2000) == TRUE & UrbAdj == TRUE) stop("If UrbAdj is TRUE, URBEXT2000 is required")
+    if (is.null(URBEXT2000) == TRUE & uef == TRUE) stop("If uef is TRUE, URBEXT2000 is required")
+    if (UrbAdj == TRUE) {
+      if (uef == TRUE) {
+        URBEXT2000 <- URBEXT2000 * UEF(Year = Yr)
+      }
+      Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT2000, BFIHOST = BFIHOST)[2]) * QMED.cd
+    }
+    if (UrbAdj == FALSE) {
+      QMED <- QMED.cd
+    } else {
+      QMED <- Q.ua
+    }
+    if (is.null(URBEXT2000) == TRUE & UrbAdj == FALSE) {
+      print("No input for URBEXT2000. If it is above > 0.03, urban adjustment is recommended")
+    }
+    if (is.null(URBEXT2000) == FALSE) {
+      if (UrbAdj == FALSE & URBEXT2000 > 0.03) {
+        print("URBEXT > 0.03, urban adjustment is recommended")
+      }
+    }
     return(QMED)
   } else {
-    QMED.cd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
-    if(is.null(Don1) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor1(CDs = CDs, Don1)}
-    if(is.null(Don2) == TRUE) {QMED.cd <- QMED.cd} else {QMED.cd <- Donor2(CDs = CDs, Don2)}
-    if(uef == TRUE) {
-      URBEXT.uef <- UEF(Yr)*CDs[18,2]
-    Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT.uef, BFIHOST = CDs[5,2])[2])*QMED.cd}
-    if(uef == FALSE) {Q.ua <-  as.numeric(UAF(CDs = CDs)[2])*QMED.cd}
-    if (UrbAdj == FALSE) {QMED <- QMED.cd} else {QMED <- Q.ua}
-    if (CDs[18,2] > 0.03 & UrbAdj == FALSE) {print("URBEXT > 0.03, urban adjustment is recommended")}
+    QMED.cd <- 8.3062 * CDs[1, 2]^0.8510 * 0.1536^(1000 / CDs[15, 2]) * CDs[8, 2]^3.4451 * 0.0460^(CDs[5, 2]^2)
+    if (is.null(Don1) == TRUE) {
+      QMED.cd <- QMED.cd
+    } else {
+      QMED.cd <- Donor1(CDs = CDs, Don1)
+    }
+    if (is.null(Don2) == TRUE) {
+      QMED.cd <- QMED.cd
+    } else {
+      QMED.cd <- Donor2(CDs = CDs, Don2)
+    }
+    if (uef == TRUE) {
+      URBEXT.uef <- UEF(Yr) * CDs[18, 2]
+      Q.ua <- as.numeric(UAF(URBEXT2000 = URBEXT.uef, BFIHOST = CDs[5, 2])[2]) * QMED.cd
+    }
+    if (uef == FALSE) {
+      Q.ua <- as.numeric(UAF(CDs = CDs)[2]) * QMED.cd
+    }
+    if (UrbAdj == FALSE) {
+      QMED <- QMED.cd
+    } else {
+      QMED <- Q.ua
+    }
+    if (CDs[18, 2] > 0.03 & UrbAdj == FALSE) {
+      print("URBEXT > 0.03, urban adjustment is recommended")
+    }
     return(QMED)
   }
 }
@@ -1664,17 +2069,20 @@ QMED <- function(CDs = NULL, Don1 = NULL, Don2 = NULL, UrbAdj = FALSE, uef = FAL
 #'
 #' Estimates the median annual maximum flow (QMED) from peaks over threshold data
 #'
-#'@details If there are multiple peaks per year, the peaks per year (ppy) argument is used to convert to the annual scale to derive QMED. If ppy is one, then the median of the POT sample is returned (the median of x).
+#' @details If there are multiple peaks per year, the peaks per year (ppy) argument is used to convert to the annual scale to derive QMED. If ppy is one, then the median of the POT sample is returned (the median of x).
 #' @param x numerical vector. POT data
 #' @param ppy number of peaks per year in the POT data
 #' @examples
-#' #Extract some POT data and estimate QMED
-#' ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-#' QMEDPOT(ThamesPOT$peak, ppy = 1.867263)
+#' # Extract some POT data and estimate QMED
+#' thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+#' QMEDPOT(thames_pot$peak, ppy = 1.867263)
+#'
 #' @author Anthony Hammond
-QMEDPOT <- function(x, ppy){
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  qu <- 1-(0.5/ppy)
+QMEDPOT <- function(x, ppy) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  qu <- 1 - (0.5 / ppy)
   qmed <- quantile(x, qu, na.rm = TRUE)
   return(as.numeric(qmed))
 }
@@ -1684,18 +2092,19 @@ QMEDPOT <- function(x, ppy){
 #'
 #' Estimates the median annual maximum flow (QMED) from non-flood flows
 #'
-#'The QMED Linking equation estimates QMED as a function of the flow that is exceeded five percent of the time, the flow that is exceeded 10 percent of the time, the baseflow index, and the catchment desciptor; drainage path slope (DPSBAR). All of these can be found for sites on the National River Flow Archive (NRFA) website. The method is provided in the guidance note 'WINFAP 4 QMED Linking equation' (2016) by Wallingford HydroSolutions.
+#' The QMED Linking equation estimates QMED as a function of the flow that is exceeded five percent of the time, the flow that is exceeded 10 percent of the time, the baseflow index, and the catchment descriptor drainage path slope (DPSBAR). All of these can be found for sites on the National River Flow Archive (NRFA) website. The method is provided in the guidance note 'WINFAP 4 QMED Linking equation' (2016) by Wallingford HydroSolutions.
 #' @param Q5dmf numeric. The daily mean flow that is exceeded 5 percent of the time
 #' @param Q10dmf numeric. The daily mean flow that is exceeded 10 percent of the time
 #' @param DPSBAR a catchment descriptor. The average drainage path slope of the catchment
 #' @param BFI the baseflow index of the gauged flow
 #' @examples
-#' #Calculate the QMED for site 1001 (Wick at Tarroul)
+#' # Calculate the QMED for site 1001 (Wick at Tarroul)
 #' QMEDLink(10.14, 7.352, 29.90, 0.39)
+#'
 #' @author Anthony Hammond
 QMEDLink <- function(Q5dmf, Q10dmf, DPSBAR, BFI) {
-  GRAD <- (log10(Q5dmf)-log10(Q10dmf))/(qnorm(0.05)-qnorm(0.1))
-  1.762*Q5dmf^0.866*(1+GRAD)^-0.775*DPSBAR^0.265*0.2388^(BFI^2)
+  GRAD <- (log10(Q5dmf) - log10(Q10dmf)) / (qnorm(0.05) - qnorm(0.1))
+  1.762 * Q5dmf^0.866 * (1 + GRAD)^-0.775 * DPSBAR^0.265 * 0.2388^(BFI^2)
 }
 
 
@@ -1703,11 +2112,11 @@ QMEDLink <- function(Q5dmf, Q10dmf, DPSBAR, BFI) {
 #'
 #' Applies a donor adjustment to the median annual maximum flow (QMED) estimate
 #'
-#'Although a single donor adjustment can be applied with the DonAdj() function and the QMED(), this is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008).
-#' @param AREA catchment area in km2
-#' @param SAAR standardised average annual rainfall in mm
-#' @param FARL flood attenuation from reservoirs and lakes
-#' @param BFIHOST the baseflow index as a function of soil type
+#' Although a single donor adjustment can be applied with the DonAdj() function and the QMED() function, this additional function is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008). The x and y grid reference inputs assume that the grid references for subject and donor site are using the same grid referencing system.
+#' @param AREA catchment area in km2 for the site of interest
+#' @param SAAR standardised average annual rainfall in mm for the site of interest
+#' @param FARL flood attenuation from reservoirs and lakes for the site of interest
+#' @param BFIHOST the baseflow index as a function of soil type for the site of interest
 #' @param QMEDgObs the observed QMED at the donor site
 #' @param QMEDgCds the QMED equation derived QMED at the donor site
 #' @param xSI the catchment centroid easting for the site of interest
@@ -1717,34 +2126,49 @@ QMEDLink <- function(Q5dmf, Q10dmf, DPSBAR, BFI) {
 #' @param alpha a logical argument with a default of TRUE. When FALSE the exponent in the donor equation is set to one. Otherwise it is determined by the distance between the donor and the subject site
 #'
 #' @examples
-#' #Get observed QMED for site 15006
-#' Qob <- median(GetAM(15006)[,2])
-#' #Get QMED equation estimated QMED for the donor site
-#' QCD <- QMED(CDs = GetCDs(15006))
-#' #display CDs for site 27051 & note the easting and northing
+#' # Get observed QMED for site 15006
+#' q_ob <- median(GetAM(15006)[, 2])
+#'
+#' # Get QMED equation estimated QMED for the donor site
+#' q_cd <- QMED(CDs = GetCDs(15006))
+#'
+#' # Display CDs for site 27051 & note the easting and northing
 #' GetCDs(27051)
-#' #display CDs for site 15006 & note the easting and northing
+#'
+#' # Display CDs for site 15006 & note the easting and northing
 #' GetCDs(15006)
-#' #Apply the QMEDDonEq function with the information gained
-#' QMEDDonEq(194, 1096, 0.955, 0.297, Qob, QCD, xSI = 289289,ySI = 947523,xDon = 280908,yDon = 953653)
+#'
+#' # Apply the QMEDDonEq function with the information gained
+#' QMEDDonEq(
+#'   194, 1096, 0.955, 0.297, q_ob, q_cd,
+#'   xSI = 289289, ySI = 947523,
+#'   xDon = 280908, yDon = 953653
+#' )
+#'
 #' @author Anthony Hammond
 QMEDDonEq <- function(AREA, SAAR, FARL, BFIHOST, QMEDgObs, QMEDgCds, xSI, ySI, xDon, yDon, alpha = TRUE) {
-  QMED.scd <- 8.3062*AREA^0.8510*0.1536^(1000/SAAR)*FARL^3.4451*0.0460^(BFIHOST^2)
-  d <- NGRDist(i = c(xSI,ySI), j = c(xDon,yDon))
-  rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
-  if(alpha == TRUE) {a <- rij(d)} else{a <- 1}
-  QMED.adj <- QMED.scd*(QMEDgObs/QMEDgCds)^a
+  QMED.scd <- 8.3062 * AREA^0.8510 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.0460^(BFIHOST^2)
+  d <- NGRDist(i = c(xSI, ySI), j = c(xDon, yDon))
+  rij <- function(d) {
+    0.4598 * exp(-0.0200 * d) + (1 - 0.4598) * exp(-0.4785 * d)
+  }
+  if (alpha == TRUE) {
+    a <- rij(d)
+  } else {
+    a <- 1
+  }
+  QMED.adj <- QMED.scd * (QMEDgObs / QMEDgCds)^a
   return(QMED.adj)
 }
 
 
 
-#'Donor adjustment candidates & results
+#' Donor adjustment candidates & results
 #'
-#'Provides donor adjustment candidates, descriptors, and results in order of the proximity to the centroid of the subject catchment.
+#' Provides donor adjustment candidates, descriptors, and results in order of the proximity to the centroid of the subject catchment.
 #'
-#'When d2 is FALSE the results for single donor adjustment are in the final column headed 'QMED.adj' for each site. If alpha is set to FALSE, the results in this column are from the same donor equation but with an exponent of 1. The donor adjustment method is as outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When two donors are used, only the result is returned, rather than donor candidates. The QMEDfse column provides the gauged factorial standard error for the median of the annual maximum sample. It is worth considering this when choosing a donor site (a high value indicates a poor donor). When choosing between two donors, the site with a lower QMEDfse would be an appropriate choice (all else being equal). The QMEDfse is calculated with the QMEDfseSS() function.
-#' @param CDs catchment descriptors derived from either GetCDs or CDsXML
+#' The donor adjustment method is as outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When d2 is NULL this function returns a list of possible donors and associated details - including a default adjusted QMED estimate for the site of interest.  The results for single donor adjustment are in the final column headed 'QMED.adj'. If alpha is set to FALSE, the results in the final column are from the same donor equation but with an exponent of 1. The QMEDfse column provides the gauged factorial standard error for the median of the annual maximum sample. It is worth considering this when choosing a donor site (a high value indicates a poor donor). When choosing between two donors, the site with a lower QMEDfse would be an appropriate choice (all else being equal). The QMEDfse is calculated with the QMEDfseSS() function. When d2 is populated (when two donors are used), only the resulting adjusted QMED and alpha values are returned, rather than donor candidate information. Note that the estimates for the single donor and two donor adjustment do not consider urbanisation in the catchment of interest or the donor catchments. Such things can be considered more specifically using the QMED() function.
+#' @param CDs catchment descriptors derived from either GetCDs or CDsXML for the site of interest
 #' @param x catchment centroid easting (for when CDs isn't used)
 #' @param y catchment centroid northing (for when CDs isn't used)
 #' @param QMEDscd QMED estimate for the catchment of interest (for when CDs isn't used)
@@ -1752,85 +2176,116 @@ QMEDDonEq <- function(AREA, SAAR, FARL, BFIHOST, QMEDgObs, QMEDgCds, xSI, ySI, x
 #' @param rows number of sites provided; default is 10
 #' @param d2 a numeric vector of length two; the two site references for the donor catchments chosen for the two donor case
 #' @examples
-#' #Get some CDs and output candidate donor sites
-#' CDs.54022 <- GetCDs(54022)
-#' DonAdj(CDs.54022)
-#' #Get results with inputs of x,y, and QMEDscd
+#' # Get some CDs and output candidate donor sites
+#' cds_54022 <- GetCDs(54022)
+#' DonAdj(cds_54022)
+#'
+#' # Get results with inputs of x,y, and QMEDscd
 #' DonAdj(x = 283261, y = 288067, QMEDscd = 17.931)
-#' #Get a result with two donors
-#' DonAdj(CDs.54022, d2 = c(54092, 54091))
+#'
+#' # Get a result with two donors
+#' DonAdj(cds_54022, d2 = c(54092, 54091))
+#'
 #' @return A data.frame with rownames of site references and columns of catchment descriptors, distance from subect site, and associated results. When two donors are used, only the resulting adjusted QMED is returned
 #' @author Anthony Hammond
 
-DonAdj <- function(CDs = NULL, x,y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 = NULL){
+DonAdj <- function(CDs = NULL, x, y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 = NULL) {
   Donor2 <- function(CDs, Sites, DonUrbAdj = FALSE) {
-    rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
-    NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
+    rij <- function(d) {
+      0.4598 * exp(-0.0200 * d) + (1 - 0.4598) * exp(-0.4785 * d)
+    }
+    NGRDist <- function(i, j) {
+      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
+    }
     Site1 <- Sites[1]
     Site2 <- Sites[2]
     CDs.Site1 <- GetCDs(Site1)
     CDs.Site2 <- GetCDs(Site2)
-    Dist1 <- NGRDist(c(CDs[19,2], CDs[20,2]), c(CDs.Site1[19,2], CDs.Site1[20,2]))
-    Dist2 <- NGRDist(c(CDs[19,2], CDs[20,2]), c(CDs.Site2[19,2], CDs.Site2[20,2]))
-    Dist12 <- NGRDist(c(CDs.Site1[19,2], CDs.Site1[20,2]), c(CDs.Site2[19,2], CDs.Site2[20,2]))
+    Dist1 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site1[19, 2], CDs.Site1[20, 2]))
+    Dist2 <- NGRDist(c(CDs[19, 2], CDs[20, 2]), c(CDs.Site2[19, 2], CDs.Site2[20, 2]))
+    Dist12 <- NGRDist(c(CDs.Site1[19, 2], CDs.Site1[20, 2]), c(CDs.Site2[19, 2], CDs.Site2[20, 2]))
     ps1 <- rij(Dist1)
     p12 <- rij(Dist12)
     ps2 <- rij(Dist2)
-    a1 <- (ps1-p12*ps2)/(1-p12^2)
-    a2 <- (ps2-p12*ps1)/(1-p12^2)
-    QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)
-    QMED1cd <- 8.3062*CDs.Site1[1,2]^0.8510*0.1536^(1000/CDs.Site1[15,2])*CDs.Site1[8,2]^3.4451*0.0460^(CDs.Site1[5,2]^2)
-    QMED2cd <- 8.3062*CDs.Site2[1,2]^0.8510*0.1536^(1000/CDs.Site2[15,2])*CDs.Site2[8,2]^3.4451*0.0460^(CDs.Site2[5,2]^2)
-    if(DonUrbAdj == TRUE) {
+    a1 <- (ps1 - p12 * ps2) / (1 - p12^2)
+    a2 <- (ps2 - p12 * ps1) / (1 - p12^2)
+    QMEDscd <- 8.3062 * CDs[1, 2]^0.8510 * 0.1536^(1000 / CDs[15, 2]) * CDs[8, 2]^3.4451 * 0.0460^(CDs[5, 2]^2)
+    QMED1cd <- 8.3062 * CDs.Site1[1, 2]^0.8510 * 0.1536^(1000 / CDs.Site1[15, 2]) * CDs.Site1[8, 2]^3.4451 * 0.0460^(CDs.Site1[5, 2]^2)
+    QMED2cd <- 8.3062 * CDs.Site2[1, 2]^0.8510 * 0.1536^(1000 / CDs.Site2[15, 2]) * CDs.Site2[8, 2]^3.4451 * 0.0460^(CDs.Site2[5, 2]^2)
+    if (DonUrbAdj == TRUE) {
       QMED1cd <- as.numeric(UAF(CDs = CDs.Site1)[2]) * QMED1cd
       QMED2cd <- as.numeric(UAF(CDs = CDs.Site2)[2]) * QMED2cd
     }
     QMED1obs <- QMEDData$QMED[which(rownames(QMEDData) == Site1)]
     QMED2obs <- QMEDData$QMED[which(rownames(QMEDData) == Site2)]
-    QMEDs.adj <- QMEDscd*(QMED1obs/QMED1cd)^a1 * (QMED2obs/QMED2cd)^a2
+    QMEDs.adj <- QMEDscd * (QMED1obs / QMED1cd)^a1 * (QMED2obs / QMED2cd)^a2
     ResultDF <- data.frame(QMEDs.adj, a1, a2)
     return(ResultDF)
   }
-  if(is.null(d2) == FALSE) {
-    if(length(d2) < 2) stop("d2 must be NULL or a vector of length 2")
+  if (is.null(d2) == FALSE) {
+    if (length(d2) < 2) stop("d2 must be NULL or a vector of length 2")
   }
-  if(is.null(QMEDscd) == TRUE & is.null(CDs) == TRUE) stop("The QMED estimate must be an input, either automatically using CDs, or the QMEDscd argument")
-  if(is.null(QMEDscd) == TRUE) {QMEDscd <- 8.3062*CDs[1,2]^0.8510*0.1536^(1000/CDs[15,2])*CDs[8,2]^3.4451*0.0460^(CDs[5,2]^2)} else {QMEDscd <- QMEDscd}
-  suppressWarnings(if(is.null(CDs) == TRUE) {
-    NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
+  if (is.null(QMEDscd) == TRUE & is.null(CDs) == TRUE) stop("The QMED estimate must be an input, either automatically using CDs, or the QMEDscd argument")
+  if (is.null(QMEDscd) == TRUE) {
+    QMEDscd <- 8.3062 * CDs[1, 2]^0.8510 * 0.1536^(1000 / CDs[15, 2]) * CDs[8, 2]^3.4451 * 0.0460^(CDs[5, 2]^2)
+  } else {
+    QMEDscd <- QMEDscd
+  }
+  suppressWarnings(if (is.null(CDs) == TRUE) {
+    NGRDist <- function(i, j) {
+      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
+    }
     Dists <- NULL
-    for(i in 1:length(QMEDData$QMED)) {Dists[i] <- NGRDist(i = c(x,y), j = c(QMEDData$X[i],QMEDData$Y[i]))}
+    for (i in 1:length(QMEDData$QMED)) {
+      Dists[i] <- NGRDist(i = c(x, y), j = c(QMEDData$X[i], QMEDData$Y[i]))
+    }
     Dists.Table <- data.frame(QMEDData, Dists)
-    Dists.Order <- Dists.Table[order(Dists.Table$Dists),]
-    rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
-    if(alpha == TRUE) {a <- rij(Dists.Order$Dists)} else{a <- 1}
+    Dists.Order <- Dists.Table[order(Dists.Table$Dists), ]
+    rij <- function(d) {
+      0.4598 * exp(-0.0200 * d) + (1 - 0.4598) * exp(-0.4785 * d)
+    }
+    if (alpha == TRUE) {
+      a <- rij(Dists.Order$Dists)
+    } else {
+      a <- 1
+    }
     Dists.Order <- cbind(Dists.Order, a)
-    QMED.adj <- QMEDscd*(Dists.Order$QMED/Dists.Order$QMEDcd)^a
+    QMED.adj <- QMEDscd * (Dists.Order$QMED / Dists.Order$QMEDcd)^a
     Dists.Order <- cbind(Dists.Order, QMED.adj)
-    if(is.null(d2) == TRUE){
-      return(Dists.Order[1:rows,])
+    if (is.null(d2) == TRUE) {
+      return(Dists.Order[1:rows, ])
     } else {
       Qd2 <- Donor2(CDs, Sites = d2)
       return(Qd2)
-    }} else {
-      NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
-      Dists <- NULL
-      for(i in 1:length(QMEDData$QMED)) {Dists[i] <- NGRDist(i = c(CDs$Value[19],CDs$Value[20]), j = c(QMEDData$X[i],QMEDData$Y[i]))}
-      Dists.Table <- data.frame(QMEDData, Dists)
-      Dists.Order <- Dists.Table[order(Dists.Table$Dists),]
-      rij <- function(d) {0.4598*exp(-0.0200*d)+(1-0.4598)*exp(-0.4785*d)}
-      if(alpha == TRUE) {a <- rij(Dists.Order$Dists)} else{a <- 1}
-      Dists.Order <- cbind(Dists.Order, a)
-      QMED.adj <- QMEDscd*(Dists.Order$QMED/Dists.Order$QMEDcd)^a
-      Dists.Order <- cbind(Dists.Order, QMED.adj)
-      if(is.null(d2) == TRUE){
-        return(Dists.Order[1:rows,])
-      } else {
-        Qd2 <- Donor2(CDs, Sites = d2)
-        return(Qd2)
-      }
-
-    })
+    }
+  } else {
+    NGRDist <- function(i, j) {
+      sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
+    }
+    Dists <- NULL
+    for (i in 1:length(QMEDData$QMED)) {
+      Dists[i] <- NGRDist(i = c(CDs$Value[19], CDs$Value[20]), j = c(QMEDData$X[i], QMEDData$Y[i]))
+    }
+    Dists.Table <- data.frame(QMEDData, Dists)
+    Dists.Order <- Dists.Table[order(Dists.Table$Dists), ]
+    rij <- function(d) {
+      0.4598 * exp(-0.0200 * d) + (1 - 0.4598) * exp(-0.4785 * d)
+    }
+    if (alpha == TRUE) {
+      a <- rij(Dists.Order$Dists)
+    } else {
+      a <- 1
+    }
+    Dists.Order <- cbind(Dists.Order, a)
+    QMED.adj <- QMEDscd * (Dists.Order$QMED / Dists.Order$QMEDcd)^a
+    Dists.Order <- cbind(Dists.Order, QMED.adj)
+    if (is.null(d2) == TRUE) {
+      return(Dists.Order[1:rows, ])
+    } else {
+      Qd2 <- Donor2(CDs, Sites = d2)
+      return(Qd2)
+    }
+  })
 }
 
 
@@ -1838,20 +2293,25 @@ DonAdj <- function(CDs = NULL, x,y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 
 #'
 #' Estimates the median annual maximum flow (QMED) factorial standard error (FSE) by bootstrapping the sample
 #'
-#'The bootstrapping procedure resamples from the sample N*500 times with replacement. After splitting into 500 samples of size N, the median is calculated for each. Then the exponent of the standard deviation of the log transformed residuals is taken as the FSE. i.e. exp(sd(log(x)-mean(log(x)))), where x is the bootstrapped medians.
+#' The bootstrapping procedure resamples from the sample N*500 times with replacement. After splitting into 500 samples of size N, the median is calculated for each. Then the exponent of the standard deviation of the log transformed residuals is taken as the FSE. i.e. exp(sd(log(x)-mean(log(x)))), where x is the bootstrapped medians.
 #' @param x a numeric vector. The sample of interest
 #' @examples
-#' #Extract an AMAX sample and estimate the QMED factorial standard error
-#' AM.203018 <- GetAM(203018)
-#' QMEDfseSS(AM.203018$Flow)
+#' # Extract an AMAX sample and estimate the QMED factorial standard error
+#' am_203018 <- GetAM(203018)
+#' QMEDfseSS(am_203018$Flow)
+#'
 #' @return The factorial standard error for the median of a sample.
 #' @author Anthony Hammond
 QMEDfseSS <- function(x) {
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  resample <- sample(x, size = length(x)*500, replace = TRUE)
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  resample <- sample(x, size = length(x) * 500, replace = TRUE)
   mat <- matrix(resample, nrow = length(x), ncol = 500)
   res <- apply(mat, 2, median)
-  FSE <- function(x) {exp(sd(log(x) - mean(log(x))))}
+  FSE <- function(x) {
+    exp(sd(log(x) - mean(log(x))))
+  }
   fse <- FSE(res)
   return(fse)
 }
@@ -1859,20 +2319,25 @@ QMEDfseSS <- function(x) {
 
 #' QMED from a gauged site suitable for QMED
 #'
-#' Provides QMED (median annual maximum flow) from a site suitable for QMED, using the site reference.
+#' Provides QMED (median annual maximum flow) from a site suitable for QMED, using the site reference. This provides the observed median of the annual maximum sample (excluding rejected observations) for the site of interest. It does not apply any adjustments or updates to account for non-stationarity.
 #'
 #' @param x the gauged reference
 #' @examples
-#' #Get the observed QMED from sites 55002
+#' # Get the observed QMED from site 55002
 #' GetQMED(55002)
+#'
 #' @return the median annual maximum
 #' @author Anthony Hammond
 GetQMED <- function(x) {
   Test1 <- which(rownames(QMEDData) == x)
   Test2 <- which(unique(AMSP$id) == x)
-  if(length(Test1) < 1 & length(Test2) < 1) stop("Site reference not recognised. Site is not in the dataframe of AMAX 'AMSP', nor is it in the QMEDData dataframe which has QMED values for all sites suitable for pooling and QMED. If your ID is correct, this suggests that it is not classified as suitable for pooling or QMED, and it has not been added manually - see AddGauge function")
-  if(length(Test1) > 0) {MedianAM <- QMEDData[which(rownames(QMEDData) == x),19]}
-  if(length(Test1) < 1) {MedianAM <- median(GetAM(x)[,2])}
+  if (length(Test1) < 1 & length(Test2) < 1) stop("Site reference not recognised. Site is not in the dataframe of AMAX 'AMSP', nor is it in the QMEDData dataframe which has QMED values for all sites suitable for pooling and QMED. If your ID is correct, this suggests that it is not classified as suitable for pooling or QMED, and it has not been added manually - see AddGauge function")
+  if (length(Test1) > 0) {
+    MedianAM <- QMEDData[which(rownames(QMEDData) == x), 19]
+  }
+  if (length(Test1) < 1) {
+    MedianAM <- median(GetAM(x)[, 2])
+  }
   return(MedianAM)
 }
 
@@ -1883,69 +2348,95 @@ GetQMED <- function(x) {
 #'
 #' Urbanises or de-urbanises the Lcv using the methods outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'
 #'
-#'The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangment of the urbanisation equation, solving for Lcv rather than Lcv-urban.
+#' The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangement of the urbanisation equation, solving for Lcv rather than Lcv-urban. The functionality assumes that the variance of an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of URBEXT2000.
 #' @param lcv the Lcv (numeric)
-#' @param URBEXT2000 quantiication of urban and suburbanisation for the subject catchment
+#' @param URBEXT2000 quantification of urban and suburbanisation for the subject catchment
 #' @param DeUrb logical argument with a default of FALSE. If set to TRUE, de-urbanisation adjustment is performed, if FALSE, urbanisation adjustment is performed
 #' @examples
-#' #Choose an urban site (site 53006) from the NRFA data then apply a de-urban
-#' #adjustment using the Lcv and URBEXT2000 displayed
-#' NRFAData[which(rownames(NRFAData) == 53006),]
+#' # Choose an urban site (site 53006) from the NRFA data then apply a de-urban
+#' # adjustment using the Lcv and URBEXT2000 displayed
+#' NRFAData[which(rownames(NRFAData) == 53006), ]
 #' LcvUrb(0.21, 0.1138, DeUrb = TRUE)
-#' #Get the pooled Lmoment ratios results for catchment 53006 and apply the
-#' #urban adjustment using the pooled Lcv, and the URBEXT2000 for site 53006.
-#' CDs.53006 <- GetCDs(53006)
-#' QuickResults(CDs.53006)[[2]]
+#'
+#' # Get the pooled L-moment ratios results for catchment 53006 and apply the
+#' # urban adjustment using the pooled Lcv and the URBEXT2000 for site 53006
+#' cds_53006 <- GetCDs(53006)
+#' QuickResults(cds_53006)[[2]]
 #' LcvUrb(0.196, 0.1138)
+#'
 #' @return The urban adjust Lcv or the de-urbanised Lcv
 #' @author Anthony Hammond
 
-LcvUrb <- function(lcv, URBEXT2000, DeUrb = FALSE) {if (DeUrb == FALSE) {lcv*0.68654^(1.567*URBEXT2000)} else {lcv/(0.68654^(1.567*URBEXT2000))}}
+LcvUrb <- function(lcv, URBEXT2000, DeUrb = FALSE) {
+  if (DeUrb == FALSE) {
+    lcv * 0.68654^(1.567 * URBEXT2000)
+  } else {
+    lcv / (0.68654^(1.567 * URBEXT2000))
+  }
+}
 
 
 #' Urban adjustment for the linear skewness (LSkew)
 #'
 #' Urbanises or de-urbanises the LSkew using the methods outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'
 #'
-#'The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangment of the urbanisation equation, solving for LSkew rather than LSkew-urban.
+#' The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangement of the urbanisation equation, solving for LSkew rather than LSkew-urban. The functionality assumes that the skewness of an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of URBEXT2000.
 #' @param lskew the LSkew (numeric)
-#' @param URBEXT2000 quantiication of urban and suburbanisation for the subject site
+#' @param URBEXT2000 quantification of urban and suburbanisation for the subject site
 #' @param DeUrb logical argument with a default of FALSE. If set to TRUE, de-urbanisation adjustment is performed, if FALSE, urbanisation adjustment is performed
 #' @examples
-#' #Choose an urban site (site 53006) from the NRFA data then apply a de-urban
-#' #adjustment using the Lcv and URBEXT2000 displayed
-#' NRFAData[which(rownames(NRFAData) == 53006),]
+#' # Choose an urban site (site 53006) from the NRFA data then apply a de-urban
+#' # adjustment using the Lcv and URBEXT2000 displayed
+#' NRFAData[which(rownames(NRFAData) == 53006), ]
 #' LSkewUrb(0.124, 0.1138, DeUrb = TRUE)
-#' #Get the pooled Lmoment ratios results for catchment 53006 and apply the urban
-#' #Get the CDS & adjustment using the pooled LSkew, and the URBEXT2000 for site 53006.
-#' CDs.53006 <- GetCDs(53006)
-#' QuickResults(CDs.53006)[[2]]
+#'
+#' # Get the pooled L-moment ratios results for catchment 53006 and apply the
+#' # urban adjustment using the pooled LSkew and the URBEXT2000 for site 53006
+#' cds_53006 <- GetCDs(53006)
+#' QuickResults(cds_53006)[[2]]
 #' LSkewUrb(0.194, 0.1138)
-#' @return The urban adjust Lcv or the de-urbanised Lcv
+#'
+#' @return The urban adjust Lskew or the de-urbanised LSkew
 #' @author Anthony Hammond
 
-LSkewUrb <- function(lskew, URBEXT2000, DeUrb = FALSE) {if(DeUrb == FALSE) {((lskew+1)*1.096017^(1.567*URBEXT2000))-1} else {((lskew+1)/1.096017^(1.567*URBEXT2000))-1}}
+LSkewUrb <- function(lskew, URBEXT2000, DeUrb = FALSE) {
+  if (DeUrb == FALSE) {
+    ((lskew + 1) * 1.096017^(1.567 * URBEXT2000)) - 1
+  } else {
+    ((lskew + 1) / 1.096017^(1.567 * URBEXT2000)) - 1
+  }
+}
 
 
 #' Urban adjustment factor (UAF) and percentage runoff urban adjustment factor (PRUAF)
 #'
 #' UAF and PRUAF from catchment descriptors for QMED estimation in ungauged urban catchments
-#'
+#' @details The urban adjustment factor is to adjust the rural QMED estimates (as estimated using the QMED function) to urban estimates. This is necessary because the QMED equation is calibrated on rural catchments. The assumption is that the magnitude of QMED is impacted by urbanisation and that this impact can be modelled as a function of the catchment descriptors URBEXT and BFIHOST. This UAF function is based on URBEXT2000 and BFIHOST19.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param URBEXT2000 quantification of catchment urbanisation (used when CDs is not)
 #' @param BFIHOST baseflow index as a function of hydrological soil type of the catchment (used when CDs is not)
 #' @examples
-#' #Get some catchment descriptors for an urban catchment calculate the UAF & PRUAF
-#' CDs.53006 <- GetCDs(53006)
-#' UAF(CDs.53006)
-#' #Calculate UAF and PRUAF using a user input URBEXT2000 and BFIHOST
+#' # Get some catchment descriptors for an urban catchment and calculate the UAF & PRUAF
+#' cds_53006 <- GetCDs(53006)
+#' UAF(cds_53006)
+#'
+#' # Calculate UAF and PRUAF using a user input URBEXT2000 and BFIHOST
 #' UAF(URBEXT2000 = 0.1138, BFIHOST = 0.3620)
+#'
 #' @return a data.frame with columns UAF and PRUAF
 #' @author Anthony Hammond
 
 UAF <- function(CDs = NULL, URBEXT2000, BFIHOST) {
-  if(is.null(CDs) == TRUE) {PRUAF <- 1+0.3*1.567*URBEXT2000*(70/(69.366-65.686*BFIHOST)-1)} else {PRUAF <-   1+0.3*1.567*CDs[18,2]*(70/(69.366-65.686*CDs[5,2])-1)}
-  if(is.null(CDs) == TRUE) {UAF <- (1+0.3*(1.567*URBEXT2000))^1.25*PRUAF^1.33} else {UAF <- (1+0.3*(1.567*CDs[18,2]))^1.25*PRUAF^1.33}
+  if (is.null(CDs) == TRUE) {
+    PRUAF <- 1 + 0.3 * 1.567 * URBEXT2000 * (70 / (69.366 - 65.686 * BFIHOST) - 1)
+  } else {
+    PRUAF <- 1 + 0.3 * 1.567 * CDs[18, 2] * (70 / (69.366 - 65.686 * CDs[5, 2]) - 1)
+  }
+  if (is.null(CDs) == TRUE) {
+    UAF <- (1 + 0.3 * (1.567 * URBEXT2000))^1.25 * PRUAF^1.33
+  } else {
+    UAF <- (1 + 0.3 * (1.567 * CDs[18, 2]))^1.25 * PRUAF^1.33
+  }
   return(data.frame(PRUAF, UAF))
 }
 
@@ -1958,20 +2449,22 @@ UAF <- function(CDs = NULL, URBEXT2000, BFIHOST) {
 #' Extracts the annual maximum peak flow sample and associated dates for the site of interest.
 #' @param ref the site reference of interest (numeric)
 #' @examples
-#' #Get an AMAX sample and display it in the console
+#' # Get an AMAX sample and display it in the console
 #' GetAM(203018)
-#' #Save an AMAX sample as an object
-#' AM.203018 <- GetAM(203018)
+#'
+#' # Save an AMAX sample as an object
+#' am_203018 <- GetAM(203018)
+#'
 #' @return A data.frame with columns; Date, Flow, and id
 #' @author Anthony Hammond
 
 GetAM <- function(ref) {
   Test <- which(AMSP$id == ref)
-  if(length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use the GetDatNRFA function for annual maximum samples including peak flow gauges not considered suitable for pooling. Another option is the AMImport function")
+  if (length(Test) < 1) stop("Only sites suitable for pooling are available via this function. Check the reference or use the GetDatNRFA function for annual maximum samples including peak flow gauges not considered suitable for pooling. Another option is the AMImport function")
   AM <- subset(AMSP, id == ref)
   rws <- seq(1, length(AM$Flow))
-  Date <- as.Date(AM[,1])
-  AM <- AM[,-1]
+  Date <- as.Date(AM[, 1])
+  AM <- AM[, -1]
   AM <- cbind(Date, AM)
   rownames(AM) <- rws
   return(AM)
@@ -1982,25 +2475,31 @@ GetAM <- function(ref) {
 
 #' Linearly detrend a sample
 #'
-#'@description Applies a linear detrend to a sample
-#'@details Adjusts all the values in the sample, of size n, by the difference between the linearly modelled ith data point and the linearly modelled nth data point.
-#'@param x a numeric vector
-#'@examples
-#'# Get an annual maximum (AM) sample that looks to have a significant trend
-#'AM.21025 <- GetAM(21025)
-#'# plot the resulting AM as a bar plot. Then detrend and compare with another plot
-#'plot(AM.21025$Flow, type = "h", ylab = "Discharge (m3/s)")
-#'AM.Detrend <- DeTrend(AM.21025$Flow)
-#'plot(AM.Detrend, type = "h", ylab = "Discharge (m3/s)")
-#'@return A numeric vector which is a linearly detrended version of x.
-#'@author Anthony Hammond
+#' @description Applies a linear detrend to a sample
+#' @details Adjusts all the values in the sample, of size n, by the difference between the linearly modelled ith data point and the linearly modelled nth data point.
+#' @param x a numeric vector
+#' @examples
+#' # Get an annual maximum (AM) sample that looks to have a significant trend
+#' am_21025 <- GetAM(21025)
+#'
+#' # Plot the resulting AM as a bar plot. Then detrend and compare with another plot
+#' plot(am_21025$Flow, type = "h", ylab = "Discharge (m^3/s)")
+#' am_detrend <- DeTrend(am_21025$Flow)
+#' plot(am_detrend, type = "h", ylab = "Discharge (m^3/s)")
+#'
+#' @return A numeric vector which is a linearly detrended version of x.
+#' @author Anthony Hammond
 DeTrend <- function(x) {
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
   Lmod <- lm(x ~ seq(1, length(x)))
   Lpred <- as.numeric(predict(Lmod))
   DiffsTrend <- NULL
-  for(i in 1:length(x)) {DiffsTrend[i] <- Lpred[length(x)]-Lpred[i]}
-  Detrend <- x+DiffsTrend
+  for (i in 1:length(x)) {
+    DiffsTrend[i] <- Lpred[length(x)] - Lpred[i]
+  }
+  Detrend <- x + DiffsTrend
   return(Detrend)
 }
 
@@ -2012,61 +2511,159 @@ DeTrend <- function(x) {
 #' File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the xml file path
 #' @examples
-#' #Import catchment descriptors from a NRFA peakflows xml file and display in console
-#' \dontrun{CDs.4003 <- CDsXML("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.xml")}
-#' \dontrun{CDs.4003}
-#' #Import catchment descriptors from a FEH webserver xml file and display xml in the console
-#' \dontrun{CDs.MySite <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")}
+#' # Import catchment descriptors from an NRFA Peak Flows XML file and display in console
+#' \dontrun{
+#' cds_4003 <- CDsXML("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.xml")
+#' cds_4003
+#' }
+#'
+#' # Import catchment descriptors from a FEH webserver XML file and display XML in the console
+#' \dontrun{
+#' cds_my_site <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")
+#' cds_my_site
+#' }
+#'
 #' @return A data.frame with columns; Descriptor and Value.
 #' @author Anthony Hammond
 CDsXML <- function(x) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
-  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+  if (attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
     CDS <- ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors
   }
-  if(attributes(ListXML)$names == "FEHDescriptors") {
+  if (attributes(ListXML)$names == "FEHDescriptors") {
     CDS <- ListXML$FEHDescriptors$CatchmentDescriptors
   }
 
-  Descriptor <- c("AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST19", "DPLBAR",
-                  "DPSBAR", "FARL", "FPEXT", "LDP", "PROPWET", "RMED-1H",
-                  "RMED-1D", "RMED-2D", "SAAR", "SAAR4170", "SPRHOST",
-                  "URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFIHOST")
-  if(length(as.numeric(CDS$area)) < 1) {AREA <- NA} else {AREA <- as.numeric(CDS$area)}
-  if(length(as.numeric(CDS$altbar)) < 1) {ALTBAR <- NA} else {ALTBAR <- as.numeric(CDS$altbar)}
-  if(length(as.numeric(CDS$aspbar)) < 1) {ASPBAR <- NA} else {ASPBAR <- as.numeric(CDS$aspbar)}
-  if(length(as.numeric(CDS$aspvar)) < 1) {ASPVAR <- NA} else {ASPVAR <- as.numeric(CDS$aspvar)}
-  if(length(as.numeric(CDS$bfihost19)) < 1) {BFIHOST19 <- NA} else {BFIHOST19 <- round(as.numeric(CDS$bfihost19), 3)}
-  if(length(as.numeric(CDS$dplbar)) < 1) {DPLBAR <- NA} else {DPLBAR <- as.numeric(CDS$dplbar)}
-  if(length(as.numeric(CDS$dpsbar)) < 1) {DPSBAR <- NA} else {DPSBAR <- as.numeric(CDS$dpsbar)}
-  if(length(as.numeric(CDS$farl)) < 1) {FARL <- NA} else {FARL <- as.numeric(CDS$farl)}
-  if(length(as.numeric(CDS$fpext)) < 1) {FPEXT <- NA} else {FPEXT <- as.numeric(CDS$fpext)}
-  if(length(as.numeric(CDS$ldp)) < 1) {LDP <- NA} else {LDP <- as.numeric(CDS$ldp)}
-  if(length(as.numeric(CDS$propwet)) < 1) {PROPWET <- NA} else {PROPWET <- as.numeric(CDS$propwet)}
-  if(length(as.numeric(CDS$rmed_1h)) < 1) {RMED1H <- NA} else {RMED1H <- as.numeric(CDS$rmed_1h)}
-  if(length(as.numeric(CDS$rmed_1d)) < 1) {RMED1D <- NA} else {RMED1D <- as.numeric(CDS$rmed_1d)}
-  if(length(as.numeric(CDS$rmed_2d)) < 1) {RMED2D <- NA} else {RMED2D <- as.numeric(CDS$rmed_2d)}
-  if(length(as.numeric(CDS$saar)) < 1) {SAAR <- NA} else {SAAR <- as.numeric(CDS$saar)}
-  if(length(as.numeric(CDS$saar4170)) < 1) {SAAR4170 <- NA} else {SAAR4170 <- as.numeric(CDS$saar4170)}
-  if(length(as.numeric(CDS$sprhost)) < 1) {SPRHOST <- NA} else {SPRHOST <- as.numeric(CDS$sprhost)}
-  if(length(as.numeric(CDS$urbext2000)) < 1) {URBEXT2000 <- NA} else {URBEXT2000 <- as.numeric(CDS$urbext2000)}
+  Descriptor <- c(
+    "AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST19", "DPLBAR",
+    "DPSBAR", "FARL", "FPEXT", "LDP", "PROPWET", "RMED-1H",
+    "RMED-1D", "RMED-2D", "SAAR", "SAAR4170", "SPRHOST",
+    "URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFIHOST"
+  )
+  if (length(as.numeric(CDS$area)) < 1) {
+    AREA <- NA
+  } else {
+    AREA <- as.numeric(CDS$area)
+  }
+  if (length(as.numeric(CDS$altbar)) < 1) {
+    ALTBAR <- NA
+  } else {
+    ALTBAR <- as.numeric(CDS$altbar)
+  }
+  if (length(as.numeric(CDS$aspbar)) < 1) {
+    ASPBAR <- NA
+  } else {
+    ASPBAR <- as.numeric(CDS$aspbar)
+  }
+  if (length(as.numeric(CDS$aspvar)) < 1) {
+    ASPVAR <- NA
+  } else {
+    ASPVAR <- as.numeric(CDS$aspvar)
+  }
+  if (length(as.numeric(CDS$bfihost19)) < 1) {
+    BFIHOST19 <- NA
+  } else {
+    BFIHOST19 <- round(as.numeric(CDS$bfihost19), 3)
+  }
+  if (length(as.numeric(CDS$dplbar)) < 1) {
+    DPLBAR <- NA
+  } else {
+    DPLBAR <- as.numeric(CDS$dplbar)
+  }
+  if (length(as.numeric(CDS$dpsbar)) < 1) {
+    DPSBAR <- NA
+  } else {
+    DPSBAR <- as.numeric(CDS$dpsbar)
+  }
+  if (length(as.numeric(CDS$farl)) < 1) {
+    FARL <- NA
+  } else {
+    FARL <- as.numeric(CDS$farl)
+  }
+  if (length(as.numeric(CDS$fpext)) < 1) {
+    FPEXT <- NA
+  } else {
+    FPEXT <- as.numeric(CDS$fpext)
+  }
+  if (length(as.numeric(CDS$ldp)) < 1) {
+    LDP <- NA
+  } else {
+    LDP <- as.numeric(CDS$ldp)
+  }
+  if (length(as.numeric(CDS$propwet)) < 1) {
+    PROPWET <- NA
+  } else {
+    PROPWET <- as.numeric(CDS$propwet)
+  }
+  if (length(as.numeric(CDS$rmed_1h)) < 1) {
+    RMED1H <- NA
+  } else {
+    RMED1H <- as.numeric(CDS$rmed_1h)
+  }
+  if (length(as.numeric(CDS$rmed_1d)) < 1) {
+    RMED1D <- NA
+  } else {
+    RMED1D <- as.numeric(CDS$rmed_1d)
+  }
+  if (length(as.numeric(CDS$rmed_2d)) < 1) {
+    RMED2D <- NA
+  } else {
+    RMED2D <- as.numeric(CDS$rmed_2d)
+  }
+  if (length(as.numeric(CDS$saar)) < 1) {
+    SAAR <- NA
+  } else {
+    SAAR <- as.numeric(CDS$saar)
+  }
+  if (length(as.numeric(CDS$saar4170)) < 1) {
+    SAAR4170 <- NA
+  } else {
+    SAAR4170 <- as.numeric(CDS$saar4170)
+  }
+  if (length(as.numeric(CDS$sprhost)) < 1) {
+    SPRHOST <- NA
+  } else {
+    SPRHOST <- as.numeric(CDS$sprhost)
+  }
+  if (length(as.numeric(CDS$urbext2000)) < 1) {
+    URBEXT2000 <- NA
+  } else {
+    URBEXT2000 <- as.numeric(CDS$urbext2000)
+  }
   Easting <- attributes(CDS$CatchmentCentroid)$x
   Northing <- attributes(CDS$CatchmentCentroid)$y
-  if(length(as.numeric(CDS$urbext1990)) < 1) {URBEXT1990 <- NA} else {URBEXT1990 <- as.numeric(CDS$urbext1990)}
-  if(length(as.numeric(CDS$bfihost)) < 1) {BFIHOST <- NA} else {BFIHOST <- as.numeric(CDS$bfihost)}
-  Value <- c(AREA, ALTBAR, ASPBAR, ASPVAR, BFIHOST19, DPLBAR,
-             DPSBAR, FARL, FPEXT, LDP, PROPWET, RMED1H,
-             RMED1D, RMED2D, SAAR, SAAR4170, SPRHOST,
-             URBEXT2000, Easting, Northing, URBEXT1990, BFIHOST)
+  if (attributes(CDS$CatchmentCentroid)$grid == "Ireland") {
+    Refs <- ConvertGridRef(c(as.numeric(Easting), as.numeric(Northing)), fromBNG = FALSE, IGorLatLon = "IG")
+    Easting <- round(as.numeric(Refs[1]))
+    Northing <- round(as.numeric(Refs[2]))
+  }
+  if (length(as.numeric(CDS$urbext1990)) < 1) {
+    URBEXT1990 <- NA
+  } else {
+    URBEXT1990 <- as.numeric(CDS$urbext1990)
+  }
+  if (length(as.numeric(CDS$bfihost)) < 1) {
+    BFIHOST <- NA
+  } else {
+    BFIHOST <- as.numeric(CDS$bfihost)
+  }
+  Value <- c(
+    AREA, ALTBAR, ASPBAR, ASPVAR, BFIHOST19, DPLBAR,
+    DPSBAR, FARL, FPEXT, LDP, PROPWET, RMED1H,
+    RMED1D, RMED2D, SAAR, SAAR4170, SPRHOST,
+    URBEXT2000, Easting, Northing, URBEXT1990, BFIHOST
+  )
   DF <- data.frame(Descriptor, Value)
   NALogic <- is.na(DF$Value)
-  if(NALogic[5] == TRUE & NALogic[22] ==FALSE){DF$Value[5] <- DF$Value[22]}
-  if(NALogic[5] == TRUE & NALogic[22] ==FALSE) print("BFIHOST19 is not in the xml file and has been replaced by BFIHOST")
+  if (NALogic[5] == TRUE & NALogic[22] == FALSE) {
+    DF$Value[5] <- DF$Value[22]
+  }
+  if (NALogic[5] == TRUE & NALogic[22] == FALSE) print("BFIHOST19 is not in the xml file and has been replaced by BFIHOST")
   TrueInd <- which(NALogic == TRUE)
-  if(length(TrueInd) > 0 & NALogic[5] == FALSE) print("One or more catchment descriptors are missing from the xml file")
-  if(length(TrueInd) > 1 & NALogic[5] == TRUE) print("One or more catchment descriptors are missing from the xml file. This may impact use of this CDs object with other functions")
-  DF[,2] <- as.numeric(DF[,2])
+  if (length(TrueInd) > 0 & NALogic[5] == FALSE) print("One or more catchment descriptors are missing from the xml file")
+  if (length(TrueInd) > 1 & NALogic[5] == TRUE) print("One or more catchment descriptors are missing from the xml file. This may impact use of this CDs object with other functions")
+  DF[, 2] <- as.numeric(DF[, 2])
   return(DF)
 }
 
@@ -2078,96 +2675,137 @@ CDsXML <- function(x) {
 #' Extracts the catchment descriptors for a site of interest from the National River Flow Archive. If the site is considered suitable for QMED and pooling the CDs are extracted from the QMEDData data.frame. Otherwise they are extracted using the NRFA API.
 #' @param x the site reference of interest (numeric)
 #' @examples
-#' #Get CDs and display in the console
-#' CDs.203018 <- GetCDs(203018)
-#' CDs.203018
+#' # Get CDs and display in the console
+#' cds_203018 <- GetCDs(203018)
+#' cds_203018
+#'
 #' @return A data.frame with columns; Descriptor and Value.
 #' @author Anthony Hammond
 GetCDs <- function(x) {
   Site.id <- which(row.names(QMEDData) == x)
-  if(length(Site.id) == 0) {
-    warning ("Site ID is not within the set of sites considered suitable for QMED or pooling analysis.")
-    AllCat <- GetDataNRFA(Type ="Catalogue")
+  if (length(Site.id) == 0) {
+    warning("Site ID is not within the set of sites considered suitable for QMED or pooling analysis.")
+    AllCat <- GetDataNRFA(Type = "Catalogue")
     Index <- which(AllCat$id == x)
-    if(length(Index) == 0) stop("Gauge id does not appear to be within the National River Flow Archive")
-    #ColIndex <- c(3, 91, 92, 93, 50, 90, 84,83, 53, 89, 81, 86, 87, 88, 63, 62, 85, 102, 5, 6, 56, 38, 99, 82)
-    ColIndex <- c(3, 91, 92, 93, 82, 90, 84,83, 98, 89, 81, 88, 86, 87, 63, 62, 85,102, 5, 6, 99, 50, 38)
-    Rename <- c("AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST", "DPLBAR", "DPSBAR", "FARL",
-                "FPEXT", "LDP", "PROPWET", "RMED-1H", "REMD-1D", "RMED-2D", "SAAR",
-                "SAAR4170", "SPRHOST","URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFI", "MeanFlow")
-    Result <- t(AllCat[Index,ColIndex])
-    #Result <- data.frame(Descriptor = rownames(Result), Value = Result[,1])
-    Result <- data.frame(Descriptor = Rename, Value = Result[,1])
+    if (length(Index) == 0) stop("Gauge id does not appear to be within the National River Flow Archive")
+    # ColIndex <- c(3, 91, 92, 93, 50, 90, 84,83, 53, 89, 81, 86, 87, 88, 63, 62, 85, 102, 5, 6, 56, 38, 99, 82)
+    ColIndex <- c(3, 91, 92, 93, 82, 90, 84, 83, 98, 89, 81, 88, 86, 87, 63, 62, 85, 102, 5, 6, 99, 50, 38)
+    Rename <- c(
+      "AREA", "ALTBAR", "ASPBAR", "ASPVAR", "BFIHOST", "DPLBAR", "DPSBAR", "FARL",
+      "FPEXT", "LDP", "PROPWET", "RMED-1H", "REMD-1D", "RMED-2D", "SAAR",
+      "SAAR4170", "SPRHOST", "URBEXT2000", "Easting", "Northing", "URBEXT1990", "BFI", "MeanFlow"
+    )
+    Result <- t(AllCat[Index, ColIndex])
+    # Result <- data.frame(Descriptor = rownames(Result), Value = Result[,1])
+    Result <- data.frame(Descriptor = Rename, Value = Result[, 1])
     rownames(Result) <- seq(1, nrow(Result))
     return(Result)
   }
-  Site <- QMEDData[Site.id,]
-  Site <- Site[,-c(19,20)]
-  colnames(Site)[colnames(Site) == "X"] <-  "Easting"
-  colnames(Site)[colnames(Site) == "Y"] <-  "Northing"
+  Site <- QMEDData[Site.id, ]
+  Site <- Site[, -c(19, 20)]
+  colnames(Site)[colnames(Site) == "X"] <- "Easting"
+  colnames(Site)[colnames(Site) == "Y"] <- "Northing"
   Site <- t(Site)
   rws <- as.vector(row.names(Site))
   values <- NULL
-  for(i in 1:24) {values[i] <- Site[i,1]}
+  for (i in 1:24) {
+    values[i] <- Site[i, 1]
+  }
   dframe <- data.frame(rws, values)
   colnames(dframe) <- c("Descriptor", "Value")
-  dframe[1:14,2] <- round(dframe[1:14,2], 4)
-  dframe[c(15,16,19,20,22),2] <- round(dframe[c(15,16,19,20,22),2])
-  dframe[21,2] <- round(dframe[21,2], 3)
+  dframe[1:14, 2] <- round(dframe[1:14, 2], 4)
+  dframe[c(15, 16, 19, 20, 22), 2] <- round(dframe[c(15, 16, 19, 20, 22), 2])
+  dframe[21, 2] <- round(dframe[21, 2], 3)
   return(dframe)
 }
 
 #' Import an annual maximum (AMAX) sample from NRFA peak flow .AM files
 #'
-#' Imports the peak flows and dates from from NRFA peak flow .AM files, exluding the rejected years
+#' Imports the peak flows and dates from from NRFA peak flow .AM files, excluding the rejected years
 #'
-#'  File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the file path for the .AM file
 #' @examples
-#' #Import an AMAX sample and display the first six rows in the console
-#' \dontrun{AM.4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")}
-#' \dontrun{head(AM.4003)]}
+#' # Import an AMAX sample and display the first six rows in the console
+#' \dontrun{
+#' am_4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")
+#' }
+#' \dontrun{
+#' head(am_4003)
+#' }
+#'
 #' @return A data.frame with columns; Date and Flow
 #' @author Anthony Hammond
-AMImport <- function(x)
-{
+AMImport <- function(x) {
   AMAX <- read.table(x, sep = ",", col.names = c("Date", "Flow", "Stage"), colClasses = c("character", "numeric", "NULL"), fill = T, skip = 6)
-  Row.Strt <- 1+which(AMAX[,1] == "[AM Values]")
-  AM <- AMAX[Row.Strt:length(AMAX[,1])-1,]
-  AM <- AM[-1,]
-  Dates <- data.frame(as.Date(AM[,1], format = "%d %b %Y"), AM[,2])
-  colnames(Dates) <- c("Date", "Flow")
-  AM.c1 <- AMAX[,1]
-  if(AMAX[1,1] == "[AM Rejected]"){
-    Rej <- AM.c1[2:which(AM.c1 == "[AM Values]")-2][-1]
-    RejEnd <- as.character(as.numeric(Rej)+1)
+  Row.Strt <- 1 + which(AMAX[, 1] == "[AM Values]")
+  AM <- AMAX[Row.Strt:length(AMAX[, 1]) - 1, ]
+  AM <- AM[-1, ]
+  raw_dates <- AM[, 1]
+  if (grepl("[A-Za-z]{3}", raw_dates[1])) {
+    parsed_dates <- as.Date(raw_dates, format = "%d %b %Y") # old format
+  } else if (grepl("T|Z", raw_dates[1]) || grepl("\\d{2}:\\d{2}:\\d{2}", raw_dates[1])) {
+    parsed_dates <- as.Date(as.POSIXct(raw_dates, format = "%Y-%m-%d %H:%M:%OSZ", tz = "UTC"))
+  } else {
+    stop("Unrecognized date format.")
+  }
+  Dates <- data.frame(Date = parsed_dates, Flow = AM[, 2])
+  # colnames(Dates) <- c("Date", "Flow")
+  AM.c1 <- AMAX[, 1]
+  if (AMAX[1, 1] == "[AM Rejected]") {
+    Rej <- AM.c1[2:which(AM.c1 == "[AM Values]") - 2][-1]
+    RejEnd <- as.character(as.numeric(Rej) + 1)
     WYDate <- as.Date(paste(Rej, "- 10 - 01"), format = "%Y - %m - %d")
     WYEnd <- as.Date(paste(RejEnd, "- 09 - 30"), format = "%Y - %m - %d")
-    Date.Func <- function(x, y, z){
+    Date.Func <- function(x, y, z) {
       isTRUE(x >= y & x <= z)
     }
-    RejFunc <- function(ind){
+    RejFunc <- function(ind) {
       Rej <- NULL
-      for(i in 1:nrow(Dates)) {Rej[i] <- Date.Func(Dates$Date[i], WYDate[ind], WYEnd[ind])}
+      for (i in 1:nrow(Dates)) {
+        Rej[i] <- Date.Func(Dates$Date[i], WYDate[ind], WYEnd[ind])
+      }
       WhichTRUE <- which(Rej == TRUE)
-      if(length(WhichTRUE) == 0) {return(NA)} else {return(WhichTRUE)}
+      if (length(WhichTRUE) == 0) {
+        return(NA)
+      } else {
+        return(WhichTRUE)
+      }
     }
-    if(length(WYDate) > 1) {
+    if (length(WYDate) > 1) {
       RejInd <- list()
-      for(i in 1:length(WYDate)) {RejInd[[i]] <- RejFunc(i)}
+      for (i in 1:length(WYDate)) {
+        RejInd[[i]] <- RejFunc(i)
+      }
       RejInd <- unlist(RejInd)
-      if(any(is.na(RejInd)) == TRUE) {
+      if (any(is.na(RejInd)) == TRUE) {
         NAInd <- which(is.na(RejInd == TRUE))
-        if(length(NAInd) == length(WYDate)) {RejInd <- NULL} else {
-          RejInd <- RejInd[-which(is.na(RejInd) == TRUE)]}}
+        if (length(NAInd) == length(WYDate)) {
+          RejInd <- NULL
+        } else {
+          RejInd <- RejInd[-which(is.na(RejInd) == TRUE)]
+        }
+      }
     } else {
       RejInd <- NULL
-      for(i in 1:nrow(Dates)) {RejInd[i] <- Date.Func(Dates$Date[i], WYDate, WYEnd)}
+      for (i in 1:nrow(Dates)) {
+        RejInd[i] <- Date.Func(Dates$Date[i], WYDate, WYEnd)
+      }
       RejInd <- which(RejInd == TRUE)
-      if(length(RejInd > 0)) {RejInd <- RejInd} else {RejInd <- NULL}
+      if (length(RejInd > 0)) {
+        RejInd <- RejInd
+      } else {
+        RejInd <- NULL
+      }
     }
-    if(is.null(RejInd) == TRUE) {Result <- Dates} else {Result <- Dates[-RejInd,]}}
-  else {Result <- Dates}
+    if (is.null(RejInd) == TRUE) {
+      Result <- Dates
+    } else {
+      Result <- Dates[-RejInd, ]
+    }
+  } else {
+    Result <- Dates
+  }
   rownames(Result) <- seq(1, nrow(Result))
   return(Result)
 }
@@ -2181,7 +2819,7 @@ AMImport <- function(x)
 #'  If the x argument is a numeric vector, the peaks will be extracted with no time information.
 #'  x can instead be a data.frame with dates in the first column and the numeric vector in the second.
 #'  In this latter case, the peaks will be time-stamped and a hydrograph, including POT, will be plotted by default.
-#'  The method of extracting independent peaks assumes that there is a value either side of which, events can be considered independent.
+#'  The method of extracting independent peaks assumes that there is a value either side of which events can be considered independent.
 #'  For example, if two peaks above the chosen threshold are separated by the mean flow, they could be considered independent,
 #'  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
 #'  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of time-steps either side of the peaks.
@@ -2197,72 +2835,88 @@ AMImport <- function(x)
 #' @param xlab Label (character) for the plot x axis. Default is "Time".
 #' @param main Title for the plot. Default is "Peaks over threshold"
 #' @examples
-#' #Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
-#' #div = mean and threshold = 0.95. Then display the first six rows
-#' ThamesQPOT <- POTextract(ThamesPQ[, c(1,3)], thresh = 0.9)
-#' head(ThamesQPOT)
-#' #Extract Thames POT from only the numeric vector of flows and display the
-#' #first six rows
-#' ThamesQPOT <- POTextract(ThamesPQ[, 3], thresh = 0.9)
-#' head(ThamesQPOT)
-#' #Extract the Thames POT precipitation with a div of 0, the default
-#' #threshold, and 5 timesteps (days) either side of the peak. Then display the first six rows
-#' ThamesPPOT <- POTextract(ThamesPQ[, c(1,2)], div = 0, TimeDiv = 5)
-#' head(ThamesPPOT)
+#' # Extract POT data from Thames mean daily flow 2000-10-01 to 2015-09-30 with
+#' # div = mean (default) and threshold = 0.95, and display the first six rows
+#' thames_q_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.95)
+#' head(thames_q_pot)
+#'
+#' # Extract Thames POT from only the numeric vector of flows and display the
+#' # first six rows
+#' thames_q_pot <- POTextract(ThamesPQ[, 3], thresh = 0.9)
+#' head(thames_q_pot)
+#'
+#' # Extract the Thames POT precipitation with a div of 0, the default
+#' # threshold, and five timesteps (days) either side of the peak, and display the first six rows
+#' thames_p_pot <- POTextract(ThamesPQ[, c(1, 2)], div = 0, TimeDiv = 5)
+#' head(thames_p_pot)
+#'
 #' @return Prints the number of peaks per year and returns a data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the hydrological variable is input.
 #' @author Anthony Hammond
 
-POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRUE, ylab = "Magnitude", xlab = "Time" ,main = "Peaks over threshold"){
-
-  Low.Func <- function(TS)
-  {
-    L <- length(TS)-2
-    L1 <- length(TS)-1
+POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRUE, ylab = "Magnitude", xlab = "Time", main = "Peaks over threshold") {
+  Low.Func <- function(TS) {
+    L <- length(TS) - 2
+    L1 <- length(TS) - 1
     L2 <- length(TS)
     Vec1 <- TS[1:L]
     Vec2 <- TS[2:L1]
     Vec3 <- TS[3:L2]
-    P1 <- ifelse(Vec2 <= Vec1 & Vec2 <= Vec3 & Vec1!= Vec2, Vec2, NA)
+    P1 <- ifelse(Vec2 <= Vec1 & Vec2 <= Vec3 & Vec1 != Vec2, Vec2, NA)
     return(P1)
   }
 
-  P.Func <- function(TS)
-  {
-    L <- length(TS)-2
-    L1 <- length(TS)-1
+  P.Func <- function(TS) {
+    L <- length(TS) - 2
+    L1 <- length(TS) - 1
     L2 <- length(TS)
     Vec1 <- TS[1:L]
     Vec2 <- TS[2:L1]
     Vec3 <- TS[3:L2]
-    P1 <- ifelse(Vec2 >= Vec1 & Vec2 >= Vec3 & Vec1!= Vec2, Vec2, NA)
+    P1 <- ifelse(Vec2 >= Vec1 & Vec2 >= Vec3 & Vec1 != Vec2, Vec2, NA)
     return(P1)
   }
 
-  VP <- function(j, mu)
-  {
-    maxll <-  suppressWarnings(max(which(lows[1:j] <= mu), na.rm = T))
-    if(maxll == -Inf) {maxll <- j} else {maxll <- maxll}
-    minlr <-   suppressWarnings(min(which(lows[j:length(lows)] <= mu), na.rm = T))
-    if(minlr == Inf) {minlr <- j} else {minlr <- j+(minlr-1)}
+  VP <- function(j, mu) {
+    maxll <- suppressWarnings(max(which(lows[1:j] <= mu), na.rm = T))
+    if (maxll == -Inf) {
+      maxll <- j
+    } else {
+      maxll <- maxll
+    }
+    minlr <- suppressWarnings(min(which(lows[j:length(lows)] <= mu), na.rm = T))
+    if (minlr == Inf) {
+      minlr <- j
+    } else {
+      minlr <- j + (minlr - 1)
+    }
     MaxMin <- peaks[maxll:minlr]
     MaxInds <- which(MaxMin == max(MaxMin, na.rm = TRUE))
-    MaxInds <- (maxll-1) + MaxInds
-    if(peaks[j] == max(MaxMin, na.rm = T) & j == MaxInds[1]) {vp <- peaks[j]} else {vp <- NA}
+    MaxInds <- (maxll - 1) + MaxInds
+    if (peaks[j] == max(MaxMin, na.rm = T) & j == MaxInds[1]) {
+      vp <- peaks[j]
+    } else {
+      vp <- NA
+    }
     return(vp)
   }
 
   NAs <- FALSE
-  if(is(x, "data.frame") == FALSE) {
-    if(anyNA(x)) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
-    if(length(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15minute data for example). You may want to use the POTt function which is much quicker. If you have associated datetimes available another option is to aggregate the data to daily maximums using the AggDayHour function")
-    if(is.null(div) == FALSE) {
-      if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
-      if(div == 0 & length(which(x == min(x, na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
-      div <- quantile(x[x >0], div, na.rm = TRUE)
-      if(div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
-    if(is.null(div)) {mu <- mean(x[x >0],na.rm = TRUE)} else {mu <- div}
-    if(mu > quantile(x[x >0],thresh, na.rm = TRUE)) stop("The event division (div) must be equal to or lower than the event threshold")
-    if(is.null(TimeDiv) == FALSE) print("Warning: TimeDiv isn't currently set up for vectors. The TimeDiv element entered has no impact on the result")
+  if (is(x, "data.frame") == FALSE) {
+    if (anyNA(x)) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
+    if (length(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15minute data for example). You may want to use the POTt function which is much quicker. If you have associated datetimes available another option is to aggregate the data to daily maximums using the AggDayHour function")
+    if (is.null(div) == FALSE) {
+      if (div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      if (div == 0 & length(which(x == min(x, na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
+      div <- quantile(x[x > 0], div, na.rm = TRUE)
+      if (div < min(x, na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")
+    }
+    if (is.null(div)) {
+      mu <- mean(x[x > 0], na.rm = TRUE)
+    } else {
+      mu <- div
+    }
+    if (mu > quantile(x[x > 0], thresh, na.rm = TRUE)) stop("The event division (div) must be equal to or lower than the event threshold")
+    if (is.null(TimeDiv) == FALSE) print("Warning: TimeDiv isn't currently set up for vectors. The TimeDiv element entered has no impact on the result")
     QThresh <- as.numeric(quantile(x[x > 0], thresh, na.rm = TRUE))
     MinMuP <- min(which(x <= mu))
     MaxMuP <- max(which(x <= mu))
@@ -2277,89 +2931,133 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
     pt <- peaks[pt.ind]
     l <- length(pt.ind)
     POT <- NULL
-    {for (i in 1:l) {POT[i] <- VP(pt.ind[i], mu)}}
-    if(PkBegin > QThresh) {POT <- append(PkBegin, POT)}
-    if(PkEnd > QThresh) {POT <- append(POT, PkEnd)}
-    if(NAs == TRUE) {POT <- POT} else {POT <- POT[which(is.na(POT) == FALSE)]}
-    return(POT)}
-  if(is(x, "data.frame") == TRUE) {
-    if(ncol(x) >2) stop("x must be a data.frame with two columns. Or a vector")
-    if(anyNA(x[,2])) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have be a peak, it will not be identified as a peak")
-    if(nrow(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15-minute data for example). You may want to use the POTt function which is much quicker. You could also aggregate the data to daily maximums using the AggDayHour function")
-    if(is.null(div) == FALSE) {
-      if(div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
-      if(div == 0 & length(which(x[,2] == min(x[,2], na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
-      div <- as.numeric(quantile(x[,2][x[,2] >0], div, na.rm = TRUE))
-      if(div < min(x[,2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")}
-    if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
-    if(is.null(div)) {mu <- mean(x[,2][x[,2] >0],na.rm = TRUE)} else {mu <- div}
-    if(mu > quantile(x[,2][x[,2] >0],thresh, na.rm = TRUE)) stop("The event division (div) must be significantly lower than the event threshold")
-    QThresh <- as.numeric(quantile(x[,2][x[,2] >0], thresh, na.rm = TRUE))
-    MinMuP <- min(which(x[,2] <= mu), na.rm = TRUE)
-    MaxMuP <- max(which(x[,2] <= mu), na.rm = TRUE)
-    PkBegin <- which(x[1:MinMuP,2] == max(x[1:MinMuP,2], na.rm = TRUE))[1]
-    PkEnd <- which(x[MaxMuP:length(x[,2]),2] == max(x[MaxMuP:length(x[,2]),2], na.rm = TRUE))[1]
-    if(is.null(TimeDiv) == FALSE) {
-      DBegin <- data.frame(x[PkBegin,], PkBegin)
-      DEnd <-   data.frame(x[((MaxMuP-1)+PkEnd),], PkEnd)
+    {
+      for (i in 1:l) {
+        POT[i] <- VP(pt.ind[i], mu)
+      }
+    }
+    if (PkBegin > QThresh) {
+      POT <- append(PkBegin, POT)
+    }
+    if (PkEnd > QThresh) {
+      POT <- append(POT, PkEnd)
+    }
+    if (NAs == TRUE) {
+      POT <- POT
+    } else {
+      POT <- POT[which(is.na(POT) == FALSE)]
+    }
+    return(POT)
+  }
+  if (is(x, "data.frame") == TRUE) {
+    if (ncol(x) > 2) stop("x must be a data.frame with two columns. Or a vector")
+    if (anyNA(x[, 2])) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have be a peak, it will not be identified as a peak")
+    if (nrow(x) > 350000) print("This function is a bit slow when x is very long (when using decades of 15-minute data for example). You may want to use the POTt function which is much quicker. You could also aggregate the data to daily maximums using the AggDayHour function")
+    if (is.null(div) == FALSE) {
+      if (div < 0 | div > thresh) stop("div must be between 0 and the thresh value")
+      if (div == 0 & length(which(x[, 2] == min(x[, 2], na.rm = TRUE))) < 2) stop("only a single value is at div = 0, which means only one peak would be considered applicable under this setting. Raise div.")
+      div <- as.numeric(quantile(x[, 2][x[, 2] > 0], div, na.rm = TRUE))
+      if (div < min(x[, 2], na.rm = TRUE)) stop("Peaks division (div) is less than the minimum of x")
+    }
+    if (is(x[1, 1], "Date") == FALSE & is(x[1, 1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
+    if (is.null(div)) {
+      mu <- mean(x[, 2][x[, 2] > 0], na.rm = TRUE)
+    } else {
+      mu <- div
+    }
+    if (mu > quantile(x[, 2][x[, 2] > 0], thresh, na.rm = TRUE)) stop("The event division (div) must be significantly lower than the event threshold")
+    QThresh <- as.numeric(quantile(x[, 2][x[, 2] > 0], thresh, na.rm = TRUE))
+    MinMuP <- min(which(x[, 2] <= mu), na.rm = TRUE)
+    MaxMuP <- max(which(x[, 2] <= mu), na.rm = TRUE)
+    PkBegin <- which(x[1:MinMuP, 2] == max(x[1:MinMuP, 2], na.rm = TRUE))[1]
+    PkEnd <- which(x[MaxMuP:length(x[, 2]), 2] == max(x[MaxMuP:length(x[, 2]), 2], na.rm = TRUE))[1]
+    if (is.null(TimeDiv) == FALSE) {
+      DBegin <- data.frame(x[PkBegin, ], PkBegin)
+      DEnd <- data.frame(x[((MaxMuP - 1) + PkEnd), ], PkEnd)
       colnames(DBegin) <- c("Date", "peak", "Index")
       colnames(DEnd) <- c("Date", "peak", "Index")
     }
-    if(is.null(TimeDiv) == TRUE){
-      DBegin <- x[PkBegin,]
-      DEnd <- x[((MaxMuP-1)+PkEnd),]
+    if (is.null(TimeDiv) == TRUE) {
+      DBegin <- x[PkBegin, ]
+      DEnd <- x[((MaxMuP - 1) + PkEnd), ]
       colnames(DBegin) <- c("Date", "peak")
-      colnames(DEnd) <- c("Date", "peak")}
-    xUse <- x[MinMuP:MaxMuP,]
-    lows <- Low.Func(xUse[,2])
-    peaks <- P.Func(xUse[,2])
+      colnames(DEnd) <- c("Date", "peak")
+    }
+    xUse <- x[MinMuP:MaxMuP, ]
+    lows <- Low.Func(xUse[, 2])
+    peaks <- P.Func(xUse[, 2])
     pt.ind <- which(peaks > QThresh)
     pt <- peaks[pt.ind]
     L <- length(pt.ind)
     POT <- NULL
-    {for (i in 1:L) {POT[i] <- VP(pt.ind[i], mu)}}
-    POT.Dates <- (xUse[,1][pt.ind])+1
-    if(is.null(TimeDiv) == FALSE){
+    {
+      for (i in 1:L) {
+        POT[i] <- VP(pt.ind[i], mu)
+      }
+    }
+    POT.Dates <- (xUse[, 1][pt.ind]) + 1
+    if (is.null(TimeDiv) == FALSE) {
       res <- data.frame(POT.Dates, POT, pt.ind)
-      colnames(res) <- c("Date", "peak", "Index")}
-    if(is.null(TimeDiv) == TRUE){
+      colnames(res) <- c("Date", "peak", "Index")
+    }
+    if (is.null(TimeDiv) == TRUE) {
       res <- data.frame(POT.Dates, POT)
       colnames(res) <- c("Date", "peak")
     }
-    if(DBegin$peak > QThresh) {res <- rbind(DBegin, res)}
-    if(DEnd$peak > QThresh) {res <- rbind(res, DEnd)}
-    rownames(res) <- seq(1, length(res[,2]))
-    if(NAs == TRUE) {res <- res} else {res <- res[which(is.na(res$peak) == FALSE), ]}
-    if(is.null(TimeDiv) == FALSE) {
+    if (DBegin$peak > QThresh) {
+      res <- rbind(DBegin, res)
+    }
+    if (DEnd$peak > QThresh) {
+      res <- rbind(res, DEnd)
+    }
+    rownames(res) <- seq(1, length(res[, 2]))
+    if (NAs == TRUE) {
+      res <- res
+    } else {
+      res <- res[which(is.na(res$peak) == FALSE), ]
+    }
+    if (is.null(TimeDiv) == FALSE) {
       ev.start <- res$Index - TimeDiv
       ev.end <- res$Index + TimeDiv
       res <- data.frame(res, ev.start, ev.end)
       RMInd <- function(ind) {
-        if(res$Index[ind] <= res$ev.end[ind-1]) {
-          MaxInd <- which.max(res$peak[(ind-1):ind])
-          if(MaxInd == 1) {Ind <- ind}
-          if(MaxInd == 2) {Ind <- ind-1}
+        if (res$Index[ind] <= res$ev.end[ind - 1]) {
+          MaxInd <- which.max(res$peak[(ind - 1):ind])
+          if (MaxInd == 1) {
+            Ind <- ind
+          }
+          if (MaxInd == 2) {
+            Ind <- ind - 1
+          }
         }
-        if(res$Index[ind] > res$ev.end[ind-1]){
+        if (res$Index[ind] > res$ev.end[ind - 1]) {
           Ind <- NA
         }
         return(Ind)
       }
-      while(any(res$Index[2:nrow(res)] - res$ev.end[1:(nrow(res)-1)] < 0)) {
+      while (any(res$Index[2:nrow(res)] - res$ev.end[1:(nrow(res) - 1)] < 0)) {
         RMInds <- NULL
-        for(i in 2:nrow(res)){RMInds[i] <- RMInd(i)}
+        for (i in 2:nrow(res)) {
+          RMInds[i] <- RMInd(i)
+        }
         RMInds <- RMInds[is.na(RMInds) == FALSE]
         res <- res[-RMInds, ]
       }
-      res <- res[,-c(3,4,5)]}
-    if(Plot == TRUE) {
-      if(mu == 0){plot(x, main = main, ylab = ylab, xlab= xlab, type = "h")}
-      if(mu > 0){plot(x, main = main, ylab = ylab, xlab= xlab, type = "l")}
+      res <- res[, -c(3, 4, 5)]
+    }
+    if (Plot == TRUE) {
+      if (mu == 0) {
+        plot(x, main = main, ylab = ylab, xlab = xlab, type = "h")
+      }
+      if (mu > 0) {
+        plot(x, main = main, ylab = ylab, xlab = xlab, type = "l")
+      }
       abline(h = QThresh, col = "blue")
-      points(res[,1:2], col = "red")
-      abline(h = mu, col = rgb(0, 0.7, 0.3))}
-    Years <- as.numeric((x[length(x[,1]),1]-x[1,1])/365.25)
-    PPY <- length(res[,1])/Years
+      points(res[, 1:2], col = "red")
+      abline(h = mu, col = rgb(0, 0.7, 0.3))
+    }
+    Years <- as.numeric((x[length(x[, 1]), 1] - x[1, 1]) / 365.25)
+    PPY <- length(res[, 1]) / Years
     print(paste("Peaks per year:", format(PPY, trim = TRUE), sep = " "))
     return(res)
   }
@@ -2383,44 +3081,46 @@ POTextract <- function(x, div = NULL, TimeDiv = NULL, thresh = 0.975, Plot = TRU
 #' @param xlab Label (character) for the plot x axis. Default is "Time".
 #' @param main Title for the plot. Default is "Peaks over threshold"
 #' @examples
-#' #Extract POT data from Thames catchment daily rainfall 2000-10-01 to 2015-09-30 with
-#' #div = 14 (14 days) and threshold = 0.975. Then display the first six rows
-#' ThamesPPOT <- POTt(ThamesPQ[, c(1,2)], div = 14)
-#' head(ThamesPPOT)
-#' #Extract Thames rainfall POT from only the numeric vector of rainfall, with threshold
-#' #set to 0.95 and div set to 14. Then display the first six rows
-#' ThamesPPOT <- POTt(ThamesPQ[, 2], threshold = 0.95, div = 14)
-#' head(ThamesPPOT)
+#' # Extract POT data from Thames catchment daily rainfall 2000-10-01 to 2015-09-30 with
+#' # div = 14 (14 days) and threshold = 0.975, and display the first six rows
+#' thames_p_pot <- POTt(ThamesPQ[, c(1, 2)], div = 14, threshold = 0.975)
+#' head(thames_p_pot)
+#'
+#' # Extract Thames rainfall POT from the numeric vector of rainfall, with threshold
+#' # set to 0.95 and div set to 14, and display the first six rows
+#' thames_p_pot <- POTt(ThamesPQ[, 2], threshold = 0.95, div = 14)
+#' head(thames_p_pot)
+#'
 #' @return A data.frame with columns; Date and peak, with the option of a plot. Or a numeric vector of peaks is returned if only a numeric vector of the variable is input as x.
 #' @author Anthony Hammond
 
 POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = "Peaks over threhsold", ylab = "Magnitude", xlab = "Time") {
-  if(is(x, "data.frame") == FALSE & is(x,"numeric") == FALSE) stop("x must be a data.frame or a numeric vector")
-  if(is(x, "data.frame")) {
-    if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
+  if (is(x, "data.frame") == FALSE & is(x, "numeric") == FALSE) stop("x must be a data.frame or a numeric vector")
+  if (is(x, "data.frame")) {
+    if (is(x[1, 1], "Date") == FALSE & is(x[1, 1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
   }
-  if(length(ncol(x)) > 2) stop("x must be either a numeric vector or a dataframe with two columns having  date (or POSIXct) in the first column and numeric variable in the second")
-  PFunc <- function(TS)
-  {
-    L <- length(TS)-2
-    L1 <- length(TS)-1
+  if (length(ncol(x)) > 2) stop("x must be either a numeric vector or a dataframe with two columns having  date (or POSIXct) in the first column and numeric variable in the second")
+  PFunc <- function(TS) {
+    L <- length(TS) - 2
+    L1 <- length(TS) - 1
     L2 <- length(TS)
     Vec1 <- TS[1:L]
     Vec2 <- TS[2:L1]
     Vec3 <- TS[3:L2]
-    P1 <- ifelse(Vec2 >= Vec1 & Vec2 >= Vec3 & Vec1!= Vec2, Vec2, NA)
+    P1 <- ifelse(Vec2 >= Vec1 & Vec2 >= Vec3 & Vec1 != Vec2, Vec2, NA)
     P1 <- c(NA, P1, NA)
     return(P1)
   }
 
-  if(is(x,"numeric")) {
-    if(anyNA(x)) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
-    thresh <- as.numeric(quantile(x[x>0], threshold, na.rm = TRUE))
-    PPeaks <- PFunc(x)}
-  if(is(x,"data.frame")) {
-    if(anyNA(x[,2])) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
-    xVar <- x[,2]
-    thresh <- as.numeric(quantile(xVar[xVar>0], threshold, na.rm = TRUE))
+  if (is(x, "numeric")) {
+    if (anyNA(x)) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
+    thresh <- as.numeric(quantile(x[x > 0], threshold, na.rm = TRUE))
+    PPeaks <- PFunc(x)
+  }
+  if (is(x, "data.frame")) {
+    if (anyNA(x[, 2])) warning("One or more years include missing data. This may impact results. Firstly, some peaks may be missed entirely, secondly, if there is missing data next to what may have been a peak, it will not be identified as a peak")
+    xVar <- x[, 2]
+    thresh <- as.numeric(quantile(xVar[xVar > 0], threshold, na.rm = TRUE))
     PPeaks <- PFunc(xVar)
   }
   ID <- seq(1, length(PPeaks), by = 1)
@@ -2432,36 +3132,43 @@ POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = 
   PeakDF <- data.frame(IndP, ev.start, ev.end, PPeaks[IndP])
 
   RMInd <- function(ind) {
-    if(PeakDF$IndP[ind] <= PeakDF$ev.end[ind-1]) {
-      MaxInd <- which.max(PeakDF$PPeaks.IndP.[(ind-1):ind])
-      if(MaxInd == 1) {Ind <- ind}
-      if(MaxInd == 2) {Ind <- ind-1}
+    if (PeakDF$IndP[ind] <= PeakDF$ev.end[ind - 1]) {
+      MaxInd <- which.max(PeakDF$PPeaks.IndP.[(ind - 1):ind])
+      if (MaxInd == 1) {
+        Ind <- ind
+      }
+      if (MaxInd == 2) {
+        Ind <- ind - 1
+      }
     }
-    if(PeakDF$IndP[ind] > PeakDF$ev.end[ind-1]){
+    if (PeakDF$IndP[ind] > PeakDF$ev.end[ind - 1]) {
       Ind <- NA
     }
     return(Ind)
   }
 
-  while(any(PeakDF$IndP[2:nrow(PeakDF)] - PeakDF$ev.end[1:(nrow(PeakDF)-1)] < 0)) {
+  while (any(PeakDF$IndP[2:nrow(PeakDF)] - PeakDF$ev.end[1:(nrow(PeakDF) - 1)] < 0)) {
     RMInds <- NULL
-    for(i in 2:nrow(PeakDF)){RMInds[i] <- RMInd(i)}
+    for (i in 2:nrow(PeakDF)) {
+      RMInds[i] <- RMInd(i)
+    }
     RMInds <- RMInds[is.na(RMInds) == FALSE]
     PeakDF <- PeakDF[-RMInds, ]
   }
-  if(is(x, "data.frame")) {
-    Res <- x[PeakDF$IndP,]
-    if(Plot == TRUE) {
-    plot(x[,], type = PlotType, main = main, xlab = xlab, ylab = ylab)
-    points(Res[,1:2], col = "red")
-    abline(h = thresh, col = "blue")}
-    LengthP <- length(Res[,1])
-    #print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
+  if (is(x, "data.frame")) {
+    Res <- x[PeakDF$IndP, ]
+    if (Plot == TRUE) {
+      plot(x[, ], type = PlotType, main = main, xlab = xlab, ylab = ylab)
+      points(Res[, 1:2], col = "red")
+      abline(h = thresh, col = "blue")
+    }
+    LengthP <- length(Res[, 1])
+    # print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
   }
-  if(is(x, "numeric")) {
-    Res <- PeakDF[,4]
+  if (is(x, "numeric")) {
+    Res <- PeakDF[, 4]
     LengthP <- length(Res)
-    #print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
+    # print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
   }
   return(Res)
 }
@@ -2475,107 +3182,136 @@ POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = 
 #'
 #'  The statistics are extracted based on the UK hydrological year by default (start month = 10). Month can be changed using the Mon argument. A year is from Mon-Hr to Mon-(Hr-1). For example, the 2018 hydrological year with Hr = 9 would be from 2018-10-01 09:00:00 to 2019-10-01 08:00:00. If Hr = 0, then it would be from 2018-10-01 00:00:00 to 2019-09-30 23:00:00. Data before the first occurrence of the 'start month' and after and including the last occurrence of the 'start month' is not included in the calculation of the statistic.
 #' @param x a data.frame with dates (or POSIXct) in the first column and variable in the second
-#' @param Stat A user chosen function to extract statistics, for example mean. The default it max. User supplied functions could also be used.
-#' @param Truncate Logical argument with a default of TRUE. If TRUE, then x is truncated to be within the first and last occurrence of the chosen month and time. If FALSE tuncation is not done and results from partial years will be included.
+#' @param Stat A user chosen function to extract statistics, for example mean. The default is max. User supplied functions could also be used.
+#' @param Truncate Logical argument with a default of TRUE. If TRUE, then x is truncated to be within the first and last occurrence of the chosen month and time. If FALSE truncation is not done and results from partial years will be included.
 #' @param Mon Choice of month as a numeric, from 1 to 12. The default is 10 which means the year starts October 1st.
 #' @param Hr Choice of hour to start the year (numeric from 0 to 23). The default is 9.
 #' @param Sliding Logical argument with a default of FALSE. This can be applied if you want the statistic over a sliding period. For example, deriving maximum annual rainfall totals over a 24 hour period, rather than the maximum daily totals. The number of periods (timesteps) is chosen with the N argument. If for example you want the annual maximum sum of rainfall over a 24 hour period, and you have 15minute data, the Stat input would be sum, and N would be 96 (because there are 96 15 minute periods in 24 hours).
 #' @param N Number of timesteps to slide over - used in conjunction with Sliding. The default is 24, make sure to adjust this depending on the duration of interest and the sampling rate of the input data.
 #' @param ... further arguments for the stat function. Such as na.rm = TRUE.
 #' @examples
-#' #Extract the Thames AMAX daily mean flow and display the first six rows
-#' ThamesAM <- AnnualStat(ThamesPQ[,c(1,3)])
-#' head(ThamesAM)
-#' #Extract the annual rainfall totals.
-#' ThamesAnnualP <- AnnualStat(ThamesPQ[,1:2], Stat = sum)
-#' #Extract maximum five day rainfall totals from the Thames rain
-#' ThamesP5DayAM <- AnnualStat(ThamesPQ[,1:2], Stat = sum, Sliding = TRUE, N = 5)
+#' # Extract the Thames AMAX daily mean flow and display the first six rows
+#' thames_am <- AnnualStat(ThamesPQ[, c(1, 3)])
+#' head(thames_am)
+#'
+#' # Extract the annual rainfall totals
+#' thames_annual_p <- AnnualStat(ThamesPQ[, 1:2], Stat = sum)
+#'
+#' # Extract maximum five day rainfall totals from the Thames rainfall series
+#' thames_5day_am <- AnnualStat(ThamesPQ[, 1:2], Stat = sum, Sliding = TRUE, N = 5)
+#'
 #' @return a data.frame with columns; DateTime and Result. By default Result is the annual maximum sample, but will be any statistic used as the Stat argument.
 #' @author Anthony Hammond
 
 AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding = FALSE, N = 24, ...) {
-  if(class(Mon) != class(1) | class(Hr) != class(1)) stop("Mon and Hr must be numeric")
+  if (class(Mon) != class(1) | class(Hr) != class(1)) stop("Mon and Hr must be numeric")
   Mon <- round(Mon)
   Hr <- round(Hr)
-  if(Mon < 1 | Mon > 12) stop("Mon must be an integer from 1 to 12")
-  if(Hr < 0 | Hr > 23) stop("Hr must be an integer from 0 to 23")
-  if(is(x, "data.frame") == FALSE) stop("x must be a data.frame")
-  if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
-  #if(length(x[,1]) != length(unique(x[,1]))) stop("There are duplicates in the first column which should be a vector of unique dates or date times in chronological order. Remove the duplicates. The duplicates function is handy for this purpose. For example x <- x[!duplicated(x$dateTime),]")
-  x <- x[order(x[,1]),]
-  DateNA <- which(is.na(x[,1]))
-  if(length(DateNA) > 0) {
+  if (Mon < 1 | Mon > 12) stop("Mon must be an integer from 1 to 12")
+  if (Hr < 0 | Hr > 23) stop("Hr must be an integer from 0 to 23")
+  if (is(x, "data.frame") == FALSE) stop("x must be a data.frame")
+  if (is(x[1, 1], "Date") == FALSE & is(x[1, 1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
+  # if(length(x[,1]) != length(unique(x[,1]))) stop("There are duplicates in the first column which should be a vector of unique dates or date times in chronological order. Remove the duplicates. The duplicates function is handy for this purpose. For example x <- x[!duplicated(x$dateTime),]")
+  x <- x[order(x[, 1]), ]
+  DateNA <- which(is.na(x[, 1]))
+  if (length(DateNA) > 0) {
     warning("One or more dates were NA and these rows have been removed")
-    x <- x[-DateNA,]}
+    x <- x[-DateNA, ]
+  }
   PluckOutTime <- function(x, from, to, Plot = FALSE, type = "l") {
-    Ind <- which(as.POSIXct(x[,1]) >= as.POSIXct(from) & as.POSIXct(x[,1]) < as.POSIXct(to))
-    Result <- x[Ind,]
-    if(Plot == TRUE) {plot(Result, type = type)}
+    Ind <- which(as.POSIXct(x[, 1]) >= as.POSIXct(from) & as.POSIXct(x[, 1]) < as.POSIXct(to))
+    Result <- x[Ind, ]
+    if (Plot == TRUE) {
+      plot(Result, type = type)
+    }
     return(Result)
   }
 
-  StDate <- x[1,1]
+  StDate <- x[1, 1]
   EndDate <- x[nrow(x), 1]
-  if(anyNA(c(StDate, EndDate)) == TRUE) stop("Either the first or the last Date/POSIXct value are NA. Correct the date or remove NA values from column one (the date time column)")
+  if (anyNA(c(StDate, EndDate)) == TRUE) stop("Either the first or the last Date/POSIXct value are NA. Correct the date or remove NA values from column one (the date time column)")
   LtSt <- as.POSIXlt(StDate)
   LtEnd <- as.POSIXlt(EndDate)
   StYr <- LtSt$year + 1900
   EndYr <- LtEnd$year + 1900
   StDateTime <- paste(StYr, "-", Mon, "-01 ", Hr, ":00:00", sep = "")
   EndDateTime <- paste(EndYr, "-", Mon, "-01 ", Hr, ":00:00", sep = "")
-  DatesWY <-  seq(as.POSIXct(StDateTime), as.POSIXct(EndDateTime), by = "year")
-  DatesWY <- sort(c(x[1,1], DatesWY, (x[nrow(x),1]+1)))
+  DatesWY <- seq(as.POSIXct(StDateTime), as.POSIXct(EndDateTime), by = "year")
+  DatesWY <- sort(c(x[1, 1], DatesWY, (x[nrow(x), 1] + 1)))
   DupTest <- which(duplicated(DatesWY) == TRUE)
-  if(length(DupTest) > 0) {DatesWY <- DatesWY[-which(duplicated(DatesWY) == TRUE)]}
-  if(DatesWY[1] < x[1,1]) {DatesWY <- DatesWY[-1]}
+  if (length(DupTest) > 0) {
+    DatesWY <- DatesWY[-which(duplicated(DatesWY) == TRUE)]
+  }
+  if (DatesWY[1] < x[1, 1]) {
+    DatesWY <- DatesWY[-1]
+  }
   nDWY <- length(DatesWY)
-  if(as.Date(DatesWY[nDWY-1]) >= as.Date(x[nrow(x),1])) {DatesWY <- DatesWY[-length(DatesWY)]}
+  if (as.Date(DatesWY[nDWY - 1]) >= as.Date(x[nrow(x), 1])) {
+    DatesWY <- DatesWY[-length(DatesWY)]
+  }
   nDWY <- length(DatesWY)
   WYList <- list()
-  for(i in 1:(nDWY-1)) {WYList[[i]] <- PluckOutTime(x, DatesWY[i], DatesWY[i+1])}
+  for (i in 1:(nDWY - 1)) {
+    WYList[[i]] <- PluckOutTime(x, DatesWY[i], DatesWY[i + 1])
+  }
   Nrows <- NULL
-  for(i in 1:length(WYList)) {Nrows[i] <- nrow(WYList[[i]])}
-  if(length(Nrows[Nrows == 0]) > 0) warning("At least one year has no data. The year in question may result in NA, -Inf, or NaN value")
+  for (i in 1:length(WYList)) {
+    Nrows[i] <- nrow(WYList[[i]])
+  }
+  if (length(Nrows[Nrows == 0]) > 0) warning("At least one year has no data. The year in question may result in NA, -Inf, or NaN value")
   NAsearch <- NULL
-  for(i in 1:length(WYList)) {NAsearch[i] <- anyNA(WYList[[i]][,2])}
-  if(any(NAsearch)) warning("Use an na.rm = TRUE argument (if you haven't already). One or more years include missing data. This may impact results.")
+  for (i in 1:length(WYList)) {
+    NAsearch[i] <- anyNA(WYList[[i]][, 2])
+  }
+  if (any(NAsearch)) warning("Use an na.rm = TRUE argument (if you haven't already). One or more years include missing data. This may impact results.")
   HeaviestPeriod <- function(x, Period = 24, Stat = max) {
-    if(Period > length(x)) {warning("N is longer than the data available in at least one of the years. NA is returned")
-      Result <- data.frame(Result = NA, StartIndex = NA)}
-    if(Period <= length(x)) {
+    if (Period > length(x)) {
+      warning("N is longer than the data available in at least one of the years. NA is returned")
+      Result <- data.frame(Result = NA, StartIndex = NA)
+    }
+    if (Period <= length(x)) {
       MA <- function(x, n) {
         ma <- NULL
-        for(i in n:length(x)) {ma[i] <- Stat(x[i:(i-n)], ...)}
+        for (i in n:length(x)) {
+          ma[i] <- Stat(x[i:(i - n)], ...)
+        }
         return(ma)
       }
-      MAResult <- MA(x, n = Period-1)
+      MAResult <- MA(x, n = Period - 1)
       MaxIndex <- which.max(MAResult)
       StartIndex <- (MaxIndex - Period) + 1
-      Result <- data.frame(Result = MAResult[MaxIndex], StartIndex)}
+      Result <- data.frame(Result = MAResult[MaxIndex], StartIndex)
+    }
     return(Result)
   }
-  if(Sliding == TRUE) {
+  if (Sliding == TRUE) {
     AM <- NULL
-    for(i in 1:length(WYList)) {AM[i] <- HeaviestPeriod(WYList[[i]][,2], Period = N, Stat = Stat)[1,1]}
+    for (i in 1:length(WYList)) {
+      AM[i] <- HeaviestPeriod(WYList[[i]][, 2], Period = N, Stat = Stat)[1, 1]
+    }
     AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)
     colnames(AM) <- c("DateTime", "Result")
-    }
+  }
 
-  if(Sliding == FALSE) {
+  if (Sliding == FALSE) {
     AM <- NULL
-    for(i in 1:length(WYList)) {AM[i] <- Stat(WYList[[i]][,2], ...)}
+    for (i in 1:length(WYList)) {
+      AM[i] <- Stat(WYList[[i]][, 2], ...)
+    }
     AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)
     colnames(AM) <- c("DateTime", "Result")
-    }
-  AM[which(AM[,2] == -Inf),2] <- NA
-  if(Truncate == TRUE) {
-    #if(as.Date(WYList[[1]][1,1]) > as.Date(StDateTime)) {AM <- AM[-1,]}
+  }
+  AM[which(AM[, 2] == -Inf), 2] <- NA
+  if (Truncate == TRUE) {
+    # if(as.Date(WYList[[1]][1,1]) > as.Date(StDateTime)) {AM <- AM[-1,]}
     DatesDiff <- as.numeric(diff(DatesWY))
     rmInd <- which(DatesDiff < 365)
-    if(length(rmInd) > 0) {AM <- AM[-rmInd,]}
+    if (length(rmInd) > 0) {
+      AM <- AM[-rmInd, ]
+    }
     rownames(AM) <- seq(1, nrow(AM))
-    #if(DatesDiff[1] < 365) {AM <- AM[-1, ]}
-    #if(DatesDiff[length(DatesDiff)] < 365) {AM <- AM[-nrow(AM), ]}
+    # if(DatesDiff[1] < 365) {AM <- AM[-1, ]}
+    # if(DatesDiff[length(DatesDiff)] < 365) {AM <- AM[-nrow(AM), ]}
   }
 
   return(AM)
@@ -2585,54 +3321,67 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
 
 #' Uncertainty quantification for gauged and ungauged pooled estimates
 #'
-#' Quantification of uncertainty for pooling results for the gauged and ungauged case
+#' Quantification of aleatoric uncertainty for pooling results for the gauged and ungauged case
 #'
-#'  Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6).
-#' @param x the pooled group derived from the Pool() or PoolSmall function
-#' @param Gauged a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case
-#' @param Dist a choice of distribution to use for the estimates. Choices are "GEV", "GenLog" ,"Gumbel", or "Kappa3". The default is "GenLog"
+#' Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6). Note that this function only quantifies sampling (aleatoric) uncertainty. It does not quantify uncertainty associated with models, model choices applied or hydrometric data. Lastly, the method assumes that AMAX samples within the pooling group are independent of each other and serially independent and identically distributed.
+#' @param x the pooled group derived from the Pool() or PoolSmall() function.
+#' @param Gauged a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case.
+#' @param Dist a choice of distribution to use for the estimates. Choices are "GEV", "GenLog", "Gumbel", or "Kappa3". The default is "GenLog".
 #' @param Conf the confidence level of the uncertainty intervals. Default is 0.95. Must be between 0 and 1.
 #' @param qmed the QMED estimate for the ungauged case. It is derived from the observed AMAX if Gauged equals TRUE.
-#' @param fseQMED The factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.
-#' @param UrbAdj applies an urban adjustment to the growth curves
-#' @param URBEXT URBEXT value for the site of interest. This is necessary if a UrbAdj equals TRUE.
+#' @param fseQMED the factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.
+#' @param UrbAdj applies an urban adjustment to the growth curves.
+#' @param URBEXT URBEXT value for the site of interest. This is necessary if UrbAdj equals TRUE.
 #' @param Plot logical argument with a default of TRUE. If TRUE a return level plot with results and margin of error is plotted. If FALSE, it is not.
 #' @param IncAMest logical argument with a default of TRUE. Sometimes when doing gauged (enhanced single site analysis), the central estimate of the single site estimate is outside the intervals of the ESS estimate. When this argument is true the confidence interval is expanded to include the central estimate for the single site. If FALSE, it is not.
-#' @param Parametric logical argument with a default of TRUE. If TRUE, the bootsrapping is done by simulation with the distribution of choice. If FALSE the bootsrapping is done by resampling with replacement.
+#' @param Parametric logical argument with a default of TRUE. If TRUE, the bootstrapping is done by simulation with the distribution of choice. If FALSE the bootstrapping is done by resampling with replacement.
 #' @examples
-#' #Get an ungauged pooling group:
-#' Pool.203018 <- Pool(GetCDs(203018), exclude = 203018)
-#' #Use the function to quantify the central estimate and uncertainty
-#' Uncertainty(Pool.203018, qmed  = QMED(GetCDs(203018)))
-#' #Form a pooling group with subject site included.
-#'  Pool.203018 <- Pool(GetCDs(203018))
-#' #Quantify the central estimate and uncertainty
-#'  Uncertainty(Pool.203018, Gauged = TRUE)
+#' # Get an ungauged pooling group
+#' pool_203018 <- Pool(GetCDs(203018), exclude = 203018)
+#'
+#' # Quantify the central estimate and uncertainty
+#' Uncertainty(pool_203018, qmed = QMED(GetCDs(203018)))
+#'
+#' # Get a pooling group with subject site included
+#' pool_203018 <- Pool(GetCDs(203018))
+#'
+#' # Quantify the central estimate and uncertainty
+#' Uncertainty(pool_203018, Gauged = TRUE)
+#'
 #' @return A dataframe with 10 rows and four columns. Return period in the first column, central estimate in the second, lower in the third, and upper in the fourth. If Plot = TRUE, a return level plot is also returned.
 #' @author Anthony Hammond
 Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 0.95, fseQMED = 1.55, UrbAdj = FALSE, URBEXT = NULL, Plot = TRUE, IncAMest = TRUE, Parametric = TRUE) {
-  if(Conf <= 0 | Conf >= 1) stop("Conf must be between 0 and 1")
-  if(class(x) != class(data.frame(rep(1,12)))) stop("x must be pooled group derived from the Pool or PoolSmall function")
-  if(is.null(qmed) & Gauged == FALSE) stop("If Gauged = FALSE a qmed value needs to be specified")
-  if(UrbAdj == TRUE & is.null(URBEXT)) stop("If UrbAdj is true it suggests you are urban adjusting the gauged site of interest. In which case an URBEXT2000 is required.")
+  if (Conf <= 0 | Conf >= 1) stop("Conf must be between 0 and 1")
+  if (class(x) != class(data.frame(rep(1, 12)))) stop("x must be pooled group derived from the Pool or PoolSmall function")
+  if (is.null(qmed) & Gauged == FALSE) stop("If Gauged = FALSE a qmed value needs to be specified")
+  if (UrbAdj == TRUE & is.null(URBEXT)) stop("If UrbAdj is true it suggests you are urban adjusting the gauged site of interest. In which case an URBEXT2000 is required.")
   RP <- c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000)
-  if(Dist != "GenLog" & Dist != "GEV" & Dist != "Gumbel" & Dist != "Kappa3") stop("Dist must be one of GenLog, GEV, Gumbel, or Kappa3.")
-  if(Dist == "GenLog") {GCFun <- GenLogGF}
-  if(Dist == "GEV") {GCFun <- GEVGF}
-  if(Dist == "Gumbel") {GCFun <- GumbelGF}
-  if(Dist == "kappa3") {GCFun <- Kappa3GF}
+  if (Dist != "GenLog" & Dist != "GEV" & Dist != "Gumbel" & Dist != "Kappa3") stop("Dist must be one of GenLog, GEV, Gumbel, or Kappa3.")
+  if (Dist == "GenLog") {
+    GCFun <- GenLogGF
+  }
+  if (Dist == "GEV") {
+    GCFun <- GEVGF
+  }
+  if (Dist == "Gumbel") {
+    GCFun <- GumbelGF
+  }
+  if (Dist == "kappa3") {
+    GCFun <- Kappa3GF
+  }
 
-  LowQuant <- (1-Conf)/2
-  HighQuant <- 1-(1-Conf)/2
+  LowQuant <- (1 - Conf) / 2
+  HighQuant <- 1 - (1 - Conf) / 2
 
-  if(Gauged == TRUE) {
+  if (Gauged == TRUE) {
     BootPool <- function(x) {
-      SampLRatios <- function(Ind){
-        AM <- GetAM(rownames(x)[Ind])[,2]
-        if(Parametric == FALSE) {
-          Boot <- sample(AM, size = length(AM), replace = TRUE)}
-        if(Parametric == TRUE){
-          Boot <-  SimData(n = length(AM), dist = Dist, GF = c(Lcv(AM), LSkew(AM), median(AM)))
+      SampLRatios <- function(Ind) {
+        AM <- GetAM(rownames(x)[Ind])[, 2]
+        if (Parametric == FALSE) {
+          Boot <- sample(AM, size = length(AM), replace = TRUE)
+        }
+        if (Parametric == TRUE) {
+          Boot <- SimData(n = length(AM), dist = Dist, GF = c(Lcv(AM), LSkew(AM), median(AM)))
         }
         LCV <- Lcv(Boot)
         LSKEW <- LSkew(Boot)
@@ -2641,42 +3390,53 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
         return(DF)
       }
       Boot1 <- SampLRatios(1)
-      if(Gauged == TRUE) {MED <- Boot1[,3]}
-      Boot1 <- Boot1[,-3]
-      for(i in 2:nrow(x)) {Boot1 <- rbind(Boot1, SampLRatios(i)[,1:2])}
+      if (Gauged == TRUE) {
+        MED <- Boot1[, 3]
+      }
+      Boot1 <- Boot1[, -3]
+      for (i in 2:nrow(x)) {
+        Boot1 <- rbind(Boot1, SampLRatios(i)[, 1:2])
+      }
       x2 <- x
-      x2[,16:17] <- Boot1
-      Res <- PoolEst(x2, gauged = Gauged, QMED = MED, dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][,2]
+      x2[, 16:17] <- Boot1
+      Res <- PoolEst(x2, gauged = Gauged, QMED = MED, dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][, 2]
       return(Res)
     }
     BootResults <- data.frame(BootPool(x), BootPool(x))
-    for(i in 3:150) {BootResults <- cbind(BootResults, BootPool(x))}
+    for (i in 3:150) {
+      BootResults <- cbind(BootResults, BootPool(x))
+    }
     Lower <- apply(BootResults, 1, quantile, LowQuant)
     Upper <- apply(BootResults, 1, quantile, HighQuant)
-    Central <- PoolEst(x, gauged = Gauged, QMED = GetQMED(rownames(x)[1]),dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][,2]
-    if(IncAMest == FALSE) {Result <- signif(data.frame(RP, Central, Lower, Upper), 3)}
-    if(IncAMest == TRUE) {
-      AM <- GetAM(rownames(x)[1])[,2]
-      RPs <- c(2,5, 10, 20, 50, 75, 100, 200, 500, 1000)
+    Central <- PoolEst(x, gauged = Gauged, QMED = GetQMED(rownames(x)[1]), dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][, 2]
+    if (IncAMest == FALSE) {
+      Result <- signif(data.frame(RP, Central, Lower, Upper), 3)
+    }
+    if (IncAMest == TRUE) {
+      AM <- GetAM(rownames(x)[1])[, 2]
+      RPs <- c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000)
       MedAM <- median(AM)
       CentralAM <- NULL
-      for(i in 1:length(RP)) {CentralAM[i] <- GCFun(Lcv(AM), LSkew(AM), RP = RPs[i])*MedAM}
+      for (i in 1:length(RP)) {
+        CentralAM[i] <- GCFun(Lcv(AM), LSkew(AM), RP = RPs[i]) * MedAM
+      }
       ResultUnc <- data.frame(CentralAM, Lower, Upper)
       Lower <- as.numeric(apply(ResultUnc, 1, min))
       Upper <- as.numeric(apply(ResultUnc, 1, max))
       Result <- signif(data.frame(RP, Central, Lower, Upper), 3)
     }
   }
-  if(Gauged == FALSE) {
+  if (Gauged == FALSE) {
     Weights <- WeightsUnLcv(x)
     NSamp <- round(Weights$Weight * 500)
-    Central <- PoolEst(x, gauged = Gauged, QMED = qmed,dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT,fseQMED = fseQMED)[[1]][,2]
-    BootFunc <- function(Ind){
-      AM <- GetAM(rownames(x)[Ind])[,2]
-      if(Parametric == FALSE) {
-        Boot <- sample(AM, size = length(AM)*NSamp[Ind], replace = TRUE)}
-      if(Parametric == TRUE){
-        Boot <-  SimData(n = length(AM)*NSamp[Ind], dist = Dist, GF = c(Lcv(AM), LSkew(AM), median(AM)))
+    Central <- PoolEst(x, gauged = Gauged, QMED = qmed, dist = Dist, UrbAdj = UrbAdj, URBEXT = URBEXT, fseQMED = fseQMED)[[1]][, 2]
+    BootFunc <- function(Ind) {
+      AM <- GetAM(rownames(x)[Ind])[, 2]
+      if (Parametric == FALSE) {
+        Boot <- sample(AM, size = length(AM) * NSamp[Ind], replace = TRUE)
+      }
+      if (Parametric == TRUE) {
+        Boot <- SimData(n = length(AM) * NSamp[Ind], dist = Dist, GF = c(Lcv(AM), LSkew(AM), median(AM)))
       }
       MatBoot <- matrix(Boot, nrow = length(AM), ncol = NSamp[Ind])
       LCVs <- apply(MatBoot, 2, Lcv)
@@ -2684,26 +3444,35 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
       DF <- data.frame(LCVs, LSKEWs)
       return(DF)
     }
-    RPs <- c(2,5, 10, 20, 50, 75, 100, 200, 500, 1000)
+    RPs <- c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000)
     BootPoolug <- BootFunc(1)
-    for(i in 2:nrow(x)) {BootPoolug <- rbind(BootPoolug, BootFunc(i))}
-    BootResults <- data.frame(GCFun(BootPoolug[1,1], BootPoolug[1,2], RP = RPs) * exp(rnorm(1,log(qmed), log(fseQMED))),
-                              GCFun(BootPoolug[2,1], BootPoolug[2,2], RP = RPs) * exp(rnorm(1,log(qmed), log(fseQMED))))
-    for(i in 3:nrow(BootPoolug)) {BootResults <- cbind(BootResults, GCFun(BootPoolug[i,1], BootPoolug[i,2], RP = RPs) * exp(rnorm(1,log(qmed), log(fseQMED))))}
+    for (i in 2:nrow(x)) {
+      BootPoolug <- rbind(BootPoolug, BootFunc(i))
+    }
+    BootResults <- data.frame(
+      GCFun(BootPoolug[1, 1], BootPoolug[1, 2], RP = RPs) * exp(rnorm(1, log(qmed), log(fseQMED))),
+      GCFun(BootPoolug[2, 1], BootPoolug[2, 2], RP = RPs) * exp(rnorm(1, log(qmed), log(fseQMED)))
+    )
+    for (i in 3:nrow(BootPoolug)) {
+      BootResults <- cbind(BootResults, GCFun(BootPoolug[i, 1], BootPoolug[i, 2], RP = RPs) * exp(rnorm(1, log(qmed), log(fseQMED))))
+    }
     Lower <- apply(BootResults, 1, quantile, LowQuant)
     Upper <- apply(BootResults, 1, quantile, HighQuant)
     Result <- signif(data.frame(RP, Central, Lower, Upper), 3)
   }
-  if(Plot == TRUE) {
-    Vec <- c(Result[,2], Result[,3], Result[,4])
-    ResPlot <- Result[-6,]
-    LogRP <- log(ResPlot[,1])
-    plot(LogRP, ResPlot[,2], type = "l", main = "Return Level plot", ylab = "Discharge (m3/s)", xlab = "Return Period (log scale)", ylim = c(min(Vec), max(Vec)), xaxt = "n", lwd = 2)
-    axis(side = 1, at = LogRP, labels = ResPlot[,1])
-    points(LogRP, ResPlot[,4], type = "l", lty = 1)
-    points(LogRP, ResPlot[,3], type = "l", lty = 1)
-    abline(v = LogRP, lty = 3, col = rgb(0,0,0,0.5))
-    legend("topleft", lty = 1, lwd = c(1,2), legend = c("Margin of error", "Central Estimate"), bty = "n")
+  if (Plot == TRUE) {
+    Vec <- c(Result[, 2], Result[, 3], Result[, 4])
+    ResPlot <- Result[-6, ]
+    LogRP <- log(ResPlot[, 1])
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+    par(mar = c(5.1, 4.5, 4.1, 2.1))
+    plot(LogRP, ResPlot[, 2], type = "l", main = "Return Level plot", ylab = expression("Discharge (m"^3 * "/s)"), xlab = "Return Period (log scale)", ylim = c(min(Vec), max(Vec)), xaxt = "n", lwd = 2)
+    axis(side = 1, at = LogRP, labels = ResPlot[, 1])
+    points(LogRP, ResPlot[, 4], type = "l", lty = 2)
+    points(LogRP, ResPlot[, 3], type = "l", lty = 2)
+    abline(v = LogRP, lty = 3, col = rgb(0, 0, 0, 0.5))
+    legend("topleft", lty = c(2, 1), lwd = c(1, 2), legend = c("Margin of error", "Central Estimate"), bty = "n")
   }
   return(Result)
 }
@@ -2713,48 +3482,52 @@ Uncertainty <- function(x, Gauged = FALSE, qmed = NULL, Dist = "GenLog", Conf = 
 #'
 #' Resampling with replacement to approximate the sampling distribution of a statistic and quantify uncertainty.
 #'
-#'The bootstrapping procedure resamples from a sample length(x) * n times with replacement. After splitting into n samples of size length(x), the statistic of interest is calculated on each.
+#' The bootstrapping procedure resamples from a sample length(x) * n times with replacement. After splitting into n samples of size length(x), the statistic of interest is calculated on each.
 #' @param x a numeric vector. The sample of interest
 #' @param Stat the function (to calculate the statistic) to be applied to the bootstrapped samples. For example mean, max, or median.
-#' @param n the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.
+#' @param n the number of bootstrapped samples (default 500). i.e. the size of the derived sampling distribution.
 #' @param Conf the confidence level of the intervals (default 0.95). Must be between 0 and 1.
 #' @param ReturnSD Logical argument with a default of FALSE. If true the bootstrapped sampling distribution is returned.
 #' @param ... further arguments for the Stat function. For example if you use the GEVAM function you might want to add RP = 50 to derive a sampling distribution for the 50-year quantile.
 #' @examples
-#' #Extract an AMAX sample and quantify uncertainty for the Gumbel estimated 50-year flow.
-#' AM.203018 <- GetAM(203018)
-#' Bootstrap(AM.203018$Flow, Stat = GumbelAM, RP = 50)
-#' #Quantify uncertainty for the sample standard deviation at the 90 percent confidence level
-#' Bootstrap(AM.203018$Flow, Stat = sd, Conf = 0.90)
-#' #Return the sampling distribution of the mean and plot an associated histogram
-#' SampDist <- Bootstrap(AM.203018$Flow, Stat = mean, ReturnSD = TRUE)
-#' hist(SampDist)
+#' # Extract an AMAX sample and quantify uncertainty for the Gumbel estimated 50-year flow
+#' am_203018 <- GetAM(203018)
+#' Bootstrap(am_203018$Flow, Stat = GumbelAM, RP = 50)
+#'
+#' # Quantify uncertainty for the sample standard deviation at the 90% confidence level
+#' Bootstrap(am_203018$Flow, Stat = sd, Conf = 0.90)
+#'
+#' # Return the sampling distribution of the mean and plot an associated histogram
+#' samp_dist <- Bootstrap(am_203018$Flow, Stat = mean, ReturnSD = TRUE)
+#' hist(samp_dist)
+#'
 #' @return If ReturnSD is FALSE a data.frame is returned with one row and three columns; central, lower, and upper. If ReturnSD is TRUE, the sampling distribution is returned.
 #' @author Anthony Hammond
-Bootstrap <- function (x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
-{
+Bootstrap <- function(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...) {
   if (is.numeric(x) == FALSE) {
     stop("x must be a numeric vector")
   }
-  if(any(is.na(x))) {
+  if (any(is.na(x))) {
     warning("x contains at least one NA. NA/s have been removed")
-    x<-x[!is.na(x)]
+    x <- x[!is.na(x)]
   }
   resample <- sample(x, size = length(x) * n, replace = TRUE)
   mat <- matrix(resample, nrow = length(x), ncol = n)
-    res <- suppressWarnings(try(apply(mat, 2, Stat, ...), silent = TRUE))
+  res <- suppressWarnings(try(apply(mat, 2, Stat, ...), silent = TRUE))
   NAindex <- which(is.na(res) == TRUE)
   LengthNA <- length(NAindex)
-  if(LengthNA == n) stop("the result of the function for all N bootsrapped samples was NA")
-  if(LengthNA > 0) warning("One or more results of the function for the bootstrapped samples was NA. These were removed")
-    res <- res[!is.nan(res)]
-    lint <- (1 - Conf)/2
-  uint <- 1-(1-Conf)/2
+  if (LengthNA == n) stop("the result of the function for all N bootsrapped samples was NA")
+  if (LengthNA > 0) warning("One or more results of the function for the bootstrapped samples was NA. These were removed")
+  res <- res[!is.nan(res)]
+  lint <- (1 - Conf) / 2
+  uint <- 1 - (1 - Conf) / 2
   Lower <- as.numeric(quantile(res, lint))
   Upper <- as.numeric(quantile(res, uint))
   Centre <- Stat(x, ...)
   Result <- signif(data.frame(Centre, Lower, Upper), 3)
-  if(ReturnSD == TRUE) {Result <- res}
+  if (ReturnSD == TRUE) {
+    Result <- res
+  }
   return(Result)
 }
 
@@ -2768,54 +3541,71 @@ Bootstrap <- function (x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
 #' Calculates the goodness of fit score for pooling groups.
 #'
 #' @details
-#'  The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 – mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
+#' The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 - mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
 #'
-#'  NOTE: This is slightly different from the zdist function described in the science report 'Improving the FEH statistical procedures for flood frequency estimation, Environment Agency (2008)'. That function assumes a theoretical LKurtosis as a function of the pooled LSKEW to compare with a distribution of LKurtosis from simulated pooling groups. This means that the Gumbel distribution cannot be compared (hence the change).
+#'  NOTE: This is slightly different from the zdist function described in the science report 'Improving the FEH statistical procedures for flood frequency estimation, Environment Agency (2008)'. That function assumes a theoretical LKurtosis as a function of the pooled LSKEW to compare with a distribution of LKurtosis from simulated pooling groups. This means that the Gumbel distribution cannot be compared (hence the change which is a recommendation in 'Regional Frequency Analysis' by Hosking & Wallis (1997)), i.e. the Gumbel distribution is now included whereas it previously could not be.
 #' @param x pooling group derived from the Pool() function
 #' @examples
-#' #Get CDs, form a pooling group and calculate the Zdist
-#' CDs.203018 <- GetCDs(203018)
-#' Pool.203018 <- Pool(CDs.203018)
-#' Zdists(Pool.203018)
+#' # Get CDs, form a pooling group, and calculate the Z-dists
+#' cds_203018 <- GetCDs(203018)
+#' pool_203018 <- Pool(cds_203018)
+#' Zdists(pool_203018)
+#'
 #' @return A list with the first element a data.frame of four Z-Scores related to the columns; "GEV", "GenLog", "Gumbel", and "Kappa3". The second element is a character stating which has the best fit.
 #' @author Anthony Hammond
 
 Zdists <- function(x) {
-  LSKEW <- sum((x$LSkew) * x$N/sum(x$N))
-  LCV <- sum((x$Lcv) * x$N/sum(x$N))
-  LKURT <- sum((x$LKurt) * x$N/sum(x$N))
+  LSKEW <- sum((x$LSkew) * x$N / sum(x$N))
+  LCV <- sum((x$Lcv) * x$N / sum(x$N))
+  LKURT <- sum((x$LKurt) * x$N / sum(x$N))
 
-  SimPool <- function(x, Dist = "GEV"){
+  SimPool <- function(x, Dist = "GEV") {
     AM <- list()
-    for(i in 1:nrow(x)) {
-      if(Dist == "GEV") {
-        AM[[i]] <-  SimData(n = x$N[i], dist = "GEV", GF = c(LCV, LSKEW, 1))}
-      if(Dist == "GenLog") {
-        AM[[i]] <-  SimData(n = x$N[i], dist = "GenLog", GF = c(LCV, LSKEW, 1))}
-      if(Dist == "Gumbel") {
-        AM[[i]] <-  SimData(n = x$N[i], dist = "Gumbel", GF = c(LCV, 1))}
-      if(Dist == "Kappa3") {
-        AM[[i]] <-  SimData(n = x$N[i], dist = "Kappa3", GF = c(LCV, LSKEW, 1))}
+    for (i in 1:nrow(x)) {
+      if (Dist == "GEV") {
+        AM[[i]] <- SimData(n = x$N[i], dist = "GEV", GF = c(LCV, LSKEW, 1))
+      }
+      if (Dist == "GenLog") {
+        AM[[i]] <- SimData(n = x$N[i], dist = "GenLog", GF = c(LCV, LSKEW, 1))
+      }
+      if (Dist == "Gumbel") {
+        AM[[i]] <- SimData(n = x$N[i], dist = "Gumbel", GF = c(LCV, 1))
+      }
+      if (Dist == "Kappa3") {
+        AM[[i]] <- SimData(n = x$N[i], dist = "Kappa3", GF = c(LCV, LSKEW, 1))
+      }
     }
     LSKEWs <- NULL
-    for(i in 1:length(AM)) {LSKEWs[i] <- LSkew(AM[[i]])}
+    for (i in 1:length(AM)) {
+      LSKEWs[i] <- LSkew(AM[[i]])
+    }
     LKURTs <- NULL
-    for(i in 1:length(AM)) {LKURTs[i] <- LKurt(AM[[i]])}
-    #LSKEWsMu <- sum(LSKEWs * (x$N / sum(x$N)))
-    LKURTsMu <- sum(LKURTs * (x$N /sum(x$N)))
+    for (i in 1:length(AM)) {
+      LKURTs[i] <- LKurt(AM[[i]])
+    }
+    # LSKEWsMu <- sum(LSKEWs * (x$N / sum(x$N)))
+    LKURTsMu <- sum(LKURTs * (x$N / sum(x$N)))
     T_res <- LKURTsMu
     return(T_res)
   }
   GEVSims <- NULL
-  for(i in 1:500) {GEVSims[i] <- SimPool(x, Dist = "GEV")}
+  for (i in 1:500) {
+    GEVSims[i] <- SimPool(x, Dist = "GEV")
+  }
   GLOSims <- NULL
-  for(i in 1:500) {GLOSims[i] <- SimPool(x, Dist = "GenLog")}
+  for (i in 1:500) {
+    GLOSims[i] <- SimPool(x, Dist = "GenLog")
+  }
   GumSims <- NULL
-  for(i in 1:500) {GumSims[i] <- SimPool(x, Dist = "Gumbel")}
+  for (i in 1:500) {
+    GumSims[i] <- SimPool(x, Dist = "Gumbel")
+  }
   KapSims <- NULL
-  for(i in 1:500) {KapSims[i] <- SimPool(x, Dist = "Kappa3")}
-  GenLog <- (LKURT - mean(GEVSims)) / sd(GEVSims)
-  GEV <- (LKURT - mean(GLOSims)) / sd(GLOSims)
+  for (i in 1:500) {
+    KapSims[i] <- SimPool(x, Dist = "Kappa3")
+  }
+  GEV <- (LKURT - mean(GEVSims)) / sd(GEVSims)
+  GenLog <- (LKURT - mean(GLOSims)) / sd(GLOSims)
   Gumbel <- (LKURT - mean(GumSims)) / sd(GumSims)
   Kappa3 <- (LKURT - mean(KapSims)) / sd(KapSims)
   zResults <- data.frame(GEV, GenLog, Gumbel, Kappa3)
@@ -2833,133 +3623,136 @@ Zdists <- function(x) {
 #'
 #' Quantifies the heterogeneity of a pooled group
 #'
-#' The H2 measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: an approach based on LMoments (1997). It was also adopted for use by the Flood Estimation Handbook (1999) and is described in volume 3.
+#' The H2 measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: An Approach Based on L-Moments' (1997). It was also adopted for use by the Flood Estimation Handbook (1999) and is described in volume 3. It works by recreating 500 pooling groups with the same sample sizes, assuming a four parameter Kappa distribution (parameters from the pooled L-moments). L-moment ratios are calculated for each of the 500 simulated pooling groups. The heterogeneity is determined by comparing the variance of L-moment ratios in the observed pooling group with the variance of the L-moment ratios across the simulated pooling groups. The simulations are homogeneous, therefore if the observed pooling group is homogeneous the expectation is that the variance will be similar to the average of the simulated variance.
 #' @param x pooling group derived from the Pool() function
 #' @param H1 logical with a default of FALSE. If TRUE, the function applies the 'H1' version of the test (see Hosking & Wallis 1997 reference). If FALSE, the default H2 version is applied.
 #' @examples
-#' #Get CDs, form a pooling group and calculate H2
-#' CDs.203018 <- GetCDs(203018)
-#' Pool.203018 <- Pool(CDs.203018)
-#' H2(Pool.203018)
+#' # Get CDs, form a pooling group, and calculate H2
+#' cds_203018 <- GetCDs(203018)
+#' pool_203018 <- Pool(cds_203018)
+#' H2(pool_203018)
+#'
 #' @return A vector of two characters; the first representing the H2 score and the second stating a qualitative measure of heterogeneity.
 #' @author Anthony Hammond
 
-H2 <- function(x, H1 = FALSE){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  #if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Pool.Kap.pars <- function(x)
-  {
+H2 <- function(x, H1 = FALSE) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  # if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  Pool.Kap.pars <- function(x) {
     l1 <- 1
-    l2 <- mean(x$Lcv)
-    lskew <- mean(x$LSkew)
-    lkurt <- mean(x$LKurt)
-    pars <- c(l1,l2,lskew, lkurt)
+    l2 <- sum(x$Lcv * x$N) / sum(x$N)
+    lskew <- sum(x$LSkew * x$N) / sum(x$N)
+    lkurt <- sum(x$LKurt * x$N) / sum(x$N)
+    pars <- c(l1, l2, lskew, lkurt)
     return(pars)
   }
 
-  v2 <- function(x)
-  {
-    t2r <- mean(x$Lcv)
-    t3r <- mean(x$LSkew)
-    ni <- ((x$Lcv-t2r)^2 + (x$LSkew-t3r)^2)
-    nni <- sum(x$N*ni)
+  v2 <- function(x) {
+    t2r <- sum(x$Lcv * x$N) / sum(x$N)
+    t3r <- sum(x$LSkew * x$N) / sum(x$N)
+    ni <- ((x$Lcv - t2r)^2 + (x$LSkew - t3r)^2)
+    nni <- sum(x$N * ni)
     mn <- sum(x$N)
-    v2 <- (nni/mn)^0.5
+    v2 <- (nni / mn)^0.5
     return(v2)
   }
 
-  v1 <- function(x)
-  {
-    t2r <- mean(x$Lcv)
-    #t3r <- mean(x$LSkew)
-    ni <- sum(x$N  * (x$Lcv-t2r)^2)
-    #nni <- sum(x$N*ni)
+  v1 <- function(x) {
+    t2r <- sum(x$Lcv * x$N) / sum(x$N)
+    # t3r <- mean(x$LSkew)
+    ni <- sum(x$N * (x$Lcv - t2r)^2)
+    # nni <- sum(x$N*ni)
     mn <- sum(x$N)
-    Result <- (ni/mn)^(1/2)
+    Result <- (ni / mn)^(1 / 2)
     return(Result)
   }
 
-  if(H1 == TRUE) {v2 <- v1}
+  if (H1 == TRUE) {
+    v2 <- v1
+  }
 
 
-  Kap.pars <- function(L1, L2, LSkew, LKurt)
-  {
-
-    Kap.opt <- function(LSkew,LKurt)
-    {
-      min.SSR <- function(par)
-      {
-
-        if (par[2]>0)
-        {
-          g1 <- (1*gamma(1+par[1])*gamma(1/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+1/par[2]))
-          g2 <- (2*gamma(1+par[1])*gamma(2/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+2/par[2]))
-          g3 <- (3*gamma(1+par[1])*gamma(3/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+3/par[2]))
-          g4 <- (4*gamma(1+par[1])*gamma(4/par[2]))/(par[2]^(1+par[1])*gamma(1+par[1]+4/par[2]))
+  Kap.pars <- function(L1, L2, LSkew, LKurt) {
+    Kap.opt <- function(LSkew, LKurt) {
+      min.SSR <- function(par) {
+        if (par[2] >= 0 && par[1] > -1) {
+          return(1e10)
         }
-        else
-        {
-          g1 <- (1*gamma(1+par[1])*gamma(-par[1]-1/par[2]))/((-par[2])^(1+par[1])*gamma(1-1/par[2]))
-          g2 <- (2*gamma(1+par[1])*gamma(-par[1]-2/par[2]))/((-par[2])^(1+par[1])*gamma(1-2/par[2]))
-          g3 <- (3*gamma(1+par[1])*gamma(-par[1]-3/par[2]))/((-par[2])^(1+par[1])*gamma(1-3/par[2]))
-          g4 <- (4*gamma(1+par[1])*gamma(-par[1]-4/par[2]))/((-par[2])^(1+par[1])*gamma(1-4/par[2]))
+
+        if (par[2] < 0 && (par[1] <= -1 || par[1] >= -1 / par[2])) {
+          return(1e10)
         }
-        t3.kap <- (-g1+3*g2-2*g3)/(g1-g2)
-        t4.kap <- (g1 - 6*g2 + 10*g3 -5*g4)/(g1-g2)
-        ss <- sum((t3.kap - LSkew)^2)+((t4.kap-LKurt)^2)
+
+        if (par[2] > 0) {
+          g1 <- (1 * gamma(1 + par[1]) * gamma(1 / par[2])) / (par[2]^(1 + par[1]) * gamma(1 + par[1] + 1 / par[2]))
+          g2 <- (2 * gamma(1 + par[1]) * gamma(2 / par[2])) / (par[2]^(1 + par[1]) * gamma(1 + par[1] + 2 / par[2]))
+          g3 <- (3 * gamma(1 + par[1]) * gamma(3 / par[2])) / (par[2]^(1 + par[1]) * gamma(1 + par[1] + 3 / par[2]))
+          g4 <- (4 * gamma(1 + par[1]) * gamma(4 / par[2])) / (par[2]^(1 + par[1]) * gamma(1 + par[1] + 4 / par[2]))
+        } else {
+          g1 <- (1 * gamma(1 + par[1]) * gamma(-par[1] - 1 / par[2])) / ((-par[2])^(1 + par[1]) * gamma(1 - 1 / par[2]))
+          g2 <- (2 * gamma(1 + par[1]) * gamma(-par[1] - 2 / par[2])) / ((-par[2])^(1 + par[1]) * gamma(1 - 2 / par[2]))
+          g3 <- (3 * gamma(1 + par[1]) * gamma(-par[1] - 3 / par[2])) / ((-par[2])^(1 + par[1]) * gamma(1 - 3 / par[2]))
+          g4 <- (4 * gamma(1 + par[1]) * gamma(-par[1] - 4 / par[2])) / ((-par[2])^(1 + par[1]) * gamma(1 - 4 / par[2]))
+        }
+        t3.kap <- (-g1 + 3 * g2 - 2 * g3) / (g1 - g2)
+        t4.kap <- (g1 - 6 * g2 + 10 * g3 - 5 * g4) / (g1 - g2)
+        ss <- ((t3.kap - LSkew)^2) + ((t4.kap - LKurt)^2)
       }
       Op <- suppressWarnings(optim(par = c(0.01, -0.4), fn = min.SSR))
       return(Op)
-
     }
 
     Kap.kh <- Kap.opt(LSkew, LKurt)$par
     K <- Kap.kh[1]
     H <- Kap.kh[2]
 
-    gr <- function(k, h)
-    {
-      if (h>0)
-      {
-        g1 <- (1*gamma(1+k)*gamma(1/h))/(h^(1+k)*gamma(1+k+1/h))
-        g2 <- (2*gamma(1+k)*gamma(2/h))/(h^(1+k)*gamma(1+k+2/h))
-        g3 <- (3*gamma(1+k)*gamma(3/h))/(h^(1+k)*gamma(1+k+3/h))
-
+    gr <- function(k, h) {
+      if (h > 0) {
+        g1 <- (1 * gamma(1 + k) * gamma(1 / h)) / (h^(1 + k) * gamma(1 + k + 1 / h))
+        g2 <- (2 * gamma(1 + k) * gamma(2 / h)) / (h^(1 + k) * gamma(1 + k + 2 / h))
+        g3 <- (3 * gamma(1 + k) * gamma(3 / h)) / (h^(1 + k) * gamma(1 + k + 3 / h))
+      } else {
+        g1 <- (1 * gamma(1 + k) * gamma(-k - 1 / h)) / ((-h)^(1 + k) * gamma(1 - 1 / h))
+        g2 <- (2 * gamma(1 + k) * gamma(-k - 2 / h)) / ((-h)^(1 + k) * gamma(1 - 2 / h))
+        g3 <- (3 * gamma(1 + k) * gamma(-k - 3 / h)) / ((-h)^(1 + k) * gamma(1 - 3 / h))
       }
-      else
-      {
-        g1 <- (1*gamma(1+k)*gamma(-k-1/h))/((-h)^(1+k)*gamma(1-1/h))
-        g2 <- (2*gamma(1+k)*gamma(-k-2/h))/((-h)^(1+k)*gamma(1-2/h))
-        g3 <- (3*gamma(1+k)*gamma(-k-3/h))/((-h)^(1+k)*gamma(1-3/h))
-      }
-      vec <- c(g1,g2)
+      vec <- c(g1, g2)
       return(vec)
     }
-    g12 <- gr(k = K,h = H)
+    g12 <- gr(k = K, h = H)
     G1 <- g12[1]
     G2 <- g12[2]
 
-    a <- L2/((G1-G2)/K)
-    loc <- L1 - a*(1-G1)/K
+    a <- L2 / ((G1 - G2) / K)
+    loc <- L1 - a * (1 - G1) / K
     pars <- c(loc, a, K, H)
     return(pars)
   }
 
 
-  Qt.kap <- function(loc, scale, k, h, T = 100) {loc + (scale/k)*((1-((1-(1-(1/T))^h)/h)^k))}
+  Qt.kap <- function(loc, scale, k, h, T = 100) {
+    loc + (scale / k) * ((1 - ((1 - (1 - (1 / T))^h) / h)^k))
+  }
   V.2 <- v2(x)
   Ls <- Pool.Kap.pars(x)
-  Pars <- Kap.pars(Ls[1],Ls[2], Ls[3], Ls[4])
+  Pars <- Kap.pars(Ls[1], Ls[2], Ls[3], Ls[4])
 
-  V2.Sim <- function(x)
-  {
+  V2.Sim <- function(x) {
     Ns <- x$N
     AMList <- list()
-    for(i in 1:nrow(x)) {AMList[[i]] <- Qt.kap(Pars[1],Pars[2],Pars[3],Pars[4], T = 1/runif(x$N[i]))}
+    for (i in 1:nrow(x)) {
+      AMList[[i]] <- Qt.kap(Pars[1], Pars[2], Pars[3], Pars[4], T = 1 / runif(x$N[i]))
+    }
     LCV.sim <- NULL
-    for(i in 1:length(AMList)) {LCV.sim[i] <- Lcv(AMList[[i]])}
+    for (i in 1:length(AMList)) {
+      LCV.sim[i] <- Lcv(AMList[[i]])
+    }
     LSKEW.sim <- NULL
-    for(i in 1:length(AMList)) {LSKEW.sim[i] <- LSkew(AMList[[i]])}
+    for (i in 1:length(AMList)) {
+      LSKEW.sim[i] <- LSkew(AMList[[i]])
+    }
     LR.Group <- data.frame(LCV.sim, LSKEW.sim, Ns)
     colnames(LR.Group) <- c("Lcv", "LSkew", "N")
     v2.sim <- v2(LR.Group)
@@ -2967,12 +3760,20 @@ H2 <- function(x, H1 = FALSE){
   }
 
   V2.500 <- numeric(500)
-  for (i in 1:500) {V2.500[i] <- V2.Sim(x)}
-  H2 <- (V.2-mean(V2.500))/sd(V2.500)
+  for (i in 1:500) {
+    V2.500[i] <- V2.Sim(x)
+  }
+  H2 <- (V.2 - mean(V2.500)) / sd(V2.500)
   H.list <- as.list(H2)
-  if (H.list < 2) {res <- "Group is homogenous"}
-  if (H.list > 2 & H.list < 4) {res <- "Group is heterogenous: a review of the group is desirable"}
-  if (H.list > 4) {res <- "Group is strongly heterogenous: a review of the group is essential"}
+  if (H.list < 2) {
+    res <- "Group is homogenous"
+  }
+  if (H.list > 2 & H.list < 4) {
+    res <- "Group is heterogenous: a review of the group is desirable"
+  }
+  if (H.list > 4) {
+    res <- "Group is strongly heterogenous: a review of the group is essential"
+  }
   H.list <- as.numeric(format(H.list, digits = 3))
   return(c(H.list, res))
 }
@@ -2993,84 +3794,163 @@ H2 <- function(x, H1 = FALSE){
 #' @param LineName a character string. User chosen label for the plotted curve
 #' @param Unc logical argument with a default of TRUE. If TRUE, 95 percent uncertainty intervals are plotted.
 #' @examples
-#' #Get an AMAX sample and plot the growth curve with the GEV distribution
-#' AM.203018 <- GetAM(203018)
-#' EVPlot(AM.203018$Flow, dist = "GEV")
+#' # Get an AMAX sample and plot the growth curve with the GEV distribution
+#' am_203018 <- GetAM(203018)
+#' EVPlot(am_203018$Flow, dist = "GEV")
+#'
 #' @return An extreme value plot (frequency or growth curve) with intervals to quantify uncertainty
 #' @author Anthony Hammond
 
 EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plot", ylabel = NULL, LineName = NULL, Unc = TRUE) {
-  if(is(x, "numeric") == FALSE) stop ("x must be a numeric vector")
-  if(dist == "GenLog") {func <- GenLogGF}
-  if(dist == "GEV") {func <- GEVGF}
-  if(dist == "GenPareto") {func <- GenParetoGF}
-  if(dist == "Kappa3") {func <- Kappa3GF}
-  if(dist == "Gumbel") {func <- GumbelGF}
+  if (is(x, "numeric") == FALSE) stop("x must be a numeric vector")
+  n_na <- sum(is.na(x))
+  n_inf <- sum(is.infinite(x))
+  n_total <- length(x)
+
+  if (n_na + n_inf > 0) {
+    message(
+      n_na, " NA value", ifelse(n_na != 1, "s", ""),
+      " and ", n_inf, " infinite value", ifelse(n_inf != 1, "s", ""),
+      " were removed from the input vector 'x'."
+    )
+  }
+
+  x <- x[is.finite(x)]
+
+  if (length(x) == 0) stop("x must contain at least one finite, non-NA value")
+  if (dist == "GenLog") {
+    func <- GenLogGF
+  }
+  if (dist == "GEV") {
+    func <- GEVGF
+  }
+  if (dist == "GenPareto") {
+    func <- GenParetoGF
+  }
+  if (dist == "Kappa3") {
+    func <- Kappa3GF
+  }
+  if (dist == "Gumbel") {
+    func <- GumbelGF
+  }
   Ranks <- seq(500, 1)
-  Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
+  Gringorten <- function(Rank, n) {
+    (Rank - 0.44) / (n + 0.12)
+  }
   Gring <- Gringorten(Ranks, 500)
-  Log.Red.Var <- log((1/Gring)-1)
-  RPs <- 1/Gring
+  Log.Red.Var <- log((1 / Gring) - 1)
+  RPs <- 1 / Gring
   Ranks.obs <- seq(length(x), 1)
   Gring.obs <- Gringorten(Ranks.obs, length(x))
-  LRV.obs <- log((1/Gring.obs)-1)
-  Scale <- x/median(x)
-  if(scaled == TRUE) {AM.sort <- sort(Scale, decreasing = F)} else {AM.sort <- sort(x, decreasing = F)}
+  LRV.obs <- log((1 / Gring.obs) - 1)
+  Scale <- x / median(x)
+  if (scaled == TRUE) {
+    AM.sort <- sort(Scale, decreasing = F)
+  } else {
+    AM.sort <- sort(x, decreasing = F)
+  }
   ss.lcv <- Lcv(x)
   ss.lskew <- LSkew(x)
-  if(scaled == TRUE) {
-    if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)} else {
-      SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)}} else {
-        if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)*median(x)} else
-        {SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)*median(x)}}
-  if(is.null(ylabel) == TRUE) {
-    if(scaled == TRUE) {YLab <- "Q/QMED"} else {YLab <- "Discharge (m3/s)"}} else {YLab = ylabel}
-  Ymax <- median(c(max(AM.sort), max(SimSS)))
-  UpperYRange <- (Ymax-median(AM.sort))
-  UpperObsRange <- (max(AM.sort)-median(AM.sort))
-  LowerYRange <- median(AM.sort)-min(AM.sort)
-  ymin <- median(AM.sort)-(UpperObsRange)
-  if(Ymax < max(AM.sort)) {Ymax <- max(AM.sort)} else {Ymax <- Ymax}
-  if(LowerYRange > 0.143*UpperYRange) {ymin <- min(AM.sort)} else {ymin <- ymin}
-
-  plot(Log.Red.Var, SimSS, type = "l", xlim = c(min(LRV.obs),7), ylim = c(ymin, Ymax), main = Title, ylab = YLab, xlab = "logistic reduced variate", lwd = 2)
-  points(LRV.obs, AM.sort, col = "blue", lwd = 1.5)
-  if(Unc == FALSE) {
-    if(is.null(LineName) == TRUE) {
-      if(scaled == FALSE) {legend("topleft", legend = c("Frequency curve", "Observed"), col = c("black", "blue"), lty = c(1,0), pch = c(NA, 1), bty = "n", lwd = c(2,NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)} else {legend("topleft", legend = c("Growth curve", "Observed"), col = c("black", "blue"), lty = c(1,0), pch = c(NA, 1), bty = "n", lwd = c(2,NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
-    } else {legend("topleft", legend = c(LineName, "Observed"), col = c("black", "blue"), lty = c(1,0), pch = c(NA, 1), bty = "n", lwd = c(2,NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
+  if (scaled == TRUE) {
+    if (dist == "Gumbel") {
+      SimSS <- func(ss.lcv, RP = 1 / Gring)
+    } else {
+      SimSS <- func(ss.lcv, ss.lskew, RP = 1 / Gring)
+    }
   } else {
-    if(is.null(LineName) == TRUE) {
-      if(scaled == FALSE) {legend("topleft", legend = c("Frequency curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)} else {legend("topleft", legend = c("Growth curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
-    } else {legend("topleft", legend = c(LineName, "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
+    if (dist == "Gumbel") {
+      SimSS <- func(ss.lcv, RP = 1 / Gring) * median(x)
+    } else {
+      SimSS <- func(ss.lcv, ss.lskew, RP = 1 / Gring) * median(x)
+    }
   }
-  T.Plot.Lab <- c(2,5,10,20,50,100, 500)
-  At <- log(T.Plot.Lab-1)
+  if (is.null(ylabel) == TRUE) {
+    if (scaled == TRUE) {
+      YLab <- "Q/QMED"
+    } else {
+      YLab <- "Discharge (m3/s)"
+    }
+  } else {
+    YLab <- ylabel
+  }
+  Ymax <- median(c(max(AM.sort), max(SimSS)))
+  UpperYRange <- (Ymax - median(AM.sort))
+  UpperObsRange <- (max(AM.sort) - median(AM.sort))
+  LowerYRange <- median(AM.sort) - min(AM.sort)
+  ymin <- median(AM.sort) - (UpperObsRange)
+  if (Ymax < max(AM.sort)) {
+    Ymax <- max(AM.sort)
+  } else {
+    Ymax <- Ymax
+  }
+  if (LowerYRange > 0.143 * UpperYRange) {
+    ymin <- min(AM.sort)
+  } else {
+    ymin <- ymin
+  }
+
+  plot(Log.Red.Var, SimSS, type = "l", xlim = c(min(LRV.obs), 7), ylim = c(ymin, Ymax), main = Title, ylab = YLab, xlab = "logistic reduced variate", lwd = 2)
+  points(LRV.obs, AM.sort, col = "blue", lwd = 1.5)
+  if (Unc == FALSE) {
+    if (is.null(LineName) == TRUE) {
+      if (scaled == FALSE) {
+        legend("topleft", legend = c("Frequency curve", "Observed"), col = c("black", "blue"), lty = c(1, 0), pch = c(NA, 1), bty = "n", lwd = c(2, NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+      } else {
+        legend("topleft", legend = c("Growth curve", "Observed"), col = c("black", "blue"), lty = c(1, 0), pch = c(NA, 1), bty = "n", lwd = c(2, NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+      }
+    } else {
+      legend("topleft", legend = c(LineName, "Observed"), col = c("black", "blue"), lty = c(1, 0), pch = c(NA, 1), bty = "n", lwd = c(2, NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+    }
+  } else {
+    if (is.null(LineName) == TRUE) {
+      if (scaled == FALSE) {
+        legend("topleft", legend = c("Frequency curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1, 0, 3), pch = c(NA, 1, NA), bty = "n", lwd = c(2, NA, 2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+      } else {
+        legend("topleft", legend = c("Growth curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1, 0, 3), pch = c(NA, 1, NA), bty = "n", lwd = c(2, NA, 2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+      }
+    } else {
+      legend("topleft", legend = c(LineName, "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1, 0, 3), pch = c(NA, 1, NA), bty = "n", lwd = c(2, NA, 2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
+    }
+  }
+  T.Plot.Lab <- c(2, 5, 10, 20, 50, 100, 500)
+  At <- log(T.Plot.Lab - 1)
   AxisPos <- median(c(ymin, median(SimSS)))
   axis(side = 1, at = At, pos = AxisPos, lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
-  TextY <- as.numeric(quantile(seq(ymin, median(SimSS), by = abs(ymin/10)), 0.86))
+  TextY <- as.numeric(quantile(seq(ymin, median(SimSS), by = abs(ymin / 10)), 0.86))
   text(2, TextY, labels = "Return Period (yrs)", cex = 0.75, pos = 4)
   abline(v = 0, lty = 3)
-  if(scaled == TRUE) {abline(h = 1, lty = 3)} else {abline(h = median(x), lty = 3)}
-  if(Unc == TRUE){
-    resample <- sample(x, size = length(x)*500, replace = TRUE)
+  if (scaled == TRUE) {
+    abline(h = 1, lty = 3)
+  } else {
+    abline(h = median(x), lty = 3)
+  }
+  if (Unc == TRUE) {
+    resample <- sample(x, size = length(x) * 500, replace = TRUE)
     mat <- matrix(resample, nrow = length(x), ncol = 500)
     Medians <- apply(mat, 2, median)
-    LMomentsAll <- LMoments(mat[,1])
-    for(i in 2:500) {LMomentsAll <- rbind(LMomentsAll, LMoments(mat[,i]))}
-    if(dist == "Gumbel") {FCs <- func(LMomentsAll$Lcv[1], RP = RPs)*Medians[1]
-    for(i in 2:500) {FCs <- rbind(FCs, func(LMomentsAll$Lcv[i], RP = RPs)*Medians[i])} } else {
-      FCs <- func(LMomentsAll$Lcv[1], LMomentsAll$LSkew[1], RP = RPs)*Medians[1]
-      for(i in 2:500) {FCs <- rbind(FCs, func(LMomentsAll$Lcv[i], LMomentsAll$LSkew[i], RP = RPs)*Medians[i])}}
+    LMomentsAll <- LMoments(mat[, 1])
+    for (i in 2:500) {
+      LMomentsAll <- rbind(LMomentsAll, LMoments(mat[, i]))
+    }
+    if (dist == "Gumbel") {
+      FCs <- func(LMomentsAll$Lcv[1], RP = RPs) * Medians[1]
+      for (i in 2:500) {
+        FCs <- rbind(FCs, func(LMomentsAll$Lcv[i], RP = RPs) * Medians[i])
+      }
+    } else {
+      FCs <- func(LMomentsAll$Lcv[1], LMomentsAll$LSkew[1], RP = RPs) * Medians[1]
+      for (i in 2:500) {
+        FCs <- rbind(FCs, func(LMomentsAll$Lcv[i], LMomentsAll$LSkew[i], RP = RPs) * Medians[i])
+      }
+    }
     lower95 <- as.numeric(apply(FCs, 2, quantile, 0.025, na.rm = TRUE))
     upper95 <- as.numeric(apply(FCs, 2, quantile, 0.975, na.rm = TRUE))
-    if(scaled == TRUE) {
-      lower95 <- lower95/median(x)
-      upper95 <- upper95/median(x)
+    if (scaled == TRUE) {
+      lower95 <- lower95 / median(x)
+      upper95 <- upper95 / median(x)
     }
     points(Log.Red.Var, lower95, type = "l", lty = 3, lwd = 2)
     points(Log.Red.Var, upper95, type = "l", lty = 3, lwd = 2)
-
   }
 }
 
@@ -3082,67 +3962,106 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
 #' @param Pars a numeric vector of length two. The first is the Lcv (linear coefficient of variation) and the second is the Lskew (linear skewness).
 #' @param dist distribution name with a choice of "GenLog", "GEV", "GenPareto", "Kappa3", and "Gumbel"
 #' @param Name character string. User chosen name for points or line added (for the legend)
-#' @param MED The two year return level. Necessary In the case where the EV plot is not scaled
+#' @param MED The two year return level. Necessary in the case where the EV plot is not scaled
 #' @param xyleg a numeric vector of length two. They are the x and y position of the symbol and text to be added to the legend.
 #' @param col The colour of the points of line that have been added
 #' @param lty An integer. The type of line added
 #' @param pts A numeric vector. An annual maximum sample, for example. This is for points to be added
 #' @param ptSym An integer. The symbol of the points to be added
 #' @examples
-#' #Get an AMAX sample and plot the growth curve with the GEV distribution
-#' AM.203018 <- GetAM(203018)
-#' EVPlot(AM.203018$Flow, dist = "GEV")
-#' #Now add a line (dotted & red) for the generalised logistic distribution
-#' #first get the Lcv and Lskew using the LMoments function
-#' pars <- as.numeric(LMoments(AM.203018[,2])[c(5,6)])
-#' EVPlotAdd(Pars = pars, dist = "GenLog", Name = "GenLog", xyleg = c(-5.2,2.65), lty = 3)
-#' #Now add a line for the gumbel distribution which is darkgreen and dashed.
-#' EVPlotAdd(Pars = pars[1], dist = "Gumbel", Name = "Gumbel",
-#' xyleg = c(-5.19,2.5), lty = 3, col = "darkgreen")
-#' #now plot afresh and get another AMAX and add the points
-#' EVPlot(AM.203018$Flow, dist = "GEV")
-#' AM.27090 <- GetAM(27090)
-#' EVPlotAdd(xyleg = c(-4.9,2.65), pts = AM.27090[,2], Name = "27090")
+#' # Get an AMAX sample and plot the growth curve with the GEV distribution
+#' am_203018 <- GetAM(203018)
+#' EVPlot(am_203018$Flow, dist = "GEV")
+#'
+#' # Now add a line (dotted and red) for the generalised logistic distribution
+#' # First get the Lcv and Lskew using the L-moments function
+#' pars <- as.numeric(LMoments(am_203018[, 2])[c(5, 6)])
+#' EVPlotAdd(
+#'   Pars = pars, dist = "GenLog", Name = "GenLog",
+#'   xyleg = c(-5.2, 2.65), lty = 3
+#' )
+#'
+#' # Now add a line for the Gumbel distribution which is dark green and dashed
+#' EVPlotAdd(
+#'   Pars = pars[1], dist = "Gumbel", Name = "Gumbel",
+#'   xyleg = c(-5.19, 2.5), lty = 3, col = "darkgreen"
+#' )
+#'
+#' # Now plot afresh and get another AMAX and add the points
+#' EVPlot(am_203018$Flow, dist = "GEV")
+#' am_27090 <- GetAM(27090)
+#' EVPlotAdd(xyleg = c(-4.9, 2.65), pts = am_27090[, 2], Name = "27090")
+#'
 #' @return Additional, user specified line or points to an extreme value plot derived from the EVPlot function.
 #' @author Anthony Hammond
 
 EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyleg = NULL, col = "red", lty = 1, pts = NULL, ptSym = NULL) {
-  if(is.null(pts) == TRUE) {Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
-  Ranks <- seq(500, 1)
-  Gring <- Gringorten(Ranks, 500)
-  Log.Red.Var <- log((1/Gring)-1)
-  RPs <- 1/Gring
-  if(dist == "GenLog") {func <- GenLogGF}
-  if(dist == "GEV") {func <- GEVGF}
-  if(dist == "GenPareto") {func <- GenParetoGF}
-  if(dist == "Kappa3") {func <- Kappa3GF}
-  if(dist == "Gumbel") {func <- GumbelGF}
-  if(is.null(MED) == TRUE) {
-    if(dist == "Gumbel") {
-      points(Log.Red.Var, func(Pars[1], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)
+  if (is.null(pts) == TRUE) {
+    Gringorten <- function(Rank, n) {
+      (Rank - 0.44) / (n + 0.12)
+    }
+    Ranks <- seq(500, 1)
+    Gring <- Gringorten(Ranks, 500)
+    Log.Red.Var <- log((1 / Gring) - 1)
+    RPs <- 1 / Gring
+    if (dist == "GenLog") {
+      func <- GenLogGF
+    }
+    if (dist == "GEV") {
+      func <- GEVGF
+    }
+    if (dist == "GenPareto") {
+      func <- GenParetoGF
+    }
+    if (dist == "Kappa3") {
+      func <- Kappa3GF
+    }
+    if (dist == "Gumbel") {
+      func <- GumbelGF
+    }
+    if (is.null(MED) == TRUE) {
+      if (dist == "Gumbel") {
+        points(Log.Red.Var, func(Pars[1], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)
+      } else {
+        points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)
+      }
+    }
+    if (is.null(MED) == FALSE) {
+      if (dist == "Gumbel") {
+        points(Log.Red.Var, func(Pars[1], RP = RPs) * MED, type = "l", col = col, lwd = 2, lty = lty)
+      } else {
+        points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs) * MED, type = "l", col = col, lwd = 2, lty = lty)
+      }
+    }
+    if (is.null(xyleg) == TRUE) {
+      print("Warning: as the xyleg argument was not used, the line has not been added to the legend")
     } else {
-      points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs), type = "l", col = col, lwd = 2, lty = lty)}}
-  if(is.null(MED) == FALSE) {
-    if(dist == "Gumbel") {
-      points(Log.Red.Var, func(Pars[1], RP = RPs)*MED, type = "l", col = col, lwd = 2, lty = lty)
-    } else {
-      points(Log.Red.Var, func(Pars[1], Pars[2], RP = RPs)*MED, type = "l", col = col, lwd = 2, lty = lty)}
-  }
-  if(is.null(xyleg) == TRUE) {print("Warning: as the xyleg argument was not used, the line has not been added to the legend")} else {
-    legend(x = xyleg[1], y = xyleg[2], legend = Name, lty = lty, lwd = 2, col = col, bty = "n", seg.len = 2, cex = 0.8, x.intersp = 0.8)}
+      legend(x = xyleg[1], y = xyleg[2], legend = Name, lty = lty, lwd = 2, col = col, bty = "n", seg.len = 2, cex = 0.8, x.intersp = 0.8)
+    }
   } else {
-    if(is.null(MED) == TRUE) {pts <- pts/median(pts)} else {pts <- pts}
-    Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
+    if (is.null(MED) == TRUE) {
+      pts <- pts / median(pts)
+    } else {
+      pts <- pts
+    }
+    Gringorten <- function(Rank, n) {
+      (Rank - 0.44) / (n + 0.12)
+    }
     Ranks.obs <- seq(length(pts), 1)
     Gring.obs <- Gringorten(Ranks.obs, length(pts))
-    LRV.obs <- log((1/Gring.obs)-1)
-    if(is.null(ptSym) == TRUE) {
+    LRV.obs <- log((1 / Gring.obs) - 1)
+    if (is.null(ptSym) == TRUE) {
       ptSym <- 3
       points(sort(LRV.obs), sort(pts), col = col, pch = ptSym, lwd = 1.5)
     } else {
-      points(sort(LRV.obs), sort(pts), col = col, pch = ptSym, lwd = 1.5) }
-    if(is.null(xyleg) == TRUE) {print("Warning: as the xyleg argument was not used, the point has not been added to the legend")} else {
-      legend(x = xyleg[1], y = xyleg[2], legend = Name, pch = ptSym, pt.lwd = 1.5, col = col, bty = "n", seg.len = 2, cex = 0.8, x.intersp = 1.9)} }
+      points(sort(LRV.obs), sort(pts), col = col, pch = ptSym, lwd = 1.5)
+    }
+    if (is.null(xyleg) == TRUE) {
+      print("Warning: as the xyleg argument was not used, the point has not been added to the legend")
+    } else {
+      legend(x = xyleg[1], y = xyleg[2], legend = Name, pch = ptSym, pt.lwd = 1.5, col = col, bty = "n", seg.len = 2, cex = 0.8, x.intersp = 1.9)
+    }
+  }
 }
 
 #' Extreme value plot for pooling groups
@@ -3154,173 +4073,290 @@ EVPlotAdd <- function(Pars, dist = "GenLog", Name = "Adjusted", MED = NULL, xyle
 #' @param dist a choice of distribution. Choices are "GEV", "GenLog", "Kappa3", or "Gumbel". The default is "GenLog"
 #' @param QMED a chosen QMED to convert the curve from a growth curve to the frequency curve
 #' @param Title a character string. The user chosen plot title. The default is "Pooled growth curve"
-#' @param UrbAdj a logical argument with a default of FALSE. If TRUE and urban adjustment is applied to the pooled growth curve
+#' @param UrbAdj a logical argument with a default of FALSE. If TRUE an urban adjustment is applied to the pooled growth curve
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML. Only necessary if UrbAdj is TRUE
 #' @examples
-#' #Get some CDs, form an ungauged pooling group and apply EVPlot.
-#' CDs.28015 <- GetCDs(28015)
-#' Pool.28015 <- Pool(CDs.28015, exclude = 28015)
-#' EVPool(Pool.28015)
-#' #Do the same for the gauged case, change the title, and convert with a QMED of 105.5.
-#' PoolG.28015 <- Pool(CDs.28015)
-#' EVPool(PoolG.28015, gauged = TRUE, Title = "Gauged frequency curve - Site 28015", QMED = 9.8)
-#' #Pretend we have an extra AMAX for the gauge. Amend the pooling group Lcv and LSkew
-#' #for the site accordingly then apply EVPool with the updated AMAX.
-#' #Firstly, get the AMAX sample
-#' AM.28015 <- GetAM(28015)
-#' #Add an extra AMAX flow of 15m3/s
-#' Append28015 <- append(AM.28015$Flow, 15)
-#' #Amend the Lcv and Lskew in the pooling group
-#' PoolG.28015[1, c(16, 17)] <- c(Lcv(Append28015), LSkew(Append28015))
-#' #Now plot gauged with the updated AMAX
-#' EVPool(PoolG.28015, AMAX = Append28015, gauged = TRUE)
+#' # Get some CDs, form an ungauged pooling group and apply EVPool
+#' cds_28015 <- GetCDs(28015)
+#' pool_28015 <- Pool(cds_28015, exclude = 28015)
+#' EVPool(pool_28015)
+#'
+#' # Do the same for the gauged case, change the title, and convert with a QMED of 9.8
+#' pool_g_28015 <- Pool(cds_28015)
+#' EVPool(pool_g_28015, gauged = TRUE, Title = "Gauged frequency curve - Site 28015", QMED = 9.8)
+#'
+#' # Pretend we have an extra AMAX for the gauge. Amend the pooling group Lcv and LSkew
+#' # for the site accordingly, then apply EVPool with the updated AMAX
+#' # Firstly, get the AMAX sample
+#' am_28015 <- GetAM(28015)
+#'
+#' # Add an extra AMAX flow of 15 m^3/s
+#' append_28015 <- append(am_28015$Flow, 15)
+#'
+#' # Amend the Lcv and Lskew in the pooling group
+#' pool_g_28015[1, c(16, 17)] <- c(Lcv(append_28015), LSkew(append_28015))
+#'
+#' # Now plot gauged with the updated AMAX
+#' EVPool(pool_g_28015, AMAX = append_28015, gauged = TRUE)
+#'
 #' @return An extreme value plot for gauged or ungauged pooling groups
 #' @author Anthony Hammond
 
-EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL, Title = "Pooled growth curve", UrbAdj = FALSE, CDs){
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  if(dist == "GenLog") {func <- GenLogGF}
-  if(dist == "GEV") {func <- GEVGF}
-  if(dist == "Kappa3") {func <- Kappa3GF}
-  if(dist == "Gumbel") {func <- GumbelGF}
-  if(is.null(QMED) == TRUE) {
+EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL, Title = "Pooled growth curve", UrbAdj = FALSE, CDs) {
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  if (dist == "GenLog") {
+    func <- GenLogGF
+  }
+  if (dist == "GEV") {
+    func <- GEVGF
+  }
+  if (dist == "Kappa3") {
+    func <- Kappa3GF
+  }
+  if (dist == "Gumbel") {
+    func <- GumbelGF
+  }
+  if (is.null(QMED) == TRUE) {
     Ranks <- seq(500, 1)
-    Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
+    Gringorten <- function(Rank, n) {
+      (Rank - 0.44) / (n + 0.12)
+    }
     Gring <- Gringorten(Ranks, 500)
-    Log.Red.Var <- log((1/Gring)-1)
+    Log.Red.Var <- log((1 / Gring) - 1)
     GN <- nrow(x)
     n <- c(1:GN)
-    if(dist == "Gumbel") {
+    if (dist == "Gumbel") {
       LoV <- list()
-      for (i in n){
-        LoV[[i]]<- func(x$Lcv[i], 1/Gring)}} else {
-          LoV <- list()
-          for (i in n){
-            LoV[[i]]<- func(x$Lcv[i], x$LSkew[i], 1/Gring)}
-        }
+      for (i in n) {
+        LoV[[i]] <- func(x$Lcv[i], 1 / Gring)
+      }
+    } else {
+      LoV <- list()
+      for (i in n) {
+        LoV[[i]] <- func(x$Lcv[i], x$LSkew[i], 1 / Gring)
+      }
+    }
     LoV <- data.frame(LoV)
-    if(UrbAdj == TRUE) {URBEXT2000 <- CDs[18,2]}
-    if(gauged == TRUE) {L.cv <- WGaugLcv(x)} else {L.cv = WungLcv(x)}
-    if(gauged == TRUE) {L.Skew <- WGaugLSkew(x)} else {L.Skew <- WungLSkew(x)}
-    if(UrbAdj == TRUE) {L.cv <- L.cv*0.68654^(1.567*URBEXT2000)} else {L.cv <- L.cv}
-    if(UrbAdj == TRUE) {L.Skew <- ((L.Skew+1)*1.096017^(1.567*URBEXT2000))-1} else {L.Skew <- L.Skew}
-    if(dist == "Gumbel") {Sim <- func(L.cv, RP = 1/Gring)} else {
-      Sim <- func(L.cv, L.Skew, RP = 1/Gring)}
-    if(gauged == FALSE){
-      if(max(LoV) > 12) {ymax <- 12} else {ymax <- max(LoV)}
-      matplot(x = Log.Red.Var, LoV, type = "l", col = "black", lty = 1, xlim = c(-2,7), main = Title, ylab = "Q/QMED", xlab = "logistic reduced variate", ylim = c(-0.7, ymax))
-      lines(x = Log.Red.Var, y = Sim, col = "red", lwd = 2)
-      legend("topleft", legend = c("Pooled curve", "Single sites"), lty = 1, col = c("red", "black"), lwd = 2, bty = "n", seg.len = 1, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
-      T.Plot.Lab <- c(2,5,10,20,50,100, 500)
-      At <- log(T.Plot.Lab-1)
+    if (UrbAdj == TRUE) {
+      URBEXT2000 <- CDs[18, 2]
+    }
+    if (gauged == TRUE) {
+      L.cv <- WGaugLcv(x)
+    } else {
+      L.cv <- WungLcv(x)
+    }
+    if (gauged == TRUE) {
+      L.Skew <- WGaugLSkew(x)
+    } else {
+      L.Skew <- WungLSkew(x)
+    }
+    if (UrbAdj == TRUE) {
+      L.cv <- L.cv * 0.68654^(1.567 * URBEXT2000)
+    } else {
+      L.cv <- L.cv
+    }
+    if (UrbAdj == TRUE) {
+      L.Skew <- ((L.Skew + 1) * 1.096017^(1.567 * URBEXT2000)) - 1
+    } else {
+      L.Skew <- L.Skew
+    }
+    if (dist == "Gumbel") {
+      Sim <- func(L.cv, RP = 1 / Gring)
+    } else {
+      Sim <- func(L.cv, L.Skew, RP = 1 / Gring)
+    }
+    if (gauged == FALSE) {
+      if (max(LoV) > 12) {
+        ymax <- 12
+      } else {
+        ymax <- max(LoV)
+      }
+      matplot(x = Log.Red.Var, LoV, type = "l", col = "black", lty = 1, xlim = c(-2, 7), main = Title, ylab = "Q/QMED", xlab = "Logistic reduced variate", ylim = c(-0.7, ymax))
+      lines(x = Log.Red.Var, y = Sim, col = "red", lwd = 2, lty = 2)
+      legend("topleft", legend = c("Pooled curve", "Single sites"), lty = c(2, 1), col = c("red", "black"), lwd = 2, bty = "n", seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 1)
+      T.Plot.Lab <- c(2, 5, 10, 20, 50, 100, 500)
+      At <- log(T.Plot.Lab - 1)
       axis(side = 1, at = At, pos = 0, lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
-      text(2, 0.3, labels = "Return Period (yrs)", cex = 0.75, pos = 4)
+      text(2, 0.3, labels = "Return Period (yrs)", cex = 1, pos = 4)
       abline(v = 0, lty = 3)
       abline(h = 1, lty = 3)
-
     } else {
-      if(is.null(AMAX) == TRUE) {AM <- GetAM(row.names(x[1,]))} else {AM <- AMAX}
-      if(is.null(AMAX) == TRUE) {AM <- AM[,2]} else {AM <- AM}
+      if (is.null(AMAX) == TRUE) {
+        AM <- GetAM(row.names(x[1, ]))
+      } else {
+        AM <- AMAX
+      }
+      if (is.null(AMAX) == TRUE) {
+        AM <- AM[, 2]
+      } else {
+        AM <- AM
+      }
       Ranks.obs <- seq(length(AM), 1)
       Gring.obs <- Gringorten(Ranks.obs, length(AM))
-      LRV.obs <- log((1/Gring.obs)-1)
-      Scale <- AM/median(AM)
+      LRV.obs <- log((1 / Gring.obs) - 1)
+      Scale <- AM / median(AM)
       AM.sort <- sort(Scale, decreasing = F)
       ss.lcv <- Lcv(AM)
       ss.lskew <- LSkew(AM)
-      if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)} else {
-        SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)}
+      if (dist == "Gumbel") {
+        SimSS <- func(ss.lcv, RP = 1 / Gring)
+      } else {
+        SimSS <- func(ss.lcv, ss.lskew, RP = 1 / Gring)
+      }
       Ymax <- median(c(max(AM.sort), max(Sim)))
-      ymin <- median(AM.sort)-(Ymax*0.5)
-      if(Ymax < max(AM.sort)) {Ymax <- max(AM.sort)} else {Ymax <- Ymax}
-      if(ymin <= min(AM.sort)) {ymin <- ymin} else {ymin <- min(AM.sort)}
-      plot(Log.Red.Var, Sim, type = "l", xlim = c(-5.5,7), ylim = c(ymin, Ymax), main = Title, ylab = "Q/QMED", xlab = "logistic reduced variate", lwd = 2)
+      ymin <- median(AM.sort) - (Ymax * 0.5)
+      if (Ymax < max(AM.sort)) {
+        Ymax <- max(AM.sort)
+      } else {
+        Ymax <- Ymax
+      }
+      if (ymin <= min(AM.sort)) {
+        ymin <- ymin
+      } else {
+        ymin <- min(AM.sort)
+      }
+      plot(Log.Red.Var, Sim, type = "l", xlim = c(-5.5, 7), ylim = c(ymin, Ymax), main = Title, ylab = "Q/QMED", xlab = "Logistic reduced variate", lwd = 2)
       points(LRV.obs, AM.sort, col = "blue", lwd = 1.5)
-      points(Log.Red.Var, SimSS, type = "l", lty = 2, col = rgb(0,0.6,0.3), lwd = 2)
-      legend("topleft", legend = c("Pooled", "Single site", "Observed"),
-             col = c("black", rgb(0,0.6,0.3), "blue"),
-             lty = c(1,2, 0), pch = c(NA, NA, 1), bty = "n", lwd = c(2,2,NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
-      T.Plot.Lab <- c(2,5,10,20,50,100, 500)
-      At <- log(T.Plot.Lab-1)
+      points(Log.Red.Var, SimSS, type = "l", lty = 2, col = "forestgreen", lwd = 2)
+      legend("topleft",
+        legend = c("Pooled", "Single site", "Observed"),
+        col = c("black", "forestgreen", "blue"),
+        lty = c(1, 2, 0), pch = c(NA, NA, 1), bty = "n", lwd = c(2, 2, NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 1
+      )
+      T.Plot.Lab <- c(2, 5, 10, 20, 50, 100, 500)
+      At <- log(T.Plot.Lab - 1)
       AxisPos <- median(c(ymin, median(AM.sort)))
       axis(side = 1, at = At, pos = AxisPos, lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
-      TextY <- as.numeric(quantile(seq(ymin, median(AM.sort), by = abs(ymin/10)), 0.7))
-      text(2, TextY, labels = "Return Period (yrs)", cex = 0.75, pos = 4)
+      TextY <- as.numeric(quantile(seq(ymin, median(AM.sort), by = abs(ymin / 10)), 0.7))
+      text(2, TextY, labels = "Return Period (yrs)", cex = 1, pos = 4)
       abline(v = 0, lty = 3)
       abline(h = 1, lty = 3)
     }
   } else {
     Ranks <- seq(500, 1)
-    Gringorten <- function(Rank, n) {(Rank-0.44)/(n+0.12)}
+    Gringorten <- function(Rank, n) {
+      (Rank - 0.44) / (n + 0.12)
+    }
     Gring <- Gringorten(Ranks, 500)
-    Log.Red.Var <- log((1/Gring)-1)
+    Log.Red.Var <- log((1 / Gring) - 1)
     GN <- nrow(x)
     n <- c(1:GN)
-    if(dist == "Gumbel") {
+    if (dist == "Gumbel") {
       LoV <- list()
-      for (i in n){
-        LoV[[i]]<- func(x$Lcv[i], 1/Gring)*QMED}} else {
-          LoV <- list()
-          for (i in n){
-            LoV[[i]]<- func(x$Lcv[i], x$LSkew[i], 1/Gring)*QMED} }
+      for (i in n) {
+        LoV[[i]] <- func(x$Lcv[i], 1 / Gring) * QMED
+      }
+    } else {
+      LoV <- list()
+      for (i in n) {
+        LoV[[i]] <- func(x$Lcv[i], x$LSkew[i], 1 / Gring) * QMED
+      }
+    }
     LoV <- data.frame(LoV)
-    if(UrbAdj == TRUE) {URBEXT2000 <- CDs[18,2]}
-    if(gauged == TRUE) {L.cv <- WGaugLcv(x)} else {L.cv = WungLcv(x)}
-    if(gauged == TRUE) {L.Skew <- WGaugLSkew(x)} else {L.Skew <- WungLSkew(x)}
-    if(UrbAdj == TRUE) {L.cv <- L.cv*0.68654^(1.567*URBEXT2000)} else {L.cv <- L.cv}
-    if(UrbAdj == TRUE) {L.Skew <- ((L.Skew+1)*1.096017^(1.567*URBEXT2000))-1} else {L.Skew <- L.Skew}
-    if(dist == "Gumbel") {Sim <- func(L.cv, RP = 1/Gring)*QMED} else {
-      Sim <- func(L.cv, L.Skew, RP = 1/Gring)*QMED}
-    if(gauged == FALSE){
-      if(max(LoV)/QMED > 12) {ymax <- 12*QMED} else {ymax <- max(LoV)}
-      matplot(x = Log.Red.Var, LoV, type = "l", col = "black", lty = 1, xlim = c(-2,7), main = Title, ylab = "Discharge (m3/s)", xlab = "logistic reduced variate", ylim = c((QMED-(QMED*1.5)), ymax))
-      lines(x = Log.Red.Var, y = Sim, col = "red", lwd = 2)
-      legend("topleft", legend = c("Pooled curve", "Single sites"), lty = 1, col = c("red", "black"), lwd = 2, bty = "n", seg.len = 1, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
-      T.Plot.Lab <- c(2,5,10,20,50,100, 500)
-      At <- log(T.Plot.Lab-1)
-      axis(side = 1, at = At, pos = (QMED-(QMED*0.8)), lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
-      text(2, (QMED-(QMED*0.5)), labels = "Return Period (yrs)", cex = 0.75, pos = 4)
+    if (UrbAdj == TRUE) {
+      URBEXT2000 <- CDs[18, 2]
+    }
+    if (gauged == TRUE) {
+      L.cv <- WGaugLcv(x)
+    } else {
+      L.cv <- WungLcv(x)
+    }
+    if (gauged == TRUE) {
+      L.Skew <- WGaugLSkew(x)
+    } else {
+      L.Skew <- WungLSkew(x)
+    }
+    if (UrbAdj == TRUE) {
+      L.cv <- L.cv * 0.68654^(1.567 * URBEXT2000)
+    } else {
+      L.cv <- L.cv
+    }
+    if (UrbAdj == TRUE) {
+      L.Skew <- ((L.Skew + 1) * 1.096017^(1.567 * URBEXT2000)) - 1
+    } else {
+      L.Skew <- L.Skew
+    }
+    if (dist == "Gumbel") {
+      Sim <- func(L.cv, RP = 1 / Gring) * QMED
+    } else {
+      Sim <- func(L.cv, L.Skew, RP = 1 / Gring) * QMED
+    }
+    if (gauged == FALSE) {
+      if (max(LoV) / QMED > 12) {
+        ymax <- 12 * QMED
+      } else {
+        ymax <- max(LoV)
+      }
+      matplot(x = Log.Red.Var, LoV, type = "l", col = "black", lty = 1, xlim = c(-2, 7), main = Title, ylab = "Discharge (m3/s)", xlab = "Logistic reduced variate", ylim = c((QMED - (QMED * 1.5)), ymax))
+      lines(x = Log.Red.Var, y = Sim, col = "red", lwd = 2, lty = 2)
+      legend("topleft", legend = c("Pooled curve", "Single sites"), lty = c(2, 1), col = c("red", "black"), lwd = 2, bty = "n", seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 1)
+      T.Plot.Lab <- c(2, 5, 10, 20, 50, 100, 500)
+      At <- log(T.Plot.Lab - 1)
+      axis(side = 1, at = At, pos = (QMED - (QMED * 0.8)), lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
+      text(2, (QMED - (QMED * 0.5)), labels = "Return Period (yrs)", cex = 1, pos = 4)
       abline(v = 0, lty = 3)
       abline(h = QMED, lty = 3)
     } else {
-      if(is.null(AMAX) == TRUE) {AM <- GetAM(row.names(x[1,]))} else {AM <- AMAX}
-      if(is.null(AMAX) == TRUE) {AM <- AM[,2]} else {AM <- AM}
+      if (is.null(AMAX) == TRUE) {
+        AM <- GetAM(row.names(x[1, ]))
+      } else {
+        AM <- AMAX
+      }
+      if (is.null(AMAX) == TRUE) {
+        AM <- AM[, 2]
+      } else {
+        AM <- AM
+      }
       Ranks.obs <- seq(length(AM), 1)
       Gring.obs <- Gringorten(Ranks.obs, length(AM))
-      LRV.obs <- log((1/Gring.obs)-1)
+      LRV.obs <- log((1 / Gring.obs) - 1)
       AM.sort <- sort(AM, decreasing = F)
       ss.lcv <- Lcv(AM)
       ss.lskew <- LSkew(AM)
-      if(dist == "Gumbel") {SimSS <- func(ss.lcv, RP = 1/Gring)*QMED} else {
-        SimSS <- func(ss.lcv, ss.lskew, RP = 1/Gring)*QMED}
+      if (dist == "Gumbel") {
+        SimSS <- func(ss.lcv, RP = 1 / Gring) * QMED
+      } else {
+        SimSS <- func(ss.lcv, ss.lskew, RP = 1 / Gring) * QMED
+      }
       Ymax <- median(c(max(AM.sort), max(Sim)))
-      ymin <- median(AM.sort)-(Ymax*0.5)
-      if(Ymax < max(AM.sort)) {Ymax <- max(AM.sort)} else {Ymax <- Ymax}
-      if(ymin <= min(AM.sort)) {ymin <- ymin} else {ymin <- min(AM.sort)}
-      plot(Log.Red.Var, Sim, type = "l", xlim = c(-5.5,7),ylim = c(ymin, Ymax) , main = Title, ylab = "Discharge (m3/s)", xlab = "logistic reduced variate", lwd = 2)
+      ymin <- median(AM.sort) - (Ymax * 0.5)
+      if (Ymax < max(AM.sort)) {
+        Ymax <- max(AM.sort)
+      } else {
+        Ymax <- Ymax
+      }
+      if (ymin <= min(AM.sort)) {
+        ymin <- ymin
+      } else {
+        ymin <- min(AM.sort)
+      }
+      plot(Log.Red.Var, Sim, type = "l", xlim = c(-5.5, 7), ylim = c(ymin, Ymax), main = Title, ylab = "Discharge (m3/s)", xlab = "Logistic reduced variate", lwd = 2)
       points(LRV.obs, AM.sort, col = "blue", lwd = 1.5)
-      points(Log.Red.Var, SimSS, type = "l", lty = 2, col = rgb(0,0.6,0.3), lwd = 2)
-      legend("topleft", legend = c("Pooled", "Single site", "Observed"),
-             col = c("black", rgb(0,0.6,0.3), "blue"),
-             lty = c(1,2, 0), pch = c(NA, NA, 1), bty = "n", lwd = c(2,2,NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)
-      T.Plot.Lab <- c(2,5,10,20,50,100, 500)
-      At <- log(T.Plot.Lab-1)
+      points(Log.Red.Var, SimSS, type = "l", lty = 2, col = "forestgreen", lwd = 2)
+      legend("topleft",
+        legend = c("Pooled", "Single site", "Observed"),
+        col = c("black", "forestgreen", "blue"),
+        lty = c(1, 2, 0), pch = c(NA, NA, 1), bty = "n", lwd = c(2, 2, NA), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 1
+      )
+      T.Plot.Lab <- c(2, 5, 10, 20, 50, 100, 500)
+      At <- log(T.Plot.Lab - 1)
       AxisPos <- median(c(ymin, median(AM.sort)))
       axis(side = 1, at = At, pos = AxisPos, lty = 1, tck = -0.02, labels = T.Plot.Lab, cex.axis = 0.7, padj = -1.5)
-      TextY <- as.numeric(quantile(seq(ymin, median(AM.sort), by = abs(ymin/10)), 0.7))
-      text(2, TextY, labels = "Return Period (yrs)", cex = 0.75, pos = 4)
+      TextY <- as.numeric(quantile(seq(ymin, median(AM.sort), by = abs(ymin / 10)), 0.7))
+      text(2, TextY, labels = "Return Period (yrs)", cex = 1, pos = 4)
       abline(v = 0, lty = 3)
-      abline(h = QMED, lty = 3)}
+      abline(h = QMED, lty = 3)
+    }
   }
 }
 
 #' Hydrological plot of concurrent discharge and precipitation
 #'
-#' Plots concurrent precipitation and discharge with precipitation along the top and discharge along the bottom
+#' Plots concurrent precipitation and discharge, with precipitation along the top and discharge along the bottom
 #' @details The input of x is a dataframe with the first column being time. If the data is sub daily this should be class POSIXct with time as well as date.
 #' @param x a data.frame with three columns in the order of date (or POSIXct), precipitation, and discharge
 #' @param main a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"
-#' @param ylab User choice for the y label of the plot. THe default is "Discharge (m3/s)".
+#' @param ylab User choice for the y label of the plot. The default is "Discharge (m3/s)".
 #' @param From a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x
 #' @param To an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x
 #' @param adj.y a numeric value to adjust the closeness of the preciptation and discharge in the plot. Default is 1.5. A lower value brings them closer and a larger value further apart
@@ -3328,37 +4364,65 @@ EVPool <- function(x, AMAX = NULL, gauged = FALSE, dist = "GenLog", QMED = NULL,
 #' @param qlw a numeric value to adjust the width of the discharge line. Default is 1.8. A larger value thickens them and vice versa
 #' @param Return a logical argument with a default of FALSE. If TRUE the data-frame of time, precipitation, and flow is returned
 #' @examples
-#' #Plot the Thames precipitation and discharge for the 2013 hydrological year,
-#' #adjusting the y axis to 1.8.
+#' # Plot the Thames precipitation and discharge for the 2013 hydrological year,
+#' # adjusting the y axis to 1.8
 #' HydroPlot(ThamesPQ, From = "2013-10-01", To = "2014-09-30", adj.y = 1.8)
-#' @return A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
+#'
+#' @return A plot of concurrent precipitation and discharge, with the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
 #' @author Anthony Hammond
 
-HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Discharge (m3/s)",From = NULL, To = NULL, adj.y = 1.5, plw = 1, qlw = 1.8, Return = FALSE){
-  if(is.data.frame(x) == FALSE) stop("x needs to be a dataframe with date of POSIXct in the first column, precipitation in the second and discharge in the third")
-  if(is.factor(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class factor")}
-  if(is.character(x[,1]) == "TRUE") {stop("The first column needs to be of class Date or POSIXct. It is currently of class character")}
+HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Discharge (m3/s)", From = NULL, To = NULL, adj.y = 1.5, plw = 1, qlw = 1.8, Return = FALSE) {
+  if (is.data.frame(x) == FALSE) stop("x needs to be a dataframe with date of POSIXct in the first column, precipitation in the second and discharge in the third")
+  if (is.factor(x[, 1]) == "TRUE") {
+    stop("The first column needs to be of class Date or POSIXct. It is currently of class factor")
+  }
+  if (is.character(x[, 1]) == "TRUE") {
+    stop("The first column needs to be of class Date or POSIXct. It is currently of class character")
+  }
   oldpar <- par(no.readonly = TRUE)
   on.exit(par(oldpar))
-  if(length(unique(x[,1])) < nrow(x)) {stop("The time column has duplicated values")}
+  if (length(unique(x[, 1])) < nrow(x)) {
+    stop("The time column has duplicated values")
+  }
   ind1 <- 1
-  ind2 <- length(x[,1])
-  suppressWarnings(if(is(x[1,1], "Date") == TRUE){
-    if(is.null(From)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.Date(From))}
-    if(is.null(To)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.Date(To))} } else
-    {
-      if(is.null(From)) {ind1 <- ind1} else {ind1 <- which(x[,1] == as.POSIXct(From))}
-      if(is.null(To)) {ind2 <- ind2} else {ind2 <- which(x[,1] == as.POSIXct(To))} })
-  if(length(ind1) < 1 | length(ind2) < 1) {stop("The chosen date or datetime is not within the first column of x")}
-  par(mar=c(5.1, 5, 4.1, 5))
-  with(x, plot(x[ind1:ind2,1],x[ind1:ind2,3],  type = "l", col = rgb(0, 0.6, 0.3), main = main, xlab = "Time", ylab = ylab, lwd = qlw, ylim = c(min(x[ind1:ind2,3],na.rm = TRUE), adj.y*max(x[ind1:ind2,3],na.rm = TRUE))))
+  ind2 <- length(x[, 1])
+  suppressWarnings(if (is(x[1, 1], "Date") == TRUE) {
+    if (is.null(From)) {
+      ind1 <- ind1
+    } else {
+      ind1 <- which(x[, 1] == as.Date(From))
+    }
+    if (is.null(To)) {
+      ind2 <- ind2
+    } else {
+      ind2 <- which(x[, 1] == as.Date(To))
+    }
+  } else {
+    if (is.null(From)) {
+      ind1 <- ind1
+    } else {
+      ind1 <- which(x[, 1] == as.POSIXct(From))
+    }
+    if (is.null(To)) {
+      ind2 <- ind2
+    } else {
+      ind2 <- which(x[, 1] == as.POSIXct(To))
+    }
+  })
+  if (length(ind1) < 1 | length(ind2) < 1) {
+    stop("The chosen date or datetime is not within the first column of x")
+  }
+  par(mar = c(5.1, 5, 4.1, 5))
+  with(x, plot(x[ind1:ind2, 1], x[ind1:ind2, 3], type = "l", col = rgb(0, 0.6, 0.3), main = main, xlab = "Time", ylab = ylab, lwd = qlw, ylim = c(min(x[ind1:ind2, 3], na.rm = TRUE), adj.y * max(x[ind1:ind2, 3], na.rm = TRUE))))
   par(new = T)
-  with(x, plot(x[ind1:ind2,c(1,2)],  type = "h", lwd = plw, axes = F, xlab = NA, ylab = NA, col = rgb(0,0.3,0.6), ylim = rev(c(0, adj.y*max(x[,2], na.rm = TRUE)))))
+  with(x, plot(x[ind1:ind2, c(1, 2)], type = "h", lwd = plw, axes = F, xlab = NA, ylab = NA, col = rgb(0, 0.3, 0.6), ylim = rev(c(0, adj.y * max(x[, 2], na.rm = TRUE)))))
   axis(side = 4)
   mtext(side = 4, line = 3, "Rainfall (mm)")
   par(mar = c(5.1, 4.1, 4.1, 2.1))
   DFRet <- x[ind1:ind2, ]
-  if(Return == TRUE) {return(DFRet)}
+  if (Return == TRUE) {
+    return(DFRet)
+  }
 }
 
 
@@ -3373,20 +4437,23 @@ HydroPlot <- function(x, main = "Concurrent Rainfall & Discharge", ylab = "Disch
 #' @param xlab Label for the x axis (character string).
 #' @param main Title for the plot (character string). The default is 'Annual maximum sample:', where : is followed by an ID number if this is included in a third column of the dataframe x.
 #' @examples
-#' #Get an AMAX sample and plot
+#' # Get an AMAX sample and plot
 #' AMplot(GetAM(58002))
+#'
 #' @return A barplot of the annual maximum sample
 #' @author Anthony Hammond
-AMplot <- function(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", main = NULL){
-  if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
-  #if(ncol(x) != 2) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
-  if(class(x[,1])[1] != class(as.POSIXct("1981-10-15"))[1] &class(x[,1])[1] != class(as.Date("1981-10-15"))[1]  ) stop("x must be a dataframe with two columns, Date or POSIXct in the first and numeric in the second.")
-  if(class(x[,2])[1] != class(runif(10))[1]) stop("x must be a dataframe with numeric in the second column.")
-  if(is.null(main)) {
-    SiteRef <- as.character(x[1,3])
+AMplot <- function(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", main = NULL) {
+  if (class(x) != class(data.frame(c(1, 2, 3)))) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
+  # if(ncol(x) != 2) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
+  if (class(x[, 1])[1] != class(as.POSIXct("1981-10-15"))[1] & class(x[, 1])[1] != class(as.Date("1981-10-15"))[1]) stop("x must be a dataframe with two columns, Date or POSIXct in the first and numeric in the second.")
+  if (class(x[, 2])[1] != class(runif(10))[1]) stop("x must be a dataframe with numeric in the second column.")
+  if (is.null(main)) {
+    SiteRef <- as.character(x[1, 3])
     main <- paste("Annual maximum sample", SiteRef, sep = ": ")
-    } else {main <- main}
-  plot(x[, 1:2], type = "h", col = rgb(0,0.3,0.6), lwd = 1.5, main = main, ylab = ylab, xlab = xlab)
+  } else {
+    main <- main
+  }
+  plot(x[, 1:2], type = "h", col = rgb(0, 0.3, 0.6), lwd = 1.5, main = main, ylab = ylab, xlab = xlab)
 }
 
 
@@ -3397,63 +4464,91 @@ AMplot <- function(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", mai
 #' @param x pooling group derived from the Pool() function
 #' @param gauged logical argument with a default of FALSE. TRUE adds the top site in the pooling group to the plots in a different colour
 #' @examples
-#' #Form a gauged pooling group and plot the diagnostics with gauged = TRUE
-#' Pool.28015 <- Pool(GetCDs(28015))
-#' DiagPlots(Pool.28015, gauged = TRUE)
-#' #Form an ugauged pooling group and plot the diagnostics
-#' Pool.28015 <- Pool(GetCDs(28015), exclude = 28015)
-#' DiagPlots(Pool.28015)
+#' # Form a gauged pooling group and plot the diagnostics
+#' pool_28015 <- Pool(GetCDs(28015))
+#' DiagPlots(pool_28015, gauged = TRUE)
+#'
+#' # Form an ungauged pooling group and plot the diagnostics
+#' pool_28015 <- Pool(GetCDs(28015), exclude = 28015)
+#' DiagPlots(pool_28015)
+#'
 #' @return ten diagnostic plots for pooling groups
 #' @author Anthony Hammond
-DiagPlots <- function(x, gauged = FALSE){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  if(gauged == TRUE) {AMAX <- GetAM(rownames(x)[1])}
-  if(gauged == TRUE) {CDs <- GetCDs(rownames(x)[1])}
+DiagPlots <- function(x, gauged = FALSE) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  if (gauged == TRUE) {
+    AMAX <- GetAM(rownames(x)[1])
+  }
+  if (gauged == TRUE) {
+    CDs <- GetCDs(rownames(x)[1])
+  }
   Min.A <- min(x$AREA)
   Max.A <- max(x$AREA)
-  hist(NRFAData$AREA[NRFAData$AREA > Min.A*0.5 & NRFAData$AREA < Max.A*1.1], col="grey", lty=0, main = "", xlab = "AREA")
+  hist(NRFAData$AREA[NRFAData$AREA > Min.A * 0.5 & NRFAData$AREA < Max.A * 1.1], col = "grey", lty = 0, main = "", xlab = "AREA")
   text(x = x$AREA, y = 0, labels = rep("x", length(x$AREA)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[1,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[1, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
-  hist(NRFAData$SAAR, col="grey", lty=0, main = "", xlab = "SAAR")
+  hist(NRFAData$SAAR, col = "grey", lty = 0, main = "", xlab = "SAAR")
   text(x = x$SAAR, y = 0, labels = rep("x", length(x$SAAR)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[15,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[15, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
-  hist(NRFAData$PROPWET, col="grey", lty=0, main = "", xlab = "PROPWET")
+  hist(NRFAData$PROPWET, col = "grey", lty = 0, main = "", xlab = "PROPWET")
   text(x = x$PROPWET, y = 0, labels = rep("x", length(x$PROPWET)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[11,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[11, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
-  hist(NRFAData$FARL, col="grey", lty=0, main = "", xlab = "FARL")
+  hist(NRFAData$FARL, col = "grey", lty = 0, main = "", xlab = "FARL")
   text(x = x$FARL, y = 0, labels = rep("x", length(x$FARL)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[8,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[8, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
-  hist(NRFAData$FPEXT, col="grey", lty=0, main = "", xlab = "FPEXT")
+  hist(NRFAData$FPEXT, col = "grey", lty = 0, main = "", xlab = "FPEXT")
   text(x = x$FPEXT, y = 0, labels = rep("x", length(x$FPEXT)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[9,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[9, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
-  hist(NRFAData$BFIHOST19, col="grey", lty=0, main = "", xlab = "BFIHOST19")
+  hist(NRFAData$BFIHOST19, col = "grey", lty = 0, main = "", xlab = "BFIHOST19")
   text(x = x$BFIHOST19, y = 0, labels = rep("x", length(x$BFIHOST19)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[5,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[5, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
   NRFARural <- subset(NRFAData, URBEXT2000 <= 0.03)
-  hist(NRFARural$URBEXT2000, col="grey", lty=0, main = "", xlab = "URBEXT2000", breaks = 50)
+  hist(NRFARural$URBEXT2000, col = "grey", lty = 0, main = "", xlab = "URBEXT2000", breaks = 50)
   text(x = x$URBEXT2000, y = 0, labels = rep("x", length(x$URBEXT2000)))
-  suppressWarnings(if(gauged == TRUE) {text(x = CDs[18,2], y = 0, labels = "x", col = "red", cex = 2)})
+  suppressWarnings(if (gauged == TRUE) {
+    text(x = CDs[18, 2], y = 0, labels = "x", col = "red", cex = 2)
+  })
 
   plot(NRFAData$LSkew, NRFAData$Lcv, main = "", xlab = "LSkew", ylab = "Lcv", pch = 19, cex = 0.4)
   points(x$LSkew, x$Lcv, pch = 21, cex = 1.15, bg = "blue")
-  if(gauged == TRUE) {points(LSkew(AMAX$Flow), Lcv(AMAX$Flow), pch = 19, col = "red")}
+  if (gauged == TRUE) {
+    points(LSkew(AMAX$Flow), Lcv(AMAX$Flow), pch = 19, col = "red")
+  }
 
   plot(NRFAData$LSkew, NRFAData$LKurt, main = "", xlab = "LSkew", ylab = "LKurtosis", pch = 19, cex = 0.4)
-  points(x$LSkew, x$LKurt, pch = 21, cex = 1.15,  bg = "blue")
-  if(gauged == TRUE) {points(LSkew(AMAX$Flow), LKurt(AMAX$Flow), pch = 19, col = "red")}
+  points(x$LSkew, x$LKurt, pch = 21, cex = 1.15, bg = "blue")
+  if (gauged == TRUE) {
+    points(LSkew(AMAX$Flow), LKurt(AMAX$Flow), pch = 19, col = "red")
+  }
 
-  plot(UKOutline$X_BNG/1000, UKOutline$Y_BNG/1000, pch = 19, cex = 0.25, xlab = "Easting (km)", ylab = "Northing (km)", xlim = c((25272/1000), (650000/1000)))
+  plot(UKOutline$X_BNG / 1000, UKOutline$Y_BNG / 1000, pch = 19, cex = 0.25, xlab = "Easting (km)", ylab = "Northing (km)", xlim = c((25272 / 1000), (650000 / 1000)))
   Rows <- row.names(x)
   QMED.Pool <- QMEDData[Rows, 21:22]
-  points(QMED.Pool/1000, pch = 19, col = "red")
-  if(gauged == TRUE) {points(CDs[19,2]/1000, CDs[20,2]/1000, pch = 19, col = "blue")}
+  points(QMED.Pool / 1000, pch = 19, col = "red")
+  if (gauged == TRUE) {
+    points(CDs[19, 2] / 1000, CDs[20, 2] / 1000, pch = 19, col = "blue")
+  }
 }
 
 
@@ -3468,28 +4563,37 @@ DiagPlots <- function(x, gauged = FALSE){
 #' Lmoments calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 #' @param x a numeric vector. The sample of interest
 #' @examples
-#' #Get an AMAX sample and calculate the Lmoments
-#' AM.27051 <- GetAM(27051)
-#' LMoments(AM.27051$Flow)
+#' # Get an AMAX sample and calculate the L-moments
+#' am_27051 <- GetAM(27051)
+#' LMoments(am_27051$Flow)
+#'
 #' @return A data.frame with one row and column headings; L1, L2, L3, L4, Lcv, LSkew, and LKurt. The first four are the Lmoments and the next three are the Lmoment ratios.
 #' @author Anthony Hammond
 
-LMoments <- function(x)
-{
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+LMoments <- function(x) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
+  n <- length(x)
   b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
   L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  L4 <- 20*b3-30*b2+12*b1-b0
-  Lcv <- L2/L1
-  LSkew <- L3/L2
-  LKurt <- L4/L2
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  L4 <- 20 * b3 - 30 * b2 + 12 * b1 - b0
+  Lcv <- L2 / L1
+  LSkew <- L3 / L2
+  LKurt <- L4 / L2
   Frame <- data.frame(L1, L2, L3, L4, Lcv, LSkew, LKurt)
   colnames(Frame) <- c("L1", "L2", "L3", "L4", "Lcv", "LSkew", "LKurt")
   return(Frame)
@@ -3503,25 +4607,31 @@ LMoments <- function(x)
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
-#' WungLcv(Pool.27051)
+#' # Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051, exclude = 27051)
+#' WungLcv(pool_27051)
+#'
 #' @return the ungauged weighted Lcv from a pooling group
 #' @author Anthony Hammond
 
-WungLcv <- function(x)
-{
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Ck.LCV <- function(n) {0.02609/(n-1)}
-  bj.Lcv <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-  Weight <- cbind(x$N,x$SDM , x$Lcv, bj.Lcv(x$SDM), Ck.LCV(x$N), (bj.Lcv(x$SDM) + Ck.LCV(x$N))^-1)
-  colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-  bc.vector <- Weight[,6]
+WungLcv <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  Ck.LCV <- function(n) {
+    0.02609 / (n - 1)
+  }
+  bj.Lcv <- function(SDM) {
+    0.0047 * sqrt(SDM) + (0.0023 / 2)
+  }
+  Weight <- cbind(x$N, x$SDM, x$Lcv, bj.Lcv(x$SDM), Ck.LCV(x$N), (bj.Lcv(x$SDM) + Ck.LCV(x$N))^-1)
+  colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+  bc.vector <- Weight[, 6]
   s.bc <- sum(bc.vector)
-  Wjs.LCV <- bc.vector/s.bc
-  Sum.prod <- sum(Wjs.LCV*Weight[,3])
+  Wjs.LCV <- bc.vector / s.bc
+  Sum.prod <- sum(Wjs.LCV * Weight[, 3])
   return(Sum.prod)
 }
 
@@ -3532,25 +4642,31 @@ WungLcv <- function(x)
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
-#' WungLSkew(Pool.27051)
+#' # Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051, exclude = 27051)
+#' WungLSkew(pool_27051)
+#'
 #' @return the ungauged weighted LSkew from a pooling group
 #' @author Anthony Hammond
 
-WungLSkew <- function(x)
-{
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Ck.LSkew <- function(n) {0.2743/(n-2)}
-  bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-  Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-  colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-  bc.vector <- Weight[,6]
+WungLSkew <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  Ck.LSkew <- function(n) {
+    0.2743 / (n - 2)
+  }
+  bj.LSkew <- function(SDM) {
+    0.0219 * (1 - exp(-(SDM / 0.2360)))
+  }
+  Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+  colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+  bc.vector <- Weight[, 6]
   s.bc <- sum(bc.vector)
-  Wjs.LSkew <- bc.vector/s.bc
-  Sum.prod <- sum(Wjs.LSkew*Weight[,3])
+  Wjs.LSkew <- bc.vector / s.bc
+  Sum.prod <- sum(Wjs.LSkew * Weight[, 3])
   return(Sum.prod)
 }
 
@@ -3562,47 +4678,55 @@ WungLSkew <- function(x)
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form a gauged pooling group, and estimate gauged LSkew
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051)
-#' WGaugLSkew(Pool.27051)
+#' # Get some CDs, form a gauged pooling group, and estimate gauged LSkew
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051)
+#' WGaugLSkew(pool_27051)
+#'
 #' @return the gauged weighted LSkew from a pooling group
 #' @author Anthony Hammond
-WGaugLSkew <- function(x)
-{
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  WLSKEW1 <- function(x)
-  {
-    Ck.LSkew <- function(n) {0.2743/(n-2)}
-    bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-    Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-    bc.vector <- Weight[,6]
+WGaugLSkew <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  WLSKEW1 <- function(x) {
+    Ck.LSkew <- function(n) {
+      0.2743 / (n - 2)
+    }
+    bj.LSkew <- function(SDM) {
+      0.0219 * (1 - exp(-(SDM / 0.2360)))
+    }
+    Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LSkew <- (Weight.1b/(Weight.1c+Weight.1b))+((Weight.1c*(Weight.1c+Weight.1b)^-2)/s.bc)
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LSkew <- (Weight.1b / (Weight.1c + Weight.1b)) + ((Weight.1c * (Weight.1c + Weight.1b)^-2) / s.bc)
     return(Wjs.LSkew)
   }
-  WLSKEWj <- function(x)
-  {
-    Ck.LSkew <- function(n) {0.2743/(n-2)}
-    bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-    Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-    bc.vector <- Weight[,6]
+  WLSKEWj <- function(x) {
+    Ck.LSkew <- function(n) {
+      0.2743 / (n - 2)
+    }
+    bj.LSkew <- function(SDM) {
+      0.0219 * (1 - exp(-(SDM / 0.2360)))
+    }
+    Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
     bc.vector <- bc.vector[-1]
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LSkew <- (Weight.1c*(Weight.1c+Weight.1b)^-1 * bc.vector)/s.bc
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LSkew <- (Weight.1c * (Weight.1c + Weight.1b)^-1 * bc.vector) / s.bc
     return(Wjs.LSkew)
   }
   W1 <- WLSKEW1(x)
   Wjs <- WLSKEWj(x)
   W <- append(W1, Wjs)
-  Sum.prod <- sum(x$LSkew*W)
+  Sum.prod <- sum(x$LSkew * W)
   return(Sum.prod)
 }
 
@@ -3614,47 +4738,55 @@ WGaugLSkew <- function(x)
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051)
-#' WGaugLcv(Pool.27051)
+#' # Get some CDs, form a gauged pooling group, and estimate gauged Lcv
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051)
+#' WGaugLcv(pool_27051)
+#'
 #' @return the gauged weighted Lcv from a pooling group
 #' @author Anthony Hammond
-WGaugLcv <- function(x)
-{
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  WLCV1 <- function(x)
-  {
-    Ck.LCV <- function(n) {0.02609/(n-1)}
-    bj.LCV <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-    Weight <- cbind(x$N,x$SDM , x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-    bc.vector <- Weight[,6]
+WGaugLcv <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  WLCV1 <- function(x) {
+    Ck.LCV <- function(n) {
+      0.02609 / (n - 1)
+    }
+    bj.LCV <- function(SDM) {
+      0.0047 * sqrt(SDM) + (0.0023 / 2)
+    }
+    Weight <- cbind(x$N, x$SDM, x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LCV <- (Weight.1b/(Weight.1c+Weight.1b))+((Weight.1c*(Weight.1c+Weight.1b)^-2)/s.bc)
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LCV <- (Weight.1b / (Weight.1c + Weight.1b)) + ((Weight.1c * (Weight.1c + Weight.1b)^-2) / s.bc)
     return(Wjs.LCV)
   }
-  WLCVj <- function(x)
-  {
-    Ck.LCV <- function(n) {0.02609/(n-1)}
-    bj.LCV <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-    Weight <- cbind(x$N,x$SDM , x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-    bc.vector <- Weight[,6]
+  WLCVj <- function(x) {
+    Ck.LCV <- function(n) {
+      0.02609 / (n - 1)
+    }
+    bj.LCV <- function(SDM) {
+      0.0047 * sqrt(SDM) + (0.0023 / 2)
+    }
+    Weight <- cbind(x$N, x$SDM, x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
     bc.vector <- bc.vector[-1]
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LCV <- (Weight.1c*(Weight.1c+Weight.1b)^-1 * bc.vector)/s.bc
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LCV <- (Weight.1c * (Weight.1c + Weight.1b)^-1 * bc.vector) / s.bc
     return(Wjs.LCV)
   }
   W1 <- WLCV1(x)
   Wjs <- WLCVj(x)
   W <- append(W1, Wjs)
-  Sum.prod <- sum(x$Lcv*W)
+  Sum.prod <- sum(x$Lcv * W)
   return(Sum.prod)
 }
 
@@ -3666,22 +4798,29 @@ WGaugLcv <- function(x)
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
-#' WeightsUnLcv(Pool.27051)
+#' # Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051, exclude = 27051)
+#' WeightsUnLcv(pool_27051)
+#'
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
-WeightsUnLcv <- function(x){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Ck.LCV <- function(n) {0.02609/(n-1)}
-  bj.Lcv <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-  Weight <- cbind(x$N,x$SDM , x$Lcv, bj.Lcv(x$SDM), Ck.LCV(x$N), (bj.Lcv(x$SDM) + Ck.LCV(x$N))^-1)
-  colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-  bc.vector <- Weight[,6]
+WeightsUnLcv <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  Ck.LCV <- function(n) {
+    0.02609 / (n - 1)
+  }
+  bj.Lcv <- function(SDM) {
+    0.0047 * sqrt(SDM) + (0.0023 / 2)
+  }
+  Weight <- cbind(x$N, x$SDM, x$Lcv, bj.Lcv(x$SDM), Ck.LCV(x$N), (bj.Lcv(x$SDM) + Ck.LCV(x$N))^-1)
+  colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+  bc.vector <- Weight[, 6]
   s.bc <- sum(bc.vector)
-  Wjs.LCV <- bc.vector/s.bc
+  Wjs.LCV <- bc.vector / s.bc
   Table <- data.frame(row.names(x), Wjs.LCV)
   colnames(Table) <- c("Site", "Weight")
   return(Table)
@@ -3694,22 +4833,29 @@ WeightsUnLcv <- function(x){
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051, exclude = 27051)
-#' WeightsUnLSkew(Pool.27051)
+#' # Get some CDs, form an ungauged pooling group, and estimate ungauged LSkew
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051, exclude = 27051)
+#' WeightsUnLSkew(pool_27051)
+#'
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
-WeightsUnLSkew <- function(x){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  Ck.LSkew <- function(n) {0.2743/(n-2)}
-  bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-  Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-  colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-  bc.vector <- Weight[,6]
+WeightsUnLSkew <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  Ck.LSkew <- function(n) {
+    0.2743 / (n - 2)
+  }
+  bj.LSkew <- function(SDM) {
+    0.0219 * (1 - exp(-(SDM / 0.2360)))
+  }
+  Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+  colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+  bc.vector <- Weight[, 6]
   s.bc <- sum(bc.vector)
-  Wjs.LSkew <- bc.vector/s.bc
+  Wjs.LSkew <- bc.vector / s.bc
   Table <- data.frame(row.names(x), Wjs.LSkew)
   colnames(Table) <- c("Site", "Weight")
   return(Table)
@@ -3723,40 +4869,49 @@ WeightsUnLSkew <- function(x){
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form a gauged pooling group, and estimate gauged Lcv
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051)
-#' WeightsGLcv(Pool.27051)
+#' # Get some CDs, form a gauged pooling group, and estimate gauged Lcv
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051)
+#' WeightsGLcv(pool_27051)
+#'
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
-WeightsGLcv  <- function(x){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  WLCV1 <- function(x)
-  {
-    Ck.LCV <- function(n) {0.02609/(n-1)}
-    bj.LCV <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-    Weight <- cbind(x$N,x$SDM , x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-    bc.vector <- Weight[,6]
+WeightsGLcv <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  WLCV1 <- function(x) {
+    Ck.LCV <- function(n) {
+      0.02609 / (n - 1)
+    }
+    bj.LCV <- function(SDM) {
+      0.0047 * sqrt(SDM) + (0.0023 / 2)
+    }
+    Weight <- cbind(x$N, x$SDM, x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LCV <- (Weight.1b/(Weight.1c+Weight.1b))+((Weight.1c*(Weight.1c+Weight.1b)^-2)/s.bc)
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LCV <- (Weight.1b / (Weight.1c + Weight.1b)) + ((Weight.1c * (Weight.1c + Weight.1b)^-2) / s.bc)
     return(Wjs.LCV)
   }
-  WLCVj <- function(x)
-  {
-    Ck.LCV <- function(n) {0.02609/(n-1)}
-    bj.LCV <- function(SDM) {0.0047*sqrt(SDM) + (0.0023/2)}
-    Weight <- cbind(x$N,x$SDM , x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "Lcv",  "bLCV", "cLCV", "bc.LCV")
-    bc.vector <- Weight[,6]
+  WLCVj <- function(x) {
+    Ck.LCV <- function(n) {
+      0.02609 / (n - 1)
+    }
+    bj.LCV <- function(SDM) {
+      0.0047 * sqrt(SDM) + (0.0023 / 2)
+    }
+    Weight <- cbind(x$N, x$SDM, x$Lcv, bj.LCV(x$SDM), Ck.LCV(x$N), (bj.LCV(x$SDM) + Ck.LCV(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "Lcv", "bLCV", "cLCV", "bc.LCV")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
     bc.vector <- bc.vector[-1]
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LCV <- (Weight.1c*(Weight.1c+Weight.1b)^-1 * bc.vector)/s.bc
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LCV <- (Weight.1c * (Weight.1c + Weight.1b)^-1 * bc.vector) / s.bc
     return(Wjs.LCV)
   }
   W1 <- WLCV1(x)
@@ -3774,41 +4929,50 @@ WeightsGLcv  <- function(x){
 #' Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 #' @param x pooling group derived with the Pool() function
 #' @examples
-#' #Get some CDs, form a gauged pooling group, and estimate gauged LSkew
-#' CDs.27051 <- GetCDs(27051)
-#' Pool.27051 <- Pool(CDs.27051)
-#' WeightsGLSkew(Pool.27051)
+#' # Get some CDs, form a gauged pooling group, and estimate gauged LSkew
+#' cds_27051 <- GetCDs(27051)
+#' pool_27051 <- Pool(cds_27051)
+#' WeightsGLSkew(pool_27051)
+#'
 #' @return A data.frame with site references in the first column and associated weights in the second
 #' @author Anthony Hammond
 
-WeightsGLSkew <- function(x){
-  if(is.data.frame(x) == FALSE) {stop("x must be a pooled group. Pooled groups can be created with the Pool() function")}
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
-  WLSKEW1 <- function(x)
-  {
-    Ck.LSkew <- function(n) {0.2743/(n-2)}
-    bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-    Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-    bc.vector <- Weight[,6]
+WeightsGLSkew <- function(x) {
+  if (is.data.frame(x) == FALSE) {
+    stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  }
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  WLSKEW1 <- function(x) {
+    Ck.LSkew <- function(n) {
+      0.2743 / (n - 2)
+    }
+    bj.LSkew <- function(SDM) {
+      0.0219 * (1 - exp(-(SDM / 0.2360)))
+    }
+    Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LSkew <- (Weight.1b/(Weight.1c+Weight.1b))+((Weight.1c*(Weight.1c+Weight.1b)^-2)/s.bc)
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LSkew <- (Weight.1b / (Weight.1c + Weight.1b)) + ((Weight.1c * (Weight.1c + Weight.1b)^-2) / s.bc)
     return(Wjs.LSkew)
   }
-  WLSKEWj <- function(x)
-  {
-    Ck.LSkew <- function(n) {0.2743/(n-2)}
-    bj.LSkew <- function(SDM) {0.0219*(1-exp(-(SDM/0.2360)))}
-    Weight <- cbind(x$N,x$SDM , x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
-    colnames(Weight) <- c("N", "SDM", "LSkew",  "bLSkew", "cLSkew", "bc.LSkew")
-    bc.vector <- Weight[,6]
+  WLSKEWj <- function(x) {
+    Ck.LSkew <- function(n) {
+      0.2743 / (n - 2)
+    }
+    bj.LSkew <- function(SDM) {
+      0.0219 * (1 - exp(-(SDM / 0.2360)))
+    }
+    Weight <- cbind(x$N, x$SDM, x$LSkew, bj.LSkew(x$SDM), Ck.LSkew(x$N), (bj.LSkew(x$SDM) + Ck.LSkew(x$N))^-1)
+    colnames(Weight) <- c("N", "SDM", "LSkew", "bLSkew", "cLSkew", "bc.LSkew")
+    bc.vector <- Weight[, 6]
     s.bc <- sum(bc.vector)
     bc.vector <- bc.vector[-1]
-    Weight.1b <- Weight[1,4]
-    Weight.1c <- Weight[1,5]
-    Wjs.LSkew <- (Weight.1c*(Weight.1c+Weight.1b)^-1 * bc.vector)/s.bc
+    Weight.1b <- Weight[1, 4]
+    Weight.1c <- Weight[1, 5]
+    Wjs.LSkew <- (Weight.1c * (Weight.1c + Weight.1b)^-1 * bc.vector) / s.bc
     return(Wjs.LSkew)
   }
   W1 <- WLSKEW1(x)
@@ -3826,23 +4990,33 @@ WeightsGLSkew <- function(x){
 #' Lcv calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 #' @param x a numeric vector. The sample of interest
 #' @examples
-#' #Get an AMAX sample and calculate the Lmoments
-#' AM.27051 <- GetAM(27051)
-#' Lcv(AM.27051$Flow)
+#' # Get an AMAX sample and calculate the L-moments
+#' am_27051 <- GetAM(27051)
+#' Lcv(am_27051$Flow)
+#'
 #' @return Numeric. The Lcv of a sample.
 #' @author Anthony Hammond
 
-Lcv <- function(x){
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+Lcv <- function(x) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
+  n <- length(x)
   b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
   L1 <- b0
-  L2 <- 2*b1-b0
-  Lcv <- L2/L1
+  L2 <- 2 * b1 - b0
+  Lcv <- L2 / L1
   return(Lcv)
 }
 
@@ -3854,23 +5028,39 @@ Lcv <- function(x){
 #' LSkew calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 #' @param x a numeric vector. The sample of interest
 #' @examples
-#' #Get an AMAX sample and calculate the Lmoments
-#' AM.27051 <- GetAM(27051)
-#' LSkew(AM.27051$Flow)
+#' # Get an AMAX sample and calculate the L-moments
+#' am_27051 <- GetAM(27051)
+#' LSkew(am_27051$Flow)
+#'
 #' @return Numeric. The LSkew of a sample.
 #' @author Anthony Hammond
-LSkew <- function(x){
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+LSkew <- function(x) {
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  x <- x[!is.na(x)]
+
+  if (length(x) < 4) {
+    return(NaN)
+  }
+
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
+  n <- length(x)
   b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
   L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  LSkew <- L3/L2
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  LSkew <- L3 / L2
   return(LSkew)
 }
 
@@ -3882,24 +5072,43 @@ LSkew <- function(x){
 #' LKurtosis calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 #' @param x a numeric vector. The sample of interest
 #' @examples
-#' #Get an AMAX sample and calculate the Lmoments
-#' AM.27051 <- GetAM(27051)
-#' LKurt(AM.27051$Flow)
+#' # Get an AMAX sample and calculate the L-moments
+#' am_27051 <- GetAM(27051)
+#' LKurt(am_27051$Flow)
+#'
 #' @return Numeric. The LSkew of a sample.
 #' @author Anthony Hammond
 LKurt <- function(x) {
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
+  if (!is.numeric(x)) stop("x must be a numeric vector")
+
+  x <- x[!is.na(x)]
+
+  n <- length(x)
+  if (n < 4) {
+    return(NaN)
+  }
+
   Sort.x <- sort(x)
-  Rank <- seq(1, length(x))
-  b0 <- mean(x, na.rm = TRUE)
-  b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
-  b2 <- mean(((Rank-1)*(Rank-2))/((length(x)-1)*(length(x)-2))*Sort.x, na.rm = TRUE)
-  b3 <- mean(((Rank-1)*(Rank-2)*(Rank-3))/((length(x)-1)*(length(x)-2)*(length(x)-3))*Sort.x, na.rm = TRUE)
+  n <- length(x)
+
+  b0 <- mean(Sort.x)
+  indices_b1 <- 2:n
+  weights_b1 <- (indices_b1 - 1) / (n - 1)
+  b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
+  indices_b2 <- 3:n
+  weights_b2 <- ((indices_b2 - 1) * (indices_b2 - 2)) / ((n - 1) * (n - 2))
+  b2 <- sum(weights_b2 * Sort.x[indices_b2]) / n
+  indices_b3 <- 4:n
+  weights_b3 <- ((indices_b3 - 1) * (indices_b3 - 2) * (indices_b3 - 3)) /
+    ((n - 1) * (n - 2) * (n - 3))
+  b3 <- sum(weights_b3 * Sort.x[indices_b3]) / n
+
   L1 <- b0
-  L2 <- 2*b1-b0
-  L3 <- 6*b2-6*b1+b0
-  L4 <- 20*b3-30*b2+12*b1-b0
-  Lkurt <- L4/L2
+  L2 <- 2 * b1 - b0
+  L3 <- 6 * b2 - 6 * b1 + b0
+  L4 <- 20 * b3 - 30 * b2 + 12 * b1 - b0
+
+  Lkurt <- L4 / L2
   return(Lkurt)
 }
 
@@ -3909,7 +5118,7 @@ LKurt <- function(x) {
 #'
 #' Provides outputs of the ReFH model from catchment descriptors or user defined inputs
 #'
-#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D (then a seasonal correction factor is applied). Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1).
+#' The ReFH is described in the Flood Estimation Handbook Supplementary Report No.1 (2007). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and the two year rainfall for the critical duration. The latter is based on a quadratic interpolation of the catchment descriptors RMED1H, RMED1D, and RMED2D (then a seasonal correction factor is applied). Parameters and initial conditions can also be individually input by the user. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. If a value for the scaled argument is provided (m3/s), a scaled hydrograph is returned. The RPa argument doesn't change the rainfall input and is only needed for the alpha adjustment (see the FEH supplement report no.1). The scaling approach multiplies all the ordinates of the hydrograph by the peak flow as opposed to extending the rise of the hydrograph. i.e. there is an implicit assumption that the largest peak flow events are from initial flow that is also larger than for lower peak flow events. This ReFH model is not recommended for deterministic design flow estimation. Instead it can be used to analyse the plausible response to an input of rainfall.
 #' @param CDs catchment descriptors derived from either GetCDs or ImportCD
 #' @param Depth a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default, when Depth = NULL, is a two year rainfall.
 #' @param duration a numeric value. A duration (hrs) for the design rainfall
@@ -3928,233 +5137,490 @@ LKurt <- function(x) {
 #' @param BFini numeric. Initial baseflow (m3/s)
 #' @param Rain numeric. User input rainfall (hourly). A numeric vector
 #' @examples
-#' #Get CDs and apply the ReFH function
-#' CDs.203018 <- GetCDs(203018)
-#' ReFH(CDs.203018)
-#' #Apply the ReFH function, scale to a 100-year flow estimate and change the plot title accordingly
-#' ReFH(CDs.203018, scaled = 182, PlotTitle = "100-Year Design Hydrograph - Site 203018")
-#' #Apply the ReFH function with a user defined initial baseflow
-#' ReFH(CDs.203018, BFini = 6)
+#' # Get CDs and apply the ReFH function
+#' cds_203018 <- GetCDs(203018)
+#' ReFH(cds_203018)
+#'
+#' # Apply the ReFH function, scale to a 100-year flow estimate and change the plot title accordingly
+#' ReFH(cds_203018, scaled = 182, PlotTitle = "100-Year Design Hydrograph - Site 203018")
+#'
+#' # Apply the ReFH function with a user defined initial baseflow
+#' ReFH(cds_203018, BFini = 6)
+#'
 #' @return A list with two elements, and a plot. First element of the list is a data.frame of  parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
 #' @author Anthony Hammond
 
 ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, scaled = NULL, PlotTitle = NULL, RPa = NULL, alpha = TRUE, season = NULL, AREA = NULL, TP = NULL, BR = NULL, BL = NULL, Cmax = NULL, Cini = NULL, BFini = NULL, Rain = NULL) {
-  if(alpha == FALSE & is.null(RPa) == FALSE) {print("Warning: You've chosen an RPa value and have alpha = FALSE. The RPa argument, in this case, does nothing")}
+  if (alpha == FALSE & is.null(RPa) == FALSE) {
+    print("Warning: You've chosen an RPa value and have alpha = FALSE. The RPa argument, in this case, does nothing")
+  }
   oldpar <- par(no.readonly = TRUE)
   on.exit(par(oldpar))
-  if(is.null(season) == TRUE & is.null(CDs) == TRUE) stop ("CDs argument and/or season argument must be used")
-  if(is.null(season) == TRUE) {
-    if(CDs[18,2] > 0.03) {Season <- "summer"} else {Season <- "winter"}}
-  else {Season <- season}
-  if(is.null(CDs) == TRUE & is.null(Depth) == TRUE) {Depth <- sum(Rain)}
-  if(is.null(CDs) == TRUE & is.null(duration) == TRUE) {duration <- length(Rain)}
-  if(is.null(CDs) == FALSE) {
-    if(class(CDs)!= class(data.frame(c(1,2,3)))) stop("If CDs argument is used it must be a data.frame with two columns. The first with the name of descriptors, the second with the associated value")
+  if (is.null(season) == TRUE & is.null(CDs) == TRUE) stop("CDs argument and/or season argument must be used")
+  if (is.null(season) == TRUE) {
+    if (CDs[18, 2] > 0.03) {
+      Season <- "summer"
+    } else {
+      Season <- "winter"
+    }
+  } else {
+    Season <- season
+  }
+  if (is.null(CDs) == TRUE & is.null(Depth) == TRUE) {
+    Depth <- sum(Rain)
+  }
+  if (is.null(CDs) == TRUE & is.null(duration) == TRUE) {
+    duration <- length(Rain)
+  }
+  if (is.null(CDs) == FALSE) {
+    if (class(CDs) != class(data.frame(c(1, 2, 3)))) stop("If CDs argument is used it must be a data.frame with two columns. The first with the name of descriptors, the second with the associated value")
   }
   Params <- function(x, season, D = NULL, cini = NULL) {
-    PROPWET <- x[which(x$Descriptor == "PROPWET"),2]
-    DPLBAR <- x[which(x$Descriptor == "DPLBAR"),2]
-    URBEXT1990 <- x[which(x$Descriptor == "URBEXT1990"),2]
-    DPSBAR <- x[which(x$Descriptor == "DPSBAR"),2]
-    SAAR <- x[which(x$Descriptor == "SAAR"),2]
-    BFIHOST <- x[grep("BFIHOST", x$Descriptor)[1],2]
-    AREA <- x[which(x$Descriptor == "AREA"),2]
-    TP <- 1.56*PROPWET^-1.09*DPLBAR^0.6*(1+URBEXT1990)^-3.34*DPSBAR^-0.28
-    if(is.null(D) == TRUE) {D <- TP*(1+(SAAR/1000))} else {D <- D}
-    BL <- 25.5*BFIHOST^0.47*DPLBAR^0.21*PROPWET^-0.53*(1+URBEXT1990)^-3.01
-    BR <- 3.75*BFIHOST^1.08*PROPWET^0.36
-    Cmax <- 596.7*BFIHOST^0.95*PROPWET^-0.24
-    if(is.null(cini) == TRUE) {
-      Cini.win <- (Cmax/2)*(1.2-1.7*BFIHOST+0.82*PROPWET)
-      Cini.sum <- (Cmax/2)*(0.9-0.82*BFIHOST-0.43*PROPWET)
-      if(season == "winter") {Cini <- Cini.win}
-      if(season == "summer") {Cini <- Cini.sum}} else {Cini <- cini}
-    if(Cini <= 0) {Cini <- 0} else {Cini <- Cini}
-    BFini.win <- (63.8*(Cini-120.8)+5.54*SAAR)*10^-5*AREA
-    BFini.sum <- (33.9*(Cini - 85.4)+3.14*SAAR)*10^-5*AREA
-    if(season == "winter") {BFini <- BFini.win}
-    if(season == "summer") {BFini <- BFini.sum}
-    if(BFini <= 0) {BFini <- 0} else {BFini <- BFini}
+    PROPWET <- x[which(x$Descriptor == "PROPWET"), 2]
+    DPLBAR <- x[which(x$Descriptor == "DPLBAR"), 2]
+    URBEXT1990 <- x[which(x$Descriptor == "URBEXT1990"), 2]
+    DPSBAR <- x[which(x$Descriptor == "DPSBAR"), 2]
+    SAAR <- x[which(x$Descriptor == "SAAR"), 2]
+    BFIHOST <- x[grep("BFIHOST", x$Descriptor)[1], 2]
+    AREA <- x[which(x$Descriptor == "AREA"), 2]
+    TP <- 1.56 * PROPWET^-1.09 * DPLBAR^0.6 * (1 + URBEXT1990)^-3.34 * DPSBAR^-0.28
+    if (is.null(D) == TRUE) {
+      D <- TP * (1 + (SAAR / 1000))
+    } else {
+      D <- D
+    }
+    BL <- 25.5 * BFIHOST^0.47 * DPLBAR^0.21 * PROPWET^-0.53 * (1 + URBEXT1990)^-3.01
+    BR <- 3.75 * BFIHOST^1.08 * PROPWET^0.36
+    Cmax <- 596.7 * BFIHOST^0.95 * PROPWET^-0.24
+    if (is.null(cini) == TRUE) {
+      Cini.win <- (Cmax / 2) * (1.2 - 1.7 * BFIHOST + 0.82 * PROPWET)
+      Cini.sum <- (Cmax / 2) * (0.9 - 0.82 * BFIHOST - 0.43 * PROPWET)
+      if (season == "winter") {
+        Cini <- Cini.win
+      }
+      if (season == "summer") {
+        Cini <- Cini.sum
+      }
+    } else {
+      Cini <- cini
+    }
+    if (Cini <= 0) {
+      Cini <- 0
+    } else {
+      Cini <- Cini
+    }
+    BFini.win <- (63.8 * (Cini - 120.8) + 5.54 * SAAR) * 10^-5 * AREA
+    BFini.sum <- (33.9 * (Cini - 85.4) + 3.14 * SAAR) * 10^-5 * AREA
+    if (season == "winter") {
+      BFini <- BFini.win
+    }
+    if (season == "summer") {
+      BFini <- BFini.sum
+    }
+    if (BFini <= 0) {
+      BFini <- 0
+    } else {
+      BFini <- BFini
+    }
     df <- data.frame(AREA, TP, D, BR, BL, Cmax, Cini, BFini)
     return(df)
   }
-  PProfile <- function(d, season = "winter", timestep = 1){
-    d <- d*(1/timestep)
-    OddSeq <- seq(1,ceiling(d), by = 2)
-    vec <- OddSeq/d
-    if(season == "winter") {a <- 0.060}
-    if(season == "winter") {b <- 1.026}
-    if(season == "summer") {a <- 0.1}
-    if(season == "summer") {b <- 0.815}
+  PProfile <- function(d, season = "winter", timestep = 1) {
+    d <- d * (1 / timestep)
+    d_rounded <- round(d)
+    d_odd <- ifelse(d_rounded %% 2 == 0,
+      d_rounded + ifelse(d_rounded < d, 1, -1),
+      d_rounded
+    )
+    vec <- seq(1, d_odd, 2) / d_odd
+    if (season == "winter") {
+      a <- 0.060
+    }
+    if (season == "winter") {
+      b <- 1.026
+    }
+    if (season == "summer") {
+      a <- 0.1
+    }
+    if (season == "summer") {
+      b <- 0.815
+    }
     z <- vec^b
-    y <- (1-a^z)/(1-a)
+    y <- (1 - a^z) / (1 - a)
     peak <- y[1]
     props <- NULL
-    for (i in length(vec):2) {props[i] <- (y[i]-y[i-1])/2}
+    for (i in length(vec):2) {
+      props[i] <- (y[i] - y[i - 1]) / 2
+    }
     RainVec <- c(sort(props, decreasing = FALSE), peak, sort(props, decreasing = TRUE))
     return(RainVec)
   }
 
   Loss <- function(P, cini, Cmax, RPa, alpha = FALSE, season) {
-    if(alpha == TRUE){
-      if (season == "winter") {if(RPa < 5) {a <- 1} else{a <- 1.166*RPa^-0.073}}
-      if (season == "summer")  {if(RPa < 5) {a <- 1} else {a <- 1.444*RPa^-0.182}}
-      ct1 <- a*cini
-      ct <- P[2]+ct1
-      for (i in 3:length(P)) {ct <- append(ct, ct[length(ct)]+P[i])}
-      ct <-append(ct1, ct)
-      pr1 <- a*(cini/Cmax)+(P[1]/(2*Cmax))
+    if (alpha == TRUE) {
+      if (season == "winter") {
+        if (RPa < 5) {
+          a <- 1
+        } else {
+          a <- 1.166 * RPa^-0.073
+        }
+      }
+      if (season == "summer") {
+        if (RPa < 5) {
+          a <- 1
+        } else {
+          a <- 1.444 * RPa^-0.182
+        }
+      }
+      ct1 <- a * cini
+      ct <- P[2] + ct1
+      for (i in 3:length(P)) {
+        ct <- append(ct, ct[length(ct)] + P[i])
+      }
+      ct <- append(ct1, ct)
+      pr1 <- a * (cini / Cmax) + (P[1] / (2 * Cmax))
       pr <- NULL
-      for (i in 2:(length(P))) {pr[i] <- (ct[i-1]/Cmax)+(P[i]/(2*Cmax))}
+      for (i in 2:(length(P))) {
+        pr[i] <- (ct[i - 1] / Cmax) + (P[i] / (2 * Cmax))
+      }
       pr[1] <- pr1
-    }
-    else {
+    } else {
       ct1 <- cini
-      ct <- P[2]+ct1
-      for (i in 3:length(P)) {ct <- append(ct, ct[length(ct)]+P[i])}
-      ct <-append(ct1, ct)
-      pr1 <- (cini/Cmax)+(P[1]/(2*Cmax))
+      ct <- P[2] + ct1
+      for (i in 3:length(P)) {
+        ct <- append(ct, ct[length(ct)] + P[i])
+      }
+      ct <- append(ct1, ct)
+      pr1 <- (cini / Cmax) + (P[1] / (2 * Cmax))
       pr <- NULL
-      for (i in 2:(length(P))) {pr[i] <- (ct[i-1]/Cmax)+(P[i]/(2*Cmax))}
+      for (i in 2:(length(P))) {
+        pr[i] <- (ct[i - 1] / Cmax) + (P[i] / (2 * Cmax))
+      }
       pr[1] <- pr1
     }
-    NetP <- pr*P
+    NetP <- pr * P
     return(NetP)
   }
 
-  UH <- function(CDs, tp = FALSE, timestep = 1){
-    if(tp == FALSE) {TP <- 1.56*CDs[11,2]^-1.09*CDs[6,2]^0.6*(1+CDs[18,2])^-3.34*CDs[7,2]^-0.28} else {TP <- tp}
-    TBt <- 2*(TP/0.65)
-    Uc <- 0.65*((TBt - 2*TP)/(TBt-TP))
-    TB <- TP*(1+2*((1-0.65))/(0.8*Uc))
-    U2tp <- Uc*0.8
-    y <- c(0, mean(c(0, 0.65)), 0.65,U2tp, mean(c(U2tp, 0)), 0)
-    x <- c(0, mean(c(0,TP)), TP, 2*TP, mean(c(2*TP, TB)), TB)
+  UH <- function(CDs, tp = FALSE, timestep = 1) {
+    if (tp == FALSE) {
+      TP <- 1.56 * CDs[11, 2]^-1.09 * CDs[6, 2]^0.6 * (1 + CDs[18, 2])^-3.34 * CDs[7, 2]^-0.28
+    } else {
+      TP <- tp
+    }
+    TBt <- 2 * (TP / 0.65)
+    Uc <- 0.65 * ((TBt - 2 * TP) / (TBt - TP))
+    TB <- TP * (1 + 2 * ((1 - 0.65)) / (0.8 * Uc))
+    U2tp <- Uc * 0.8
+    y <- c(0, mean(c(0, 0.65)), 0.65, U2tp, mean(c(U2tp, 0)), 0)
+    x <- c(0, mean(c(0, TP)), TP, 2 * TP, mean(c(2 * TP, TB)), TB)
     y1mod <- lm(y[1:3] ~ x[1:3])
     y2mod <- lm(y[3:4] ~ x[3:4])
     y3mod <- lm(y[4:6] ~ x[4:6])
     Coefs1 <- as.numeric(coefficients(y1mod))
     Coefs2 <- as.numeric(coefficients(y2mod))
     Coefs3 <- as.numeric(coefficients(y3mod))
-    YModel1 <- function(x) {Coefs1[1] + Coefs1[2]*x}
-    YModel2 <- function(x) {Coefs2[1] + Coefs2[2]*x}
-    YModel3 <- function(x) {Coefs3[1] + Coefs3[2]*x}
+    YModel1 <- function(x) {
+      Coefs1[1] + Coefs1[2] * x
+    }
+    YModel2 <- function(x) {
+      Coefs2[1] + Coefs2[2] * x
+    }
+    YModel3 <- function(x) {
+      Coefs3[1] + Coefs3[2] * x
+    }
     UnitHydro <- data.frame(x, y)
-    uh1 <- YModel1(seq(0, UnitHydro[3,1],by = 0.01))
-    uh2 <- YModel2(seq(UnitHydro[3,1], UnitHydro[4,1],by = 0.01))
-    uh3 <- YModel3(seq(UnitHydro[4,1], UnitHydro[6,1],by = 0.01))
-    UH <- c(uh1,uh2[-1],uh3[-1])
+    uh1 <- YModel1(seq(0, UnitHydro[3, 1], by = 0.01))
+    uh2 <- YModel2(seq(UnitHydro[3, 1], UnitHydro[4, 1], by = 0.01))
+    uh3 <- YModel3(seq(UnitHydro[4, 1], UnitHydro[6, 1], by = 0.01))
+    UH <- c(uh1, uh2[-1], uh3[-1])
     Scurve <- NULL
-    for(i in 1:length(UH)) {Scurve[i] <- sum(UH[1:i])}
-    TSCoef <- timestep/0.01
+    for (i in 1:length(UH)) {
+      Scurve[i] <- sum(UH[1:i])
+    }
+    TSCoef <- timestep / 0.01
     Zeros <- rep(0, TSCoef)
     S.t <- append(Zeros, Scurve)
-    SDiff <- abs(Scurve-S.t[1:length(Scurve)])
-    UHfin <- SDiff*(0.01/timestep)
-    TSCoef <- timestep/0.01
+    SDiff <- abs(Scurve - S.t[1:length(Scurve)])
+    UHfin <- SDiff * (0.01 / timestep)
+    TSCoef <- timestep / 0.01
     UHVec <- seq(1, (length(UH)), by = TSCoef)
     return(UHfin[UHVec])
   }
-  Convolute <- function(UH, NR){
+  Convolute <- function(UH, NR) {
     Mults <- NULL
-    for(i in 1:length(NR)) {Mults[[i]] <- NR[i]*UH}
-    NAadd <- seq(1,(length(NR)))
+    for (i in 1:length(NR)) {
+      Mults[[i]] <- NR[i] * UH
+    }
+    NAadd <- seq(1, (length(NR)))
     NAsAdd <- rep(NA, sum(NAadd))
-    for(i in 1:length(NAadd)) {Mults[[i]] <- append(NAsAdd[1:i], Mults[[i]])}
-    LenConv <- length(UH)+length(NR)
+    for (i in 1:length(NAadd)) {
+      Mults[[i]] <- append(NAsAdd[1:i], Mults[[i]])
+    }
+    LenConv <- length(UH) + length(NR)
     RainSums <- NULL
-    for(i in 1:LenConv) {RainSums[i] <- sum(sapply(Mults, function(Mults) Mults[i]), na.rm = TRUE)}
+    for (i in 1:LenConv) {
+      RainSums[i] <- sum(sapply(Mults, function(Mults) Mults[i]), na.rm = TRUE)
+    }
     return(RainSums)
   }
   BF <- function(BL, BR, Bfini, ro, timestep = 1) {
-    k3 <- exp(-(timestep/BL))
-    k2 <- BR*(1-(1-k3)*(BL/timestep))
-    k1 <- BR*((BL/timestep)*(1-k3)-k3)
+    k3 <- exp(-(timestep / BL))
+    k2 <- BR * (1 - (1 - k3) * (BL / timestep))
+    k1 <- BR * ((BL / timestep) * (1 - k3) - k3)
     zt <- Bfini
-    for(i in 2:(length(ro))) {zt <- append(zt, k1*ro[(i-1)]+k2*ro[i]+k3*zt[length(zt)])}
+    for (i in 2:(length(ro))) {
+      zt <- append(zt, k1 * ro[(i - 1)] + k2 * ro[i] + k3 * zt[length(zt)])
+    }
     return(zt)
   }
-  if(is.null(CDs) == FALSE) {Pars <- Params(CDs, season = Season, D = duration, cini = Cini)}
-  if(is.null(AREA) == TRUE) {AREA <- NA} else {AREA <- AREA}
-  if(is.null(TP) == TRUE) {TP <- NA} else {TP <- TP}
-  if(is.null(duration) == TRUE) {D <- NA} else {D <- duration}
-  if(is.null(BR) == TRUE) {BR <- NA} else {BR <- BR}
-  if(is.null(BL) == TRUE) {BL <- NA} else {BL <- BL}
-  if(is.null(Cmax) == TRUE) {Cmax <- NA} else {Cmax <- Cmax}
-  if(is.null(Cini) == TRUE) {Cini <- NA} else {Cini <- Cini}
-  if(is.null(BFini) == TRUE) {BFini <- NA} else {BFini <- BFini}
+  if (is.null(CDs) == FALSE) {
+    Pars <- Params(CDs, season = Season, D = duration, cini = Cini)
+  }
+  if (is.null(AREA) == TRUE) {
+    AREA <- NA
+  } else {
+    AREA <- AREA
+  }
+  if (is.null(TP) == TRUE) {
+    TP <- NA
+  } else {
+    TP <- TP
+  }
+  if (is.null(duration) == TRUE) {
+    D <- NA
+  } else {
+    D <- duration
+  }
+  if (is.null(BR) == TRUE) {
+    BR <- NA
+  } else {
+    BR <- BR
+  }
+  if (is.null(BL) == TRUE) {
+    BL <- NA
+  } else {
+    BL <- BL
+  }
+  if (is.null(Cmax) == TRUE) {
+    Cmax <- NA
+  } else {
+    Cmax <- Cmax
+  }
+  if (is.null(Cini) == TRUE) {
+    Cini <- NA
+  } else {
+    Cini <- Cini
+  }
+  if (is.null(BFini) == TRUE) {
+    BFini <- NA
+  } else {
+    BFini <- BFini
+  }
   ParsNull <- c(AREA, TP, D, BR, BL, Cmax, Cini, BFini)
   ParsNull <- as.data.frame(t(ParsNull))
   colnames(ParsNull) <- c("AREA", "TP", "D", "BR", "BL", "Cmax", "Cini", "BFini")
-  if(is.null(CDs) == TRUE) {Pars <- ParsNull}
-  ParInd <- which(is.na(ParsNull[1,]) == FALSE)
-  if(is.null(CDs) == TRUE & length(ParInd) < 8) stop ("If no CDs are provided the following arguments are required: AREA, TP, BL, duration, BR, Cmax, Cini, BFini, Depth, RPa and/or alpha, and season")
-  if(length(ParInd) > 0) {Pars[ParInd] <- ParsNull[ParInd]}
-  #print(Pars)
-  if(is.null(Rain) == FALSE) {duration <- length(Rain)}  else {duration <- Pars$D}
-  if(duration < Pars$TP) warning ("duration shorter than time to peak")
-  if(duration >= 4.5*Pars$TP) warning ("This is an event based model; duration > 4.5TP and is on the high side")
-  if(is.null(timestep) == TRUE){
-    if(Pars$TP <= 1) {timestep <- 0.1}
-    if(Pars$TP  > 1 & Pars$TP < 3) {timestep <- 0.25}
-    if(Pars$TP  >= 3 & Pars$TP < 5) {timestep <- 0.5}
-    if(Pars$TP  >= 5) {timestep <- 1}
-  } else {timestep <- timestep}
-  if(timestep > 0.25*ceiling(Pars$TP)) warning ("If timestep is > 0.25TP results may be a touch 'blocky'")
-  if(is.null(Rain) == FALSE) {Depth <- sum(Rain)}
-  if(is.null(Rain) == TRUE) {Rain <- PProfile(duration, season =  Season, timestep = timestep)} else {Rain <- Rain/sum(Rain)}
-  if(is.null(CDs) == FALSE) {Rmod <- lm(CDs[12:14, 2] ~ c(1, 24, 48) + I(c(1, 24, 48)^2))
-  RMEDmod <- function(x) {Rmod$coefficients[1] + Rmod$coefficients[2]*x + Rmod$coefficients[3]*x^2}
-  RMEDest <- RMEDmod(Pars$D)}
-  if(is.null(CDs) == FALSE) {
-    SAAR <- CDs[15,2]
+  if (is.null(CDs) == TRUE) {
+    Pars <- ParsNull
+  }
+  ParInd <- which(is.na(ParsNull[1, ]) == FALSE)
+  if (is.null(CDs) == TRUE & length(ParInd) < 8) stop("If no CDs are provided the following arguments are required: AREA, TP, BL, duration, BR, Cmax, Cini, BFini, Depth, RPa and/or alpha, and season")
+  if (length(ParInd) > 0) {
+    Pars[ParInd] <- ParsNull[ParInd]
+  }
+  # print(Pars)
+  if (!is.null(Rain) && length(Rain) == 1) {
+    stop("Rain must be a vector of rainfall depths over time steps - not a single value.")
+  }
+  if (is.null(Rain) == FALSE) {
+    duration <- length(Rain)
+  } else {
+    duration <- Pars$D
+  }
+  if (duration < Pars$TP) warning("duration shorter than time to peak")
+  if (duration >= 4.5 * Pars$TP) warning("This is an event based model; duration > 4.5TP and is on the high side")
+  if (is.null(timestep) == TRUE) {
+    if (Pars$TP <= 1) {
+      timestep <- 0.1
+    }
+    if (Pars$TP > 1 & Pars$TP < 3) {
+      timestep <- 0.25
+    }
+    if (Pars$TP >= 3 & Pars$TP < 5) {
+      timestep <- 0.5
+    }
+    if (Pars$TP >= 5) {
+      timestep <- 1
+    }
+  } else {
+    timestep <- timestep
+  }
+  if (timestep > 0.25 * ceiling(Pars$TP)) warning("If timestep is > 0.25TP results may be a touch 'blocky'")
+  if (is.null(Rain) == FALSE) {
+    Depth <- sum(Rain)
+  }
+  if (is.null(Rain) == TRUE) {
+    Rain <- PProfile(duration, season = Season, timestep = timestep)
+  } else {
+    Rain <- Rain / sum(Rain)
+  }
+  if (is.null(CDs) == FALSE) {
+    Rmod <- lm(CDs[12:14, 2] ~ c(1, 24, 48) + I(c(1, 24, 48)^2))
+    RMEDmod <- function(x) {
+      Rmod$coefficients[1] + Rmod$coefficients[2] * x + Rmod$coefficients[3] * x^2
+    }
+    RMEDest <- RMEDmod(Pars$D)
+  }
+  if (is.null(CDs) == FALSE) {
+    SAAR <- CDs[15, 2]
     scf <- SCF(SAAR = SAAR, duration = duration)
-    if(Season == "summer") {scf <- scf[,1]}
-    if(Season == "winter") {scf <- scf[,2]}
-    RMEDest <- RMEDest*scf}
-  if(is.null(Depth) == TRUE) {Rain <- Rain*RMEDest} else {Rain <- Rain*Depth}
-  if(is.null(Depth) == FALSE & is.null(RPa) == TRUE & alpha == TRUE) stop ("if a depth is supplied, RPa is needed or change alpha to FALSE")
-  if(Season == "winter") {Cini <- Pars$Cini.win}
-  if(Season == "summer") {Cini <- Pars$Cini.sum}
-  if(is.null(RPa) == TRUE) {RPa <- 2} else {RPa <- RPa}
+    if (Season == "summer") {
+      scf <- scf[, 1]
+    }
+    if (Season == "winter") {
+      scf <- scf[, 2]
+    }
+    RMEDest <- RMEDest * scf
+  }
+  if (is.null(Depth) == TRUE) {
+    Rain <- Rain * RMEDest
+  } else {
+    Rain <- Rain * Depth
+  }
+  if (is.null(Depth) == FALSE & is.null(RPa) == TRUE & alpha == TRUE) stop("if a depth is supplied, RPa is needed or change alpha to FALSE")
+  if (Season == "winter") {
+    Cini <- Pars$Cini.win
+  }
+  if (Season == "summer") {
+    Cini <- Pars$Cini.sum
+  }
+  if (is.null(RPa) == TRUE) {
+    RPa <- 2
+  } else {
+    RPa <- RPa
+  }
   EffRain <- Loss(Rain, cini = Pars$Cini, RPa = RPa, Cmax = Pars$Cmax, season = Season, alpha = alpha)
   UnitHydro <- UH(tp = Pars$TP, timestep = timestep)
-  SF <- Pars$AREA/(3.6*Pars$TP)
-  UnitHydro <- UnitHydro*SF
+  SF <- Pars$AREA / (3.6 * Pars$TP)
+  UnitHydro <- UnitHydro * SF
   Runoff <- Convolute(UnitHydro, EffRain)
   Runoff <- Runoff[-1]
-  if(Season == "winter") {BFini <- Pars$BFini.win}
-  if(Season == "summer") {BFini <- Pars$BFini.sum}
+  if (Season == "winter") {
+    BFini <- Pars$BFini.win
+  }
+  if (Season == "summer") {
+    BFini <- Pars$BFini.sum
+  }
   Baseflow <- BF(Pars$BL, Pars$BR, Bfini = Pars$BFini, ro = Runoff, timestep = timestep)
-  TotalFlow <- Runoff+Baseflow
+  TotalFlow <- Runoff + Baseflow
   L <- length(TotalFlow)
-  NAs <- rep(NA, times = (L-length(Rain)))
+  NAs <- rep(NA, times = (L - length(Rain)))
   Rain <- append(Rain, NAs)
   res <- round(data.frame(Rain, TotalFlow, Runoff, Baseflow), 3)
-  if(is.null(scaled) == FALSE) {ScaledHydro <- (TotalFlow/max(TotalFlow))*scaled
-  res2 <- round(ScaledHydro, 3)
+  if (is.null(scaled) == FALSE) {
+    ScaledHydro <- (TotalFlow / max(TotalFlow)) * scaled
+    res2 <- round(ScaledHydro, 3)
   }
-  if(is.null(PlotTitle) == FALSE) {title <- PlotTitle} else {title <- "Runoff Hydrograph"}
-  if(is.null(PlotTitle) == FALSE) {titleScaled <- PlotTitle} else {titleScaled <- "Design Hydrograph"}
-  if(is.null(scaled) == TRUE) {
-    par(mar=c(5.1, 4.1, 4.1, 4.3))
+  if (is.null(PlotTitle) == FALSE) {
+    title <- PlotTitle
+  } else {
+    title <- "Runoff Hydrograph"
+  }
+  if (is.null(PlotTitle) == FALSE) {
+    titleScaled <- PlotTitle
+  } else {
+    titleScaled <- "Design Hydrograph (Scaled to Estimated Peak Flow)"
+  }
+  if (is.null(scaled) == TRUE) {
+    par(mar = c(5.1, 4.5, 4.1, 4.3))
     adj.y <- 1.5
-    if (timestep == 1) {TimeLab <- "Hours"} else {TimeLab <- paste(as.character(timestep), "Hours", sep = " ")}
-    with(res, matplot(res[,2:4],  type = "l", lwd = 2, main = title, xlab = TimeLab, ylab = "Discharge (m3/s)", ylim = c(0, adj.y*max(res[,2],na.rm = TRUE))))
-    legend("topright", legend = c("NetRain", "Rain", "TotalFlow", "DirectRunoff", "Baseflow"), bty = "n", col = c(rgb(0,0.7,0.3), rgb(0,0.3,0.7), "black", "red", rgb(0,0.8,0.2)), lty = c(1,1,1,2,3), lwd = c(3,3,2,2,2))
+    TimeLab <- "Time (Hours)"
+    time_hours <- seq(0, by = timestep, length.out = nrow(res))
+    matplot(time_hours, res[, 2:4],
+      type = "l", lwd = 2, main = title,
+      xlab = TimeLab, ylab = expression("Discharge (m"^3 * "/s)"),
+      ylim = c(0, adj.y * max(res[, 2], na.rm = TRUE)),
+      col = c("black", "red", "forestgreen")
+    )
+    legend("topright",
+      legend = c("NetRain", "Rain"),
+      bty = "n",
+      fill = c("#008080", "darkblue"),
+      density = c(20, NA),
+      angle = c(45, NA),
+      border = c("#008080", "black"),
+      inset = c(0.05, 0)
+    )
+
+    # Second: line-style legend
+    legend("topright",
+      legend = c("TotalFlow", "DirectRunoff", "Baseflow"),
+      bty = "n",
+      col = c("black", "red", "forestgreen"),
+      lty = c(1, 2, 3),
+      lwd = 2,
+      inset = c(0, 0.1)
+    )
     par(new = T)
-    with(res, plot(res[,1],  type = "h", lwd = 3, axes = F, xlab = NA, ylab = NA, col = rgb(0,0.3,0.6), ylim = rev(c(0, adj.y*max(res[,1], na.rm = TRUE)))))
+    NetRain <- append(EffRain, NAs)
+    plot(NA,
+      xlim = range(time_hours),
+      ylim = rev(c(0, adj.y * max(res[, 1], na.rm = TRUE))),
+      axes = FALSE, xlab = NA, ylab = NA
+    )
+
     axis(side = 4)
     mtext(side = 4, line = 3, "Rainfall (mm)")
-    NetRain <- append(EffRain, NAs)
-    points(NetRain, type = "h", col = rgb(0,0.7,0.3), lwd = 3)
-    par(mar=c(5.1,4.1,4.1,2.1))}
-  else {if (timestep == 1) {TimeLab <- "Hours"} else {TimeLab <- paste(as.character(timestep), "Hours", sep = " ")}
-    plot(res2, main = titleScaled, ylab = "Discharge (m3/s)", xlab = TimeLab, type = "l", lwd = 2)}
+
+    bar_width <- diff(range(time_hours)) / (2 * length(time_hours))
+
+    # Plot bars for res[,1]
+    for (i in seq_along(time_hours)) {
+      if (!is.na(res[i, 1]) && res[i, 1] != 0) {
+        rect(
+          xleft = time_hours[i] - bar_width,
+          xright = time_hours[i] + bar_width,
+          ybottom = 0,
+          ytop = res[i, 1],
+          col = "darkblue",
+          border = "darkblue"
+        )
+      }
+    }
+
+    # NetRain bars (patterned)
+    for (i in seq_along(time_hours)) {
+      if (!is.na(NetRain[i]) && NetRain[i] != 0) {
+        rect(
+          xleft = time_hours[i] - bar_width,
+          xright = time_hours[i] + bar_width,
+          ybottom = 0,
+          ytop = NetRain[i],
+          col = "#008080",
+          border = "#008080",
+          density = 20,
+          angle = 45,
+          lwd = 2
+        )
+      }
+    }
+    par(mar = c(5.1, 4.1, 4.1, 2.1))
+  } else {
+    TimeLab <- "Time (Hours)"
+    time_hours <- seq(0, by = timestep, length.out = length(res2))
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+    par(mar = c(5.1, 4.5, 4.1, 2.1))
+    plot(time_hours, res2, main = titleScaled, ylab = expression("Discharge (m"^3 * "/s)"), xlab = TimeLab, type = "l", lwd = 2)
+  }
   NetRain <- append(EffRain, NAs)
   Output <- round(data.frame(Rain, NetRain, Runoff, Baseflow, TotalFlow), 2)
-  if(is.null(scaled) == TRUE) {Results <- Output}
-  if(is.null(scaled) == FALSE) {Results <- res2}
+  if (is.null(scaled) == TRUE) {
+    Results <- Output
+  }
+  if (is.null(scaled) == FALSE) {
+    Results <- res2
+  }
   Results <- list(Pars, Results)
   return(Results)
 }
@@ -4166,90 +5632,111 @@ ReFH <- function(CDs = NULL, Depth = NULL, duration = NULL, timestep = NULL, sca
 #'
 #' Imports the depth duration frequency 2013 or 2022 results from xml files either from an FEH webservice download or from the Peakflows dataset downloaded from the national river flow archive (NRFA) website
 #'
-#' This function returns a data-frame of results. For further durations and return periods the separate DDF function can be applied with the data-frame as the argument/input. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+#' This function returns a data-frame of design rainfall estimates. For further durations and return periods, the separate DDF function can be applied with the data-frame as the argument/input.
 #' @param x the xml file path
 #' @param ARF logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied
 #' @param Plot logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods
 #' @param DDFVersion Version of the DDF model (numeric). either 22 or 13. The default is 22.
 #' @examples
-#' #Import DDF22 results from a NRFA peakflows xml file and display in console
-#' \dontrun{DDF22.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
-#' \dontrun{DDF22.4003}
-#' #Import DDF22 results from a FEH webserver xml file and display in the console
-#' \dontrun{DDF22.MySite <- DDFImport("C:/Data/FEH_Catchment_384200_458200.xml")}
+#' # Import DDF22 results from an NRFA Peak Flows XML file and display them in console
+#' \dontrun{
+#' ddf22_4003 <- DDFImport(r"{C:\Data\NRFAPeakFlow_v11\Suitable for QMED\04003.xml}")
+#' ddf22_4003
+#' }
+#'
+#' # Import DDF22 results from a FEH webserver XML file and display them in the console
+#' \dontrun{
+#' ddf22_my_site <- DDFImport(r"{C:\Data\FEH_Catchment_384200_458200.xml}")
+#' ddf22_my_site
+#' }
+#'
 #' @return A data frame of DDF results (mm) with columns for duration and rows for return period. If Plot equals TRUE a DDF plot is also returned.
 #'
 #' @author Anthony Hammond
 DDFImport <- function(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
-  if(length(ListXML$FEHDescriptors) == 4) {
+  if (length(ListXML$FEHDescriptors) == 4) {
     print("No DDF results available in the xml file")
     Depth <- NA
     return(Depth)
   }
-  if(DDFVersion != 22 & DDFVersion !=13) stop("DDFVersion must be 22 or 13")
+  if (DDFVersion != 22 & DDFVersion != 13) stop("DDFVersion must be 22 or 13")
 
-  if(DDFVersion == 13) {
-
-    if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+  if (DDFVersion == 13) {
+    if (attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
       Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-      RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
-      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
-      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+      RP <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]), 2)
+      for (i in 3:16) {
+        Depth <- cbind(Depth, round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]), 2))
+      }
       AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
     }
-    if(attributes(ListXML)$names == "FEHDescriptors") {
+    if (attributes(ListXML)$names == "FEHDescriptors") {
       Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-      RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
-      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]),2)
-      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]),2))}
+      RP <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[2]][[1]], split = ", ")[[1]]), 2)
+      for (i in 3:16) {
+        Depth <- cbind(Depth, round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2013Values[[i]][[1]], split = ", ")[[1]]), 2))
+      }
       AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
-    }}
-  if(DDFVersion == 22) {
-    if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+    }
+  }
+  if (DDFVersion == 22) {
+    if (attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
       Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-      RP <- round(as.numeric(strsplit( ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
-      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]),2)
-      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]),2))}
+      RP <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]), 2)
+      for (i in 3:16) {
+        Depth <- cbind(Depth, round(as.numeric(strsplit(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]), 2))
+      }
       AREA <- as.numeric(ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors$area[[1]])
     }
-    if(attributes(ListXML)$names == "FEHDescriptors") {
+    if (attributes(ListXML)$names == "FEHDescriptors") {
       Hrs <- c(0.083, 0.25, 0.5, 0.75, 1, 2, 4, 6, 12, 18, 24, 48, 96, 192, 240)
-      RP <- round(as.numeric(strsplit( ListXML$FEHDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
-      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]),2)
-      for(i in 3:16) {Depth <- cbind(Depth,  round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]),2))}
+      RP <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values$ReturnPeriods[[1]], split = ",")[[1]]))
+      Depth <- round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[2]][[1]], split = ", ")[[1]]), 2)
+      for (i in 3:16) {
+        Depth <- cbind(Depth, round(as.numeric(strsplit(ListXML$FEHDescriptors$CatchmentAverageDDF2022Values[[i]][[1]], split = ", ")[[1]]), 2))
+      }
       AREA <- as.numeric(ListXML$FEHDescriptors$CatchmentDescriptors$area[[1]])
     }
-
   }
 
 
-  if(ARF == TRUE){
-    DepthsARF <- ARF(Depth[,1], Area = AREA, D = Hrs[1])
-    for(i in 2:ncol(Depth)) {DepthsARF <- cbind(DepthsARF, ARF(Depth[,i], Area = AREA, D = Hrs[i]))}
+  if (ARF == TRUE) {
+    DepthsARF <- ARF(Depth[, 1], Area = AREA, D = Hrs[1])
+    for (i in 2:ncol(Depth)) {
+      DepthsARF <- cbind(DepthsARF, ARF(Depth[, i], Area = AREA, D = Hrs[i]))
+    }
     DepthsARF <- round(DepthsARF, 1)
     Depth <- DepthsARF
   }
   colnames(Depth) <- as.character(Hrs)
   rownames(Depth) <- as.character(RP)
-  Depth <- Depth[-c(1,2, 22, 21, 20, 19),]
-  Depth <- Depth[,-1]
-  RP2 <- Depth[1,]
-  RP10 <- Depth[4,]
-  RP56 <- Depth[7,]
-  RP100 <- Depth[8,]
-  RP180 <- Depth[9,]
-  RP560 <- Depth[11,]
+  Depth <- Depth[-c(1, 2, 22, 21, 20, 19), ]
+  Depth <- Depth[, -1]
+  RP2 <- Depth[1, ]
+  RP10 <- Depth[4, ]
+  RP56 <- Depth[7, ]
+  RP100 <- Depth[8, ]
+  RP180 <- Depth[9, ]
+  RP560 <- Depth[11, ]
   DF <- data.frame(RP2, RP10, RP56, RP100, RP180, RP560)
-  if(Plot == TRUE) {
-    matplot(x = as.numeric(colnames(Depth)), DF, lty = 1, lwd = 2,
-            ylab = "Rainfall (mm)", xlab = "Duration (hrs)", col = hcl.colors(6, palette = "spectral", rev = TRUE), type = "l")
-    abline(v = seq(0, 1000,  by = 20), lty = 3)
+  if (Plot == TRUE) {
+    matplot(
+      x = as.numeric(colnames(Depth)), DF, lty = c(1, 2, 3, 4, 5, 6), lwd = 2,
+      ylab = "Rainfall (mm)", xlab = "Duration (hrs)", col = hcl.colors(6, rev = TRUE), type = "l"
+    )
+    abline(v = seq(0, 1000, by = 20), lty = 3)
     abline(h = seq(0, 1000, by = 20), lty = 3)
-    legend("topleft", legend = c("2", "10", "56", "100", "180", "560"),
-           col = hcl.colors(6, palette = "spectral", rev = TRUE), lty = 1, lwd = 2, cex = 0.7, y.intersp = 0.7,
-           x.intersp = 0.7, title = "Return Period")}
+    legend("topleft",
+      legend = c("2", "10", "56", "100", "180", "560"),
+      col = hcl.colors(6, rev = TRUE), lty = c(1, 2, 3, 4, 5, 6), lwd = 2, cex = 0.9, y.intersp = 0.7,
+      x.intersp = 0.7, title = "Return Period (yrs)"
+    )
+  }
   return(Depth)
 }
 
@@ -4261,35 +5748,44 @@ DDFImport <- function(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22) {
 #' The .xml files only provide a set number of durations and return periods for DDF13 and DDF22.
 #' This function optimises the GEV distribution on the results in order to interpolate
 #' across return periods. A linear interpolation is used between durations.
-#' The interpolation method may provide results that differ from the FEH webserver in the region of 0.1mm.
+#' The interpolation method may provide results that differ from the FEH webservice in the region of 0.1mm.
 #' The result is then rounded to an integer.
 #' @param x A data frame of DDF13 or DDF22 results imported using the DDFImport function
 #' @param duration the duration (hrs) for which a rainfall depth estimate is required
 #' @param RP the return period (years) for which a rainfall depth estimate is required
 #' @examples
-#' #Get DDF13 results from a the DDF
-#' \dontrun{DDF13.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml")}
-#' #Estimate the 20-year, 5 hour depth
-#' \dontrun{DDF(DDF13.4003, duration = 5, RP = 20)}
+#' # Import DDF13 results from an NRFA Peak Flows XML file
+#' \dontrun{
+#' ddf13_4003 <- DDFImport("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml", DDFVersion = 13)
+#' }
+#'
+#' # Estimate the 20-year, 5-hour depth
+#' \dontrun{
+#' DDF(ddf13_4003, duration = 5, RP = 20)
+#' }
+#'
 #' @return A DDF13 or DDF22 estimate of rainfall depth (mm)
 #' @author Anthony Hammond
 DDF <- function(x, duration, RP = 100) {
-  if(duration > 240 | duration < 0.25) stop("Duration outside range (0.25 to 240 hours)")
-  if(RP < 2 | RP > 1000) stop("RP outside range (2 to 1000)")
+  if (duration > 240 | duration < 0.25) stop("Duration outside range (0.25 to 240 hours)")
+  if (RP < 2 | RP > 1000) stop("RP outside range (2 to 1000)")
   Hrs <- as.numeric(colnames(x))
   RPs <- as.numeric(rownames(x))
   ColN1 <- max(which(Hrs <= duration))
   ColN2 <- min(which(Hrs >= duration))
-  Optim1 <- OptimPars(data.frame(RPs[1:12], x[1:12,ColN1]), dist = "GEV")
+  Optim1 <- OptimPars(data.frame(RPs[1:12], x[1:12, ColN1]), dist = "GEV")
   Est1 <- GEVEst(Optim1$loc, Optim1$scale, Optim1$shape, RP = RP)
-  Optim2 <- OptimPars(data.frame(RPs[1:12], x[1:12,ColN2]), dist = "GEV")
+  Optim2 <- OptimPars(data.frame(RPs[1:12], x[1:12, ColN2]), dist = "GEV")
   Est2 <- GEVEst(Optim2$loc, Optim2$scale, Optim2$shape, RP = RP)
   HrMod <- c(Hrs[ColN1], Hrs[ColN2])
   EstMod <- c(Est1, Est2)
   LM <- lm(EstMod ~ HrMod)
-  Result <-  as.numeric(LM$coefficients[2])*duration + as.numeric(LM$coefficients[1])
-  if(ColN1 == ColN2) {
-    Result <- Est1} else {Result <- Result}
+  Result <- as.numeric(LM$coefficients[2]) * duration + as.numeric(LM$coefficients[1])
+  if (ColN1 == ColN2) {
+    Result <- Est1
+  } else {
+    Result <- Result
+  }
   Result <- round(Result)
   return(Result)
 }
@@ -4302,52 +5798,67 @@ DDF <- function(x, duration, RP = 100) {
 #' This function is coded to import DDF99 parameters from xml files from the NRFA or the FEH web-server. File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 #' @param x the xml file path
 #' @examples
-#' #Import DDF99 parameters from a NRFA peakflows xml file and display in console
-#' \dontrun{DDF99.4003 <- DDF99Pars("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")}
-#' \dontrun{DDF99.4003}
-#' #Import DDF99 parameters from a FEH webserver xml file and display in the console
-#' \dontrun{DDF99.MySite <- DDF99Pars("C:/Data/FEH_Catchment_384200_458200.xml")}
-#' @return A list with two elements, each a data frame with columns; parameters and associated Values
+#' # Import DDF99 parameters from an NRFA Peak Flows XML file and display in console
+#' \dontrun{
+#' ddf99_4003 <- DDF99Pars("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/04003.xml")
+#' ddf99_4003
+#' }
+#'
+#' # Import DDF99 parameters from a FEH webserver XML file and display in the console
+#' \dontrun{
+#' ddf99_my_site <- DDF99Pars("C:/Data/FEH_Catchment_384200_458200.xml")
+#' ddf99_my_site
+#' }
+#'
+#' @return A list with two elements, each a data frame with columns; parameters and associated values
 #' The first data frame is for the catchment average parameters (these still require an ARF adjustment where appropriate) and the second for the 1km2 grid point parameters.
 #' @author Anthony Hammond
 DDF99Pars <- function(x) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
   Par <- c("c", "d1", "d2", "d3", "e", "f")
-  if(attributes(ListXML)$names == "FEHDescriptors") {
-    Value <- as.numeric(c(ListXML$FEHDescriptors$CatchmentAverageDDFValues$c,
-                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d1,
-                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d2,
-                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$d3,
-                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$e,
-                          ListXML$FEHDescriptors$CatchmentAverageDDFValues$f))
+  if (attributes(ListXML)$names == "FEHDescriptors") {
+    Value <- as.numeric(c(
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$c,
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$d1,
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$d2,
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$d3,
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$e,
+      ListXML$FEHDescriptors$CatchmentAverageDDFValues$f
+    ))
     CatchmentAverage <- data.frame(Par, Value)
 
-    Value <- as.numeric(c(ListXML$FEHDescriptors$PointDDFValues$c_1_km,
-                          ListXML$FEHDescriptors$PointDDFValues$d1_1_km,
-                          ListXML$FEHDescriptors$PointDDFValues$d2_1_km,
-                          ListXML$FEHDescriptors$PointDDFValues$d3_1_km,
-                          ListXML$FEHDescriptors$PointDDFValues$e_1_km,
-                          ListXML$FEHDescriptors$PointDDFValues$f_1_km))
+    Value <- as.numeric(c(
+      ListXML$FEHDescriptors$PointDDFValues$c_1_km,
+      ListXML$FEHDescriptors$PointDDFValues$d1_1_km,
+      ListXML$FEHDescriptors$PointDDFValues$d2_1_km,
+      ListXML$FEHDescriptors$PointDDFValues$d3_1_km,
+      ListXML$FEHDescriptors$PointDDFValues$e_1_km,
+      ListXML$FEHDescriptors$PointDDFValues$f_1_km
+    ))
     Point <- data.frame(Par, Value)
     Result <- list(CatchmentAverage, Point)
     names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
   }
-  if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
-    Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$c,
-                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d1,
-                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d2,
-                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d3,
-                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$e,
-                          ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$f))
+  if (attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
+    Value <- as.numeric(c(
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$c,
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d1,
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d2,
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$d3,
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$e,
+      ListXML$FEHCDROMExportedDescriptors$CatchmentAverageDDFValues$f
+    ))
     CatchmentTypicalPoint <- data.frame(Par, Value)
 
-    Value <- as.numeric(c(ListXML$FEHCDROMExportedDescriptors$PointDDFValues$c_1_km,
-                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d1_1_km,
-                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d2_1_km,
-                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d3_1_km,
-                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$e_1_km,
-                          ListXML$FEHCDROMExportedDescriptors$PointDDFValues$f_1_km))
+    Value <- as.numeric(c(
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$c_1_km,
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d1_1_km,
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d2_1_km,
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$d3_1_km,
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$e_1_km,
+      ListXML$FEHCDROMExportedDescriptors$PointDDFValues$f_1_km
+    ))
     Point <- data.frame(Par, Value)
     Result <- list(CatchmentTypicalPoint, Point)
     names(Result) <- c("CatchmentTypicalPoint", "1kmGridPoint")
@@ -4369,19 +5880,25 @@ DDF99Pars <- function(x) {
 #' @param disc converts from the sliding duration to fixed duration estimate. Choices are "hourly" or "daily"
 #' @param Depth a user supplied rainfall depth for the duration under question
 #' @examples
-#' #Examples from FEH volume 2
-#' #The parameters for these examples are from FEH v2
-#' #What is the 2-day rainfall with return period 100-years for Norwich.
+#' # Examples from FEH volume 2
+#' # The parameters for these examples are from FEH v2
+#'
+#' # What is the 2-day rainfall with return period 100 years for Norwich?
 #' DDF99(Duration = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
-#' #What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment
+#'
+#' # What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment?
 #' DDF99(Duration = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
-#' #How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
+#'
+#' # How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
 #' DDF99(Duration = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
+#'
 #' @return the rainfall depth or rainfall return period
 #' @author Anthony Hammond
 
 DDF99 <- function(Duration, RP, pars, Depth = NULL, disc = NULL) {
-  if(is.null(Depth) == TRUE) {y <- -log(-log(1-(1/RP)))}
+  if (is.null(Depth) == TRUE) {
+    y <- -log(-log(1 - (1 / RP)))
+  }
   c <- pars[1]
   d1 <- pars[2]
   d2 <- pars[3]
@@ -4389,36 +5906,87 @@ DDF99 <- function(Duration, RP, pars, Depth = NULL, disc = NULL) {
   e <- pars[5]
   f <- pars[6]
   D <- Duration
-  if(D > 192|D < 1) stop ("Duration outside calibration range")
-  if(is.null(Depth) == FALSE){
-    if(D <= 12) {Y <- (log(Depth)-f-d1*log(D))/(c*log(D)+e)}
-    if(D > 12 & D <= 48) {Y <- (log(Depth)-f-d1*log(12)+d2*(log(12)-log(D))) / (c*log(D)+e)}
-    if(D > 48) {Y <- (log(Depth)-f-d1*log(12)+d2*(log(12)-log(48))+d3*(log(48)-log(D))) / (c*log(D)+e)}
-    ReturnPeriod <- 1/(1-exp(-exp(-Y)))
-    if(is.null(disc) == FALSE) {
-      ModDays <- function(days) {-0.055935*days + 0.003871*days^2 + 1.210000}
-      HourMod <- function(h) {-0.13706*log(h) + 0.03122*log(h)^2 + 1.16000}
-      if(disc == "daily") {if(D/24 <=8 ) {dpth <- Depth*round(ModDays(D/24),2)} else {dpth <- Depth}}
-      if(disc == "hourly") {if(D <= 8) {dpth <- Depth*round(HourMod(D),2)} else {dpth <- Depth}}}
-    if(is.null(disc) == TRUE) {print("Return Period")
-      return(ReturnPeriod)} else {
-        print("sliding duration depth")
-        return(dpth)}
-  }
-  else {
-    if(D <= 12) {lnR <- (c*y + d1)* log(D) + e*y +f}
-    lnR12 <- (c*y + d1)* log(12) + e*y+f
-    if(D > 12 & D <= 48) {lnR <- lnR12 + (c*y + d2) * (log(D) - log(12))}
-    lnR48 <- lnR12 + (c*y + d2) * (log(48) - log(12))
-    if(D > 48) {lnR <- lnR48 + (c*y+d3)*(log(D)-log(48))}
+  if (D > 192 | D < 1) stop("Duration outside calibration range")
+  if (is.null(Depth) == FALSE) {
+    if (D <= 12) {
+      Y <- (log(Depth) - f - d1 * log(D)) / (c * log(D) + e)
+    }
+    if (D > 12 & D <= 48) {
+      Y <- (log(Depth) - f - d1 * log(12) + d2 * (log(12) - log(D))) / (c * log(D) + e)
+    }
+    if (D > 48) {
+      Y <- (log(Depth) - f - d1 * log(12) + d2 * (log(12) - log(48)) + d3 * (log(48) - log(D))) / (c * log(D) + e)
+    }
+    ReturnPeriod <- 1 / (1 - exp(-exp(-Y)))
+    if (is.null(disc) == FALSE) {
+      ModDays <- function(days) {
+        -0.055935 * days + 0.003871 * days^2 + 1.210000
+      }
+      HourMod <- function(h) {
+        -0.13706 * log(h) + 0.03122 * log(h)^2 + 1.16000
+      }
+      if (disc == "daily") {
+        if (D / 24 <= 8) {
+          dpth <- Depth * round(ModDays(D / 24), 2)
+        } else {
+          dpth <- Depth
+        }
+      }
+      if (disc == "hourly") {
+        if (D <= 8) {
+          dpth <- Depth * round(HourMod(D), 2)
+        } else {
+          dpth <- Depth
+        }
+      }
+    }
+    if (is.null(disc) == TRUE) {
+      print("Return Period")
+      return(ReturnPeriod)
+    } else {
+      print("sliding duration depth")
+      return(dpth)
+    }
+  } else {
+    if (D <= 12) {
+      lnR <- (c * y + d1) * log(D) + e * y + f
+    }
+    lnR12 <- (c * y + d1) * log(12) + e * y + f
+    if (D > 12 & D <= 48) {
+      lnR <- lnR12 + (c * y + d2) * (log(D) - log(12))
+    }
+    lnR48 <- lnR12 + (c * y + d2) * (log(48) - log(12))
+    if (D > 48) {
+      lnR <- lnR48 + (c * y + d3) * (log(D) - log(48))
+    }
     res <- exp(lnR)
     resRound <- round(res, 3)
-    if(is.null(disc) == TRUE) {resRound <- resRound} else {
-      ModDays <- function(days) {-0.055935*days + 0.003871*days^2 + 1.210000}
-      HourMod <- function(h) {-0.13706*log(h) + 0.03122*log(h)^2 + 1.16000}
-      if(disc == "daily") {if(D/24 <=8 ) {resRound <- resRound/round(ModDays(D/24),2)} else {resRound <- resRound}}
-      if(disc == "hourly") {if(D <= 8) {resRound <- resRound/round(HourMod(D),2)} else {resRound <- resRound}}}
-    return(resRound)}
+    if (is.null(disc) == TRUE) {
+      resRound <- resRound
+    } else {
+      ModDays <- function(days) {
+        -0.055935 * days + 0.003871 * days^2 + 1.210000
+      }
+      HourMod <- function(h) {
+        -0.13706 * log(h) + 0.03122 * log(h)^2 + 1.16000
+      }
+      if (disc == "daily") {
+        if (D / 24 <= 8) {
+          resRound <- resRound / round(ModDays(D / 24), 2)
+        } else {
+          resRound <- resRound
+        }
+      }
+      if (disc == "hourly") {
+        if (D <= 8) {
+          resRound <- resRound / round(HourMod(D), 2)
+        } else {
+          resRound <- resRound
+        }
+      }
+    }
+    return(resRound)
+  }
 }
 
 
@@ -4433,32 +6001,34 @@ DDF99 <- function(Duration, RP, pars, Depth = NULL, disc = NULL) {
 #' @param Area catchment area in km2
 #' @param D duration in hours
 #' @examples
-#' #Derive the ARF for a depth of 30, an area of 500km2 and a duration of 12 hours
+#' # Derive the ARF for a depth of 30, an area of 500km^2 and a duration of 12 hours
 #' ARF(30, 500, 12)
+#'
 #' @return the rainfall depth or rainfall return period
 #' @author Anthony Hammond
-ARF <- function(Depth, Area, D){
-  if(Area <= 20)
-  {a <- 0.4 - 0.0208* log(4.6-log(Area))
-  b <- 0.0394*Area^0.354}
-  if(Area > 20 & Area < 100){
-    a <- 0.4 - 0.00382*(4.6 - log(Area))^2
-    b <- 0.0494*Area^0.354
+ARF <- function(Depth, Area, D) {
+  if (Area <= 20) {
+    a <- 0.4 - 0.0208 * log(4.6 - log(Area))
+    b <- 0.0394 * Area^0.354
   }
-  if(Area >= 100 & Area <500) {
+  if (Area > 20 & Area < 100) {
     a <- 0.4 - 0.00382 * (4.6 - log(Area))^2
-    b <- 0.0627*Area^0.254
+    b <- 0.0394 * Area^0.354
   }
-  if(Area >= 500 & Area < 1000) {
+  if (Area >= 100 & Area < 500) {
+    a <- 0.4 - 0.00382 * (4.6 - log(Area))^2
+    b <- 0.0627 * Area^0.254
+  }
+  if (Area >= 500 & Area < 1000) {
     a <- 0.4 - 0.0208 * log(log(Area) - 4.6)
-    b <- 0.0627*Area^0.254
+    b <- 0.0627 * Area^0.254
   }
-  if(Area >= 1000) {
+  if (Area >= 1000) {
     a <- 0.4 - 0.0208 * log(log(Area) - 4.6)
     b <- 0.1050 * Area^0.180
   }
-  ARF <- 1-b*D^-a
-  resARF <- Depth*ARF
+  ARF <- 1 - b * D^-a
+  resARF <- Depth * ARF
   return(resARF)
 }
 
@@ -4468,16 +6038,16 @@ ARF <- function(Depth, Area, D){
 #'
 #' The results of applying the ratio of the seasonal annual maximum rainfall for a given duration to the annual maximum rainfall for the same duration
 #'
-#' The SCF and it's use is detailed in R&D Technical Report FD1913/TR - Revitalisation of the FSR/FEH rainfall runoff method (2005). The ReFH model has a design rainfall profile included for winter and summer but the depth duration frequency (DDF) model is calibrated on annual maximum peaks as opposed to seasonal peaks. The SCF is necessary to convert the DDF estimate to a seasonal one. Similarly, the DDF model is calibrated on point rainfall and the area reduction factor converts it to a catchment rainfall for use with a rainfall runoff model such as ReFH (see details of the ReFH function).The final depth, therefore is; Depth = DDFdepth x ARF x SCF.
+#' The SCF and its use is detailed in R&D Technical Report FD1913/TR - Revitalisation of the FSR/FEH rainfall runoff method (2005). The ReFH model has a design rainfall profile included for winter and summer but the depth duration frequency (DDF) model is calibrated on annual maximum peaks as opposed to seasonal peaks. The SCF is necessary to convert the DDF estimate to a seasonal one. Similarly, the DDF model is calibrated on point rainfall and the area reduction factor converts it to a catchment rainfall for use with a rainfall runoff model such as ReFH (see details of the ReFH function). The final depth, therefore, is; Depth = DDFdepth x ARF x SCF. Note that the SCF function (as detailed in FEH volume 2) was derived for durations of up to one day.
 #' @param SAAR standardised average annual rainfall. Numeric
 #' @param duration duration in hours. Numeric
 #' @examples
-#' #Derive the SCFs for a SAAR of 1981 and a duration of 6.5
+#' # Derive the SCF for a SAAR of 1981 and a duration of 6.5 hours
 #' SCF(1981, 6.5)
+#'
 #' @return A data.frame of one row and two columns: SCFSummer and SCFWinter.
 #' @author Anthony Hammond
-SCF <- function (SAAR, duration)
-{
+SCF <- function(SAAR, duration) {
   if (duration < 1) {
     duration <- 1
   }
@@ -4485,27 +6055,51 @@ SCF <- function (SAAR, duration)
     duration <- 24
   }
   alphaMod <- function(x) {
-    if(duration >=1 & duration <= 2) {alpha <- 1.16e-05*duration - 9.19e-05}
-    if(duration > 2 & duration < 6) {alpha <- 4.85e-06*duration - 7.84e-05}
-    if(duration >= 6 & duration <= 24){alpha <- -2.961e-06*duration - 3.153e-05}
+    if (duration >= 1 & duration <= 2) {
+      alpha <- 1.16e-05 * duration - 9.19e-05
+    }
+    if (duration > 2 & duration < 6) {
+      alpha <- 4.85e-06 * duration - 7.84e-05
+    }
+    if (duration >= 6 & duration <= 24) {
+      alpha <- -2.961e-06 * duration - 3.153e-05
+    }
     return(alpha)
   }
   betaMod <- function(x) {
-    if(duration >= 1 & duration <= 2) {beta <- -0.01*duration + 1.05}
-    if(duration > 2 & duration < 6) {beta <--0.0025*duration + 1.0350}
-    if(duration >= 6 & duration <= 24){beta <- 0.001667*duration + 1.010000}
+    if (duration >= 1 & duration <= 2) {
+      beta <- -0.01 * duration + 1.05
+    }
+    if (duration > 2 & duration < 6) {
+      beta <- -0.0025 * duration + 1.0350
+    }
+    if (duration >= 6 & duration <= 24) {
+      beta <- 0.001667 * duration + 1.010000
+    }
     return(beta)
   }
   phiMod <- function(x) {
-    if(duration >= 1 & duration <= 2) {phi <- 2e-04*duration + 2e-04}
-    if(duration > 2 & duration < 6) {phi <- 7.5e-05*duration + 4.5e-04}
-    if(duration >= 6 & duration <= 24){phi <- 1.111e-05*duration + 8.333e-04}
+    if (duration >= 1 & duration <= 2) {
+      phi <- 2e-04 * duration + 2e-04
+    }
+    if (duration > 2 & duration < 6) {
+      phi <- 7.5e-05 * duration + 4.5e-04
+    }
+    if (duration >= 6 & duration <= 24) {
+      phi <- 1.111e-05 * duration + 8.333e-04
+    }
     return(phi)
   }
   psiMod <- function(x) {
-    if(duration >= 1 & duration <= 2) {psi <- 0.0454*duration + 0.3546}
-    if(duration > 2 & duration < 6) {psi <- 0.00545*duration + 0.43450}
-    if(duration >= 6 & duration <= 24){psi <- 0.003672*duration + 0.445167}
+    if (duration >= 1 & duration <= 2) {
+      psi <- 0.0454 * duration + 0.3546
+    }
+    if (duration > 2 & duration < 6) {
+      psi <- 0.00545 * duration + 0.43450
+    }
+    if (duration >= 6 & duration <= 24) {
+      psi <- 0.003672 * duration + 0.445167
+    }
     return(psi)
   }
   alpha <- alphaMod(duration)
@@ -4514,8 +6108,7 @@ SCF <- function (SAAR, duration)
   psi <- psiMod(duration)
   if (SAAR == 500) {
     SCFSummer <- 1
-  }
-  else {
+  } else {
     SCFSummer <- alpha * SAAR + beta
   }
   SCFWinter <- (1 - exp(-phi * SAAR))^psi
@@ -4535,22 +6128,28 @@ SCF <- function (SAAR, duration)
 #' @param RP return period of the events
 #' @param dist choice of probability distribution. Either "Poisson" or "Binomial"
 #' @examples
-#' #Calculate the probability of exceeding at least one 50-yr RP event
-#' #over a 10 year period, using the Poisson distribution.
+#' # Calculate the probability of exceeding at least one 50-year RP event
+#' # over a 10-year period, using the Poisson distribution
 #' EncProb(n = 1, yrs = 10, RP = 50)
-#' #Calculate the probability of exceeding at least two 100-yr RP events
-#' #over a 100 year period, using the binomial distribution.
+#'
+#' # Calculate the probability of exceeding at least two 100-year RP events
+#' # over a 100-year period, using the Binomial distribution
 #' EncProb(n = 2, yrs = 100, RP = 100, dist = "Binomial")
+#'
 #' @return A probability
 #' @author Anthony Hammond
 
 EncProb <- function(n, yrs, RP, dist = "Poisson") {
-  if(dist != "Poisson" & dist !="Binomial") stop ("dist must be either Poisson or Binomial written with inverted commas")
-  if(dist == "Poisson"){
-    Enc.Prob <- function(n = 1, yrs, RP) {1-ppois(n-1, yrs*(1/RP))}
+  if (dist != "Poisson" & dist != "Binomial") stop("dist must be either Poisson or Binomial written with inverted commas")
+  if (dist == "Poisson") {
+    Enc.Prob <- function(n = 1, yrs, RP) {
+      1 - ppois(n - 1, yrs * (1 / RP))
+    }
   }
-  if(dist == "Binomial") {
-    Enc.Prob <- function(n = 1, yrs, RP) {1-pbinom(n-1, yrs, (1/RP))}
+  if (dist == "Binomial") {
+    Enc.Prob <- function(n = 1, yrs, RP) {
+      1 - pbinom(n - 1, yrs, (1 / RP))
+    }
   }
   Res <- Enc.Prob(n = n, yrs = yrs, RP = RP)
   return(Res)
@@ -4572,28 +6171,37 @@ EncProb <- function(n, yrs, RP, dist = "Poisson") {
 #' @param method a choice of test method. Choices are "mk" (Mann Kendall - the default), "pearson", and "spearman".
 #' @param alternative the alternative hypothesis. Options are "less", "greater", and "two.sided". The default is "two.sided".
 #' @examples
-#' #Get AMAX sample and apply a trend test with the default Mann Kendall test.
-#' AM.27083 <- GetAM(27083)
-#' TrendTest(AM.27083)
-#' #Apply the test with the pearson method with dates included and not
-#' TrendTest(AM.27083, method = "pearson")
-#' TrendTest(AM.27083$Flow, method = "pearson")
-#' #Apply the default mk test for positive trend
-#' TrendTest(AM.27083$Flow, alternative = "greater")
+#' # Get an AMAX sample and apply a trend test with the default Mann-Kendall test
+#' am_27083 <- GetAM(27083)
+#' TrendTest(am_27083)
+#'
+#' # Apply the test with the Pearson correlation method with dates
+#' # included (full object) and not (flow values only)
+#' TrendTest(am_27083, method = "pearson")
+#' TrendTest(am_27083$Flow, method = "pearson")
+#'
+#' # Apply the default Mann-Kendall test for positive trend
+#' TrendTest(am_27083$Flow, alternative = "greater")
+#'
 #' @return A data.frame with columns and associated values: P_value, statistic (Kendall's tau, Spearman's rho, or Pearson's correlation coefficient), and a standardised distribution value. The latter is either the z score (for MK test) or students 't' of the observed statistic under the null hypothesis.
 #' @author Anthony Hammond
 
-TrendTest <- function (x, method = "mk", alternative = "two.sided")
-{
-  if(method != "mk" & method != "spearman" & method != "pearson") stop("Method should be one of mk, spearman, or pearson")
-  if(alternative != "two.sided" & alternative != "greater" & alternative != "less") stop("alternative should be one of two.sided, greater, or less")
-  if(anyNA(x)) warning("At least one value in x is NA. NA's have been removed")
-  if(class(x) == class(data.frame(rep(NA,4)))) {
-    NAIndex <- which(is.na(x[,2]))
-    if(length(NAIndex) < 1) {x <- x} else{x <- x[-NAIndex, ]  }
+TrendTest <- function(x, method = "mk", alternative = "two.sided") {
+  if (method != "mk" & method != "spearman" & method != "pearson") stop("Method should be one of mk, spearman, or pearson")
+  if (alternative != "two.sided" & alternative != "greater" & alternative != "less") stop("alternative should be one of two.sided, greater, or less")
+  if (anyNA(x)) warning("At least one value in x is NA. NA's have been removed")
+  if (class(x) == class(data.frame(rep(NA, 4)))) {
+    NAIndex <- which(is.na(x[, 2]))
+    if (length(NAIndex) < 1) {
+      x <- x
+    } else {
+      x <- x[-NAIndex, ]
     }
-  if(class(x) == class(runif(2))) {x <-x[!is.na(x)]}
-  if(method == "mk") {
+  }
+  if (class(x) == class(runif(2))) {
+    x <- x[!is.na(x)]
+  }
+  if (method == "mk") {
     MannKendallTest <- function(x) {
       Order <- seq(1, length(x), by = 1)
       Ranks <- rank(x)
@@ -4625,7 +6233,9 @@ TrendTest <- function (x, method = "mk", alternative = "two.sided")
       }))
 
       VarS <- (N * (N - 1) * (2 * N + 5) - tieCorrections) / 18
-      if(length(uniqueRanks) != length(Ranks)) {tau <- cor(x, seq(1, N), method = "kendall")}
+      if (length(uniqueRanks) != length(Ranks)) {
+        tau <- cor(x, seq(1, N), method = "kendall")
+      }
 
       if (S > 0) {
         z <- (S - 1) / sqrt(VarS)
@@ -4649,44 +6259,58 @@ TrendTest <- function (x, method = "mk", alternative = "two.sided")
       ResDF <- data.frame(N, S, VarS, tau, z, BothSided, GreaterP, LessP)
       return(ResDF)
     }
-    if(class(x) == class(data.frame(seq(1,3)))) {x <- x[,2]}
+    if (class(x) == class(data.frame(seq(1, 3)))) {
+      x <- x[, 2]
+    }
     Result <- MannKendallTest(x)
-    if(alternative == "greater") {Result <- Result[,c(7, 4, 5)]}
-    if(alternative == "two.sided") {Result <- Result[,c(6, 4, 5)]}
-    if(alternative == "less") {Result <- Result[,c(8, 4, 5)]}
-    colnames(Result) <- c("P_value", "tau" ,"z")
+    if (alternative == "greater") {
+      Result <- Result[, c(7, 4, 5)]
+    }
+    if (alternative == "two.sided") {
+      Result <- Result[, c(6, 4, 5)]
+    }
+    if (alternative == "less") {
+      Result <- Result[, c(8, 4, 5)]
+    }
+    colnames(Result) <- c("P_value", "tau", "z")
     rownames(Result) <- "Result:"
     return(Result)
   }
-  if(method != "mk") {
-
+  if (method != "mk") {
     if (is(x, "numeric") == TRUE | is(x, "integer") == TRUE) {
       Res <- suppressWarnings(cor.test(x, seq(1, length(x)),
-                                       method = method, alternative = alternative))
+        method = method, alternative = alternative
+      ))
       N <- length(x)
-
-    }
-    else {
+    } else {
       DayDiffs <- NULL
       for (i in 1:length(x[, 1])) {
         DayDiffs[i] <- as.numeric(x[, 1][i] - x[, 1][1])
         N <- nrow(x)
       }
-      YrDiffs <- DayDiffs/365.25
-      Res <- suppressWarnings(cor.test(x[, 2], YrDiffs, method = method,
-                                       alternative = alternative))
+      YrDiffs <- DayDiffs / 365.25
+      Res <- suppressWarnings(cor.test(x[, 2], YrDiffs,
+        method = method,
+        alternative = alternative
+      ))
     }
     P_value <- Res[3]$p.value
     cor <- Res[4]$estimate
     Statistic <- Res[1]$statistic
-    if(method == "spearman") {
-      tauRho <- function(n, Rho) {Rho*( sqrt( (n-2) / (1-Rho^2) ) )}
+    if (method == "spearman") {
+      tauRho <- function(n, Rho) {
+        Rho * (sqrt((n - 2) / (1 - Rho^2)))
+      }
       Statistic <- tauRho(n = N, Rho = cor)
     }
     Result <- data.frame(P_value, cor, Statistic, row.names = "Result:")
-    if(method == "spearman" | method == "pearson") {colnames(Result)[3] <- "t"}
-    if(method == "spearman") {colnames(Result)[2] <- "rho"}
-    #if(method == "kendall") {colnames(Result)[3] <- "z"}
+    if (method == "spearman" | method == "pearson") {
+      colnames(Result)[3] <- "t"
+    }
+    if (method == "spearman") {
+      colnames(Result)[2] <- "rho"
+    }
+    # if(method == "kendall") {colnames(Result)[3] <- "z"}
     return(Result)
   }
 }
@@ -4697,121 +6321,175 @@ TrendTest <- function (x, method = "mk", alternative = "two.sided")
 
 #' British national grid reference (NGR) distances
 #'
-#' Calculates the euclidean distance between two british national grid reference points using the pythagorean method
-#' @details Note, that the result is converted to km when six digits are used for easting and northing, when six digits would usually provide a result in metres.
+#' Calculates the Euclidean distance between two British national grid reference points using the Pythagorean/Euclidean method.
+#' @details Note, that the result is converted to km from m.
 #' @param i a numeric vector of length two. The first being the easting and the second being the northing of the first site
 #' @param j a numeric vector of length two. The first being the easting and the second being the northing of the second site
 #' @examples
-#' #Calculate the distance between the catchment centroid for the
-#' #Kingston upon Thames river gauge and the catchment centroid for the
-#' #gauge at Ardlethen on the River Ythan. First view the eastings and northings
+#' # Calculate the distance between the catchment centroid for the
+#' # Kingston upon Thames river gauge and the catchment centroid for the
+#' # gauge at Ardlethen on the River Ythan.
+#' # First retrieve the catchment descriptors (CDs) to obtain eastings and northings
 #' GetCDs(10001)
 #' GetCDs(39001)
+#'
+#' # Calculate the distance between two centroids (eastings and northings)
 #' NGRDist(i = c(381355, 839183), j = c(462899, 187850))
-#' @return A distance in kilometres (if six digits for easting and northing are used)
+#'
+#' @return A distance in kilometres (if British national grid easting and northing are applied)
 #' @author Anthony Hammond
 
-NGRDist <- function(i, j) {sqrt((i[1]-j[1])^2+(i[2]-j[2])^2)/1000}
+NGRDist <- function(i, j) {
+  # Input checks
+  if (!is.numeric(i) || length(i) != 2) {
+    stop("Argument 'i' must be a numeric vector of length 2.")
+  }
+  if (!is.numeric(j) || length(j) != 2) {
+    stop("Argument 'j' must be a numeric vector of length 2.")
+  }
+
+  # Calculate Euclidean distance in kilometres
+  sqrt((i[1] - j[1])^2 + (i[2] - j[2])^2) / 1000
+}
+
 
 
 # BFI -----------------------------------------------------------------
 
 #' Baseflow index (BFI)
 #'
-#'@description Calculates the baseflow index from a daily mean flow series
-#'@details The baseflow index is calculated using the method outlined in Gustard, A. Bullock, A. Dixon, J. M.. (1992). Low flow estimation in the United Kingdom. Wallingford, Institute of Hydrology, 88pp. (IH Report No.108)
-#'@param Q the daily mean flow series. Numeric vector
-#'@param x.lim the x axis limits of the plot. Numeric vector of length two Default is the extents of the data
-#'@param y.lim the y axis limits of the plot. Numeric vector of length two. Default is the extents of the data
-#'@param PlotTitle the title of the plot. The default is "Baseflow plot"
-#'@param Plot a logical argument with a default of TRUE. If TRUE the daily flow is plotted with the baseflow highlighted.
-#'@examples
-#'# Calculate the BFI from daily discharge at Kingston upon Thames;
-#'# which is in column three of the ThamesPQ data
-#'BFI(ThamesPQ[,3])
-#'@return the baseflow index and if Plot equals TRUE, a plot showing the flow time series (black) and the associated baseflow (red)
-#'@author Anthony Hammond
+#' @description Calculates the baseflow index from a daily mean flow series
+#' @details The baseflow index is calculated using the method outlined in Gustard, A. Bullock, A. Dixon, J. M.. (1992). Low flow estimation in the United Kingdom. Wallingford, Institute of Hydrology, 88pp. (IH Report No.108)
+#' @param Q the daily mean flow series. Numeric vector
+#' @param x.lim the x axis limits of the plot. Numeric vector of length two. Default is the extent of the data
+#' @param y.lim the y axis limits of the plot. Numeric vector of length two. Default is the extent of the data
+#' @param PlotTitle the title of the plot. The default is "Baseflow plot"
+#' @param Plot a logical argument with a default of TRUE. If TRUE the daily flow is plotted with the baseflow highlighted.
+#' @examples
+#' # Calculate the BFI from the daily discharge at Kingston upon Thames,
+#' # which is in column three of the ThamesPQ data
+#' BFI(ThamesPQ[, 3])
+#'
+#' @return the baseflow index and if Plot equals TRUE, a plot showing the flow time series (black) and the associated baseflow (red)
+#' @author Anthony Hammond
 BFI <- function(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot", Plot = TRUE) {
-  if(is.numeric(Q) == FALSE) {stop("Q must be a numeric vector")}
+  if (is.numeric(Q) == FALSE) {
+    stop("Q must be a numeric vector")
+  }
   LenNA <- length(is.na(Q)[is.na(Q) == TRUE])
-  if(LenNA > 0) {print("There is missing data. The associated days have been removed. This may compromise results")}
-  if(LenNA > 0) {Q <- Q[-which(is.na(Q) == TRUE)]}
-  SplitLength <- floor(length(Q)/5)
-  Q <- Q[1:(SplitLength*5)]
+  if (LenNA > 0) {
+    print("There is missing data. The associated days have been removed. This may compromise results")
+  }
+  if (LenNA > 0) {
+    Q <- Q[-which(is.na(Q) == TRUE)]
+  }
+  SplitLength <- floor(length(Q) / 5)
+  Q <- Q[1:(SplitLength * 5)]
   Mat <- matrix(Q, nrow = 5, ncol = SplitLength)
   MinInd <- NULL
-  for(i in 1:ncol(Mat)) {suppressWarnings(MinInd[i] <- which(Mat[,i] == min(Mat[,i], na.rm = TRUE)))}
+  for (i in 1:ncol(Mat)) {
+    suppressWarnings(MinInd[i] <- which(Mat[, i] == min(Mat[, i], na.rm = TRUE)))
+  }
   Mins <- apply(Mat, 2, min, na.rm = TRUE)
-  TPLogic <- NULL #TurningPoints
-  for(i in 2:(length(Mins)-1)){TPLogic[i] <-
-    if(Mins[i]*0.9 < Mins[i-1] & Mins[i]*0.9 < Mins[i+1]) {TP <- TRUE} else {TP<- FALSE}}
+  TPLogic <- NULL # TurningPoints
+  for (i in 2:(length(Mins) - 1)) {
+    TPLogic[i] <-
+      if (Mins[i] * 0.9 < Mins[i - 1] & Mins[i] * 0.9 < Mins[i + 1]) {
+        TP <- TRUE
+      } else {
+        TP <- FALSE
+      }
+  }
   TPLogic <- append(TPLogic, TRUE)
   TPLogic[1] <- TRUE
   Seq5 <- seq(0, length.out = length(MinInd), by = 5)
-  MinIndProp <- MinInd+Seq5
+  MinIndProp <- MinInd + Seq5
   TPind <- which(TPLogic == TRUE)
   TPMinInd <- MinIndProp[TPind]
   QNA <- rep(NA, length(Q))
   QNA[TPMinInd] <- Q[TPMinInd]
   TurnPts <- which(is.na(QNA) == FALSE)
   IntFunc <- function(j) {
-    Dist <- (TurnPts[(j+1)]-TurnPts[j])
-    Diff <- QNA[TurnPts[(j+1)]]-QNA[TurnPts[j]]
-    if(Diff == 0) {Interp <- rep(QNA[TurnPts[j]], times = Dist+1)} else {
-      IntVal <- Diff/Dist
-      Interp <- seq(QNA[TurnPts[j]], QNA[TurnPts[(j+1)]], by = IntVal)}
+    Dist <- (TurnPts[(j + 1)] - TurnPts[j])
+    Diff <- QNA[TurnPts[(j + 1)]] - QNA[TurnPts[j]]
+    if (Diff == 0) {
+      Interp <- rep(QNA[TurnPts[j]], times = Dist + 1)
+    } else {
+      IntVal <- Diff / Dist
+      Interp <- seq(QNA[TurnPts[j]], QNA[TurnPts[(j + 1)]], by = IntVal)
+    }
     Interp <- Interp[-length(Interp)]
     return(Interp)
   }
   BFts <- NULL
   BFts <- IntFunc(1)
-  for(i in 2:(length(TurnPts)-1)) {BFts <- append(BFts, IntFunc(i))}
+  for (i in 2:(length(TurnPts) - 1)) {
+    BFts <- append(BFts, IntFunc(i))
+  }
   MinSt <- min(which(is.na(QNA) == FALSE))
   MaxSt <- max(which(is.na(QNA) == FALSE))
-  DF <- data.frame(Q[MinSt:(MaxSt-1)], BFts)
+  DF <- data.frame(Q[MinSt:(MaxSt - 1)], BFts)
   BF <- apply(DF, 1, min)
-  if(is.null(x.lim) == TRUE) {x.ext <- c(1:length(Q[MinSt:MaxSt]))} else {x.ext <- x.lim}
-  if(is.null(y.lim) == TRUE) {y.ext <- c(min(Q[MinSt:MaxSt]), max(Q[MinSt:MaxSt]))} else {y.ext <- y.lim}
-  if(Plot == TRUE) {
+  if (is.null(x.lim) == TRUE) {
+    x.ext <- c(1:length(Q[MinSt:MaxSt]))
+  } else {
+    x.ext <- x.lim
+  }
+  if (is.null(y.lim) == TRUE) {
+    y.ext <- c(min(Q[MinSt:MaxSt]), max(Q[MinSt:MaxSt]))
+  } else {
+    y.ext <- y.lim
+  }
+  if (Plot == TRUE) {
     plot(Q[MinSt:MaxSt], type = "l", xlim = x.lim, ylim = y.lim, main = PlotTitle, ylab = "Daily mean flow", xlab = "Days")
-    points(BF, type = "l", col = "red")}
-  return(sum(BF, na.rm = TRUE)/sum(Q[MinSt:(MaxSt-1)], na.rm = TRUE))
+    points(BF, type = "l", col = "red")
+  }
+  return(sum(BF, na.rm = TRUE) / sum(Q[MinSt:(MaxSt - 1)], na.rm = TRUE))
 }
 
 # Rating -----------------------------------------------------------------
 
 #' Stage-Discharge equation optimisation
 #'
-#'@description Optimises a power law rating equation from observed discharge and stage
-#'@details The power law rating equation optimised here has the form q = c(h+a)^n; where 'q' is flow, 'h' is the stage, c' and 'n' are constants, and 'a' is the stage when flow is zero. The optimisation uses all the data provided in the dataframe (x). If separate rating limbs are necessary, x can be subset per limb. i.e. the rating function would be used multiple times, once for each subset of x. There is the option, with the 'a' argument, to hold the stage correction parameter (a), at a user defined level. If 'a' is NULL it will be calibrated with 'c' & 'n' as part of the optimisation procedure.
-#'@param x a data.frame with discharge in the first column and stage in the second
-#'@param a a user defined stage correction
-#'@examples
-#'# Make up Some data:
-#'Q <- c(177.685, 240.898, 221.954, 205.55, 383.051, 154.061, 216.582)
-#'Stage <- c(1.855, 2.109, 2.037, 1.972, 2.574, 1.748, 2.016)
-#'Observations <- data.frame(Q, Stage)
-#'#apply the rating function:
-#'Rating(Observations)
-#'#Hold the stage correction at zero
-#'Rating(Observations, a = 0)
-#'@return A list with three elements. The first is a vetor of the three calibrated rating parameters. The second is the rating equation; discharge as a function of stage. The third is the rating equation; stage as a function of discharge. A rating plot is also returned.
-#'@author Anthony Hammond
+#' @description Optimises a power law rating equation from observed discharge and stage
+#' @details The power law rating equation optimised here has the form q = c(h+a)^n; where 'q' is flow, 'h' is the stage, c' and 'n' are constants, and 'a' is the stage when flow is zero. The optimisation uses all the data provided in the dataframe (x). If separate rating limbs are necessary, x can be subset per limb. i.e. the rating function would be used multiple times, once for each subset of x. There is the option, with the 'a' argument, to hold the stage correction parameter (a), at a user defined level. If 'a' is NULL it will be calibrated with 'c' & 'n' as part of the optimisation procedure. Note that this is a purely statistical procedure and hydraulic considerations may prove useful for improving results (particularly where extrapolation is required).
+#' @param x a data.frame with discharge in the first column and stage in the second
+#' @param a a user defined stage correction
+#' @examples
+#' # Create some dummy data
+#' flow <- c(177.685, 240.898, 221.954, 205.55, 383.051, 154.061, 216.582)
+#' stage <- c(1.855, 2.109, 2.037, 1.972, 2.574, 1.748, 2.016)
+#' observations <- data.frame(flow, stage)
+#'
+#' # Apply the rating function
+#' Rating(observations)
+#'
+#' # Apply the rating function with the stage correction at zero
+#' Rating(observations, a = 0)
+#'
+#' @return A list with three elements. The first is a vector of the three calibrated rating parameters. The second is the rating equation; discharge as a function of stage. The third is the rating equation; stage as a function of discharge. A rating plot is also returned.
+#' @author Anthony Hammond
 Rating <- function(x, a = NULL) {
   colnames(x) <- c("Flow", "Stage")
-  if(is.null(a) == TRUE) {
+  if (is.null(a) == TRUE) {
     min.SLS <- function(data, par) {
-      with(data, sum(((par[1]*(Stage+par[2])^par[3])-Flow)^2))
+      with(data, sum(((par[1] * (Stage + par[2])^par[3]) - Flow)^2))
     }
-    result <- optim(par = c(1,0, 1), fn = min.SLS, data = x)
-    Params <- result$par} else {
-      min.SLS <- function(data, par) {
-        with(data, sum(((par[1]*(Stage+a)^par[2])-Flow)^2))
-      }
-      result <- optim(par = c(1, 1), fn = min.SLS, data = x)
-      Params <- c(result$par[1], a, result$par[2])}
-  Mod <- function(x) {Params[1]*(x+Params[2])^Params[3]}
-  ModFlip <- function(Q) {((Q/Params[1]))^(1/Params[3])-Params[2]}
+    result <- optim(par = c(1, 0, 1), fn = min.SLS, data = x)
+    Params <- result$par
+  } else {
+    min.SLS <- function(data, par) {
+      with(data, sum(((par[1] * (Stage + a)^par[2]) - Flow)^2))
+    }
+    result <- optim(par = c(1, 1), fn = min.SLS, data = x)
+    Params <- c(result$par[1], a, result$par[2])
+  }
+  Mod <- function(x) {
+    Params[1] * (x + Params[2])^Params[3]
+  }
+  ModFlip <- function(Q) {
+    ((Q / Params[1]))^(1 / Params[3]) - Params[2]
+  }
   plot(x, main = "Stage-Discharge relationship", ylab = "Stage", xlab = "Discharge")
   curve(ModFlip, from = min(x$Flow), to = max(x$Flow), add = TRUE, col = "red")
   Par1Char <- as.character(round(Params[1], 3))
@@ -4836,32 +6514,35 @@ Rating <- function(x, a = NULL) {
 
 #' Non-flood adjustment
 #'
-#'@description Adjusts the linear coefficient of variation (Lcv) and the linear skewness to account for non-flood years
-#'@details The method is the “permeable adjustment method” detailed in chapter 19, volume three of the Flood Estimation Handbook, 1999. The method makes no difference for sites where there are no annual maximums (AM) in the sample that are < median(AM)/2. Once applied the results can be used with the LRatioChange function to update the associated member of a pooling group. There is also the NonFloodAdjPool() function which can be used for multiple sites in a pooling group.
-#'@param x The annual maximum sample. Numeric vector
-#'@examples
-#'# Get an anuual maximum sample with a BFIHOST above 0.65 and with some
-#'# annual maximums lower than median(AM)/2. And then apply the function.
-#' NonFloodAdj(GetAM(44013)[,2])
-#'@return A list is returned. The first element of the list is a dataframe with one row and two columns. Lcv in the first column and Lskew in the second. The second element of the list is another dataframe with one row and three columns. Number of non-flood years in the first column, sample size in the second and the percent of non-flood year in the third.
-#'@author Anthony Hammond
+#' @description Adjusts the linear coefficient of variation (Lcv) and the linear skewness (LSkew) to account for non-flood years
+#' @details The method is the "permeable adjustment method" detailed in chapter 19, volume three of the Flood Estimation Handbook, 1999. The method makes no difference for sites where there are no annual maximums (AM) in the sample that are < median(AM)/2. Once applied the results can be used with the LRatioChange function to update the associated member of a pooling group. There is also the NonFloodAdjPool() function which can be used for multiple sites in a pooling group. The non flood adjustment procedure makes the assumption that annual maxima below QMED/2 are not from the same distribution and will result in a biased estimate. In turn it assumes that the AMAX are from a stationary process. The process adds uncertainty to the usual fitting process for three main reasons. Firstly, the definition of non-flood year (QMED/2). Secondly, the reduced sample size. Thirdly, the calculation process is based, in part, on the proportion of non-flood years to flood years. This proportion has uncertainty as a function of the sample size and the proportion because the standard error of a proportion (p) = sqrt((p * (1 - p)) / n).
+#' @param x The annual maximum sample. Numeric vector
+#' @examples
+#' # Get an annual maximum sample with a BFIHOST above 0.65 and with some
+#' # annual maxima lower than half the median of the AMAX series, then apply the function
+#' NonFloodAdj(GetAM(44013)[, 2])
+#'
+#' @return A list is returned. The first element of the list is a dataframe with one row and two columns - the adjusted Lcv in the first column and Lskew in the second. The second element of the list is another dataframe with one row and three columns. Number of non-flood years in the first column, sample size in the second and the percent of non-flood year in the third.
+#' @author Anthony Hammond
 NonFloodAdj <- function(x) {
-  if(is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  NonFlood <- length(x[x < (median(x)/2)])
-  w <- (length(x)-NonFlood)/length(x)
-  xflood <- x[x > (median(x)/2)]
+  if (is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  NonFlood <- length(x[x < (median(x) / 2)])
+  w <- (length(x) - NonFlood) / length(x)
+  xflood <- x[x > (median(x) / 2)]
   lcv <- Lcv(xflood)
   k <- -LSkew(xflood)
-  Beta <- lcv*k*sin((pi)*k)/(k*pi*(k+lcv)-lcv*sin((pi)*k))
+  Beta <- lcv * k * sin((pi) * k) / (k * pi * (k + lcv) - lcv * sin((pi) * k))
   KPerm <- function(k, w, par) {
-    abs((1-9^-par[1])/(1-49^-par[1]) - (  (1-((10*w-1)/(2*w-1))^-k)  / (1-((50*w-1)/(2*w-1))^-k)))
+    abs((1 - 9^-par[1]) / (1 - 49^-par[1]) - ((1 - ((10 * w - 1) / (2 * w - 1))^-k) / (1 - ((50 * w - 1) / (2 * w - 1))^-k)))
   }
-  KStar <- optim(par = k, k = k, w = w,fn = KPerm, method = "Brent", lower = -5, upper = 5)$par
-  A <- ((2*w-1)^-k - (10*w-1)^-k)/(1-9^-KStar)
-  B <- (2*w-1)^-k
-  BetaStar <- (Beta*KStar*A)/(k+Beta*(1-B))
+  KStar <- optim(par = k, k = k, w = w, fn = KPerm, method = "Brent", lower = -5, upper = 5)$par
+  A <- ((2 * w - 1)^-k - (10 * w - 1)^-k) / (1 - 9^-KStar)
+  B <- (2 * w - 1)^-k
+  BetaStar <- (Beta * KStar * A) / (k + Beta * (1 - B))
   LSkewness <- -KStar
-  L_cv <- (BetaStar*KStar^2*pi)/((BetaStar+KStar)*sin(KStar*pi) - BetaStar*KStar*pi)
+  L_cv <- (BetaStar * KStar^2 * pi) / ((BetaStar + KStar) * sin(KStar * pi) - BetaStar * KStar * pi)
   DF <- data.frame(L_cv, LSkewness)
   colnames(DF) <- c("Lcv", "LSkew")
   PercentNonFlood <- (NonFlood / length(x)) * 100
@@ -4875,52 +6556,64 @@ NonFloodAdj <- function(x) {
 
 #' Non-flood adjustment for pooling groups
 #'
-#'@description Applies the NonFloodAdj function to adjust the LCV and LSKEW of one or more sites in a pooling group.
-#'@details For more details of the method for individual sites see the details section of the NonFloodAdj function. As a default this function applies NonFloodAdj to every member of the pooling group. Index can be supplied which is the row name/s of the members you wish to adjust. Or AutoP can be applied and is a percentage. Any member with a greater percentage of non-flood years than AutoP is then adjusted.
-#'@param x A pooling group, derived from the Pool() or PoolSmall() functions.
-#'@param Index An vector of indices (row numbers) of sites to be adjusted. If Index = NULL (the default) the function is applied to all sites.
-#'@param AutoP A percentage (numeric) of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that the user doesn't need to specify Index. If no sites are above AutoP, the function is applied to all sites.
-#'@param ReturnStats Logical with a default of FALSE. If set to TRUE, a dataframe of non-flood year stats is returned (see 'Value' section below) instead of the adjusted Pooling group.
-#'@examples
-#'# Set up a pooling group for site 44013. Then apply the function.
-#' Pool44013 <- Pool(GetCDs(44013))
-#' PoolNF <- NonFloodAdjPool(Pool44013)
-#' #return the non flood stats for the pooling group
-#' NonFloodAdjPool(Pool44013, ReturnStats = TRUE)
-#'@return By default the pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL), or all sites with percentage of non-flood years above AutoP. No difference will be seen for sites with no AMAX < 0.5QMED. If ReturnStats is set to TRUE, a dataframe with Non-flood year stats is returned. The dataframe has a row for each site in the pooling group and three columns. The forst the number of non-flood years, the second is the number of years, and the third is the associated percentage.
-#'@author Anthony Hammond
+#' @description Applies the NonFloodAdj function to adjust the LCV and LSKEW of one or more sites in a pooling group.
+#' @details For more details of the method for individual sites see the details section of the NonFloodAdj function. As a default this function applies NonFloodAdj to every member of the pooling group. Index can be supplied which is the row name/s of the members you wish to adjust. Or AutoP can be applied and is a percentage. Any member with a greater percentage of non-flood years than AutoP is then adjusted. The non-flood adjustment procedure makes the assumption that annual maxima below QMED/2 are not from the same distribution and will result in a biased estimate. In turn it assumes that the AMAX are from a stationary process. The process adds uncertainty to the usual fitting process for three main reasons. Firstly, the definition of non-flood year (QMED/2). Secondly, the reduced sample size. Thirdly, the calculation process is based, in part, on the proportion of non-flood years to flood years. This proportion has uncertainty as a function of the sample size and the proportion because the standard error of a proportion (p) = sqrt((p * (1 - p)) / n).
+#' @param x A pooling group, derived from the Pool() or PoolSmall() functions.
+#' @param Index A vector of indices (row numbers) of sites to be adjusted. If Index = NULL (the default) the function is applied to all sites.
+#' @param AutoP A percentage (numeric) of non flood years. Any sites in the group exceeding this value will be adjusted. This is an automated approach so that the user doesn't need to specify Index. If no sites are above AutoP, the function is applied to all sites.
+#' @param ReturnStats Logical with a default of FALSE. If set to TRUE, a dataframe of non-flood year stats is returned (see 'Value' section below) instead of the adjusted Pooling group.
+#' @examples
+#' # Set up a pooling group for site 44013, then apply the function
+#' pool_44013 <- Pool(GetCDs(44013))
+#' pool_nf <- NonFloodAdjPool(pool_44013)
+#'
+#' # Return the non-flood stats for the pooling group
+#' NonFloodAdjPool(pool_44013, ReturnStats = TRUE)
+#'
+#' @return By default the pooling group is returned with adjusted LCVs and LSKEWs for all sites indexed (or all sites when Index = NULL), or all sites with percentage of non-flood years above AutoP. No difference will be seen for sites with no AMAX < 0.5QMED. If ReturnStats is set to TRUE, a dataframe with Non-flood year stats is returned. The dataframe has a row for each site in the pooling group and three columns. The first is the number of non-flood years, the second is the number of years, and the third is the associated percentage.
+#' @author Anthony Hammond
 NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL, ReturnStats = FALSE) {
-  if(is(x, "data.frame") == FALSE) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
-  if(ncol(x) != 24) stop("x must be a pooling group formed using Pool or PoolSmall functions")
-  if(is.null(Index) == FALSE & is.null(AutoP) == FALSE) stop("Warning: Either Index or AutoP should be applied. Not both")
-  if(is.null(AutoP) == FALSE) {
-    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[,2])[[2]]
-    for(i in 2:nrow(x)) {IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[,2])[[2]])}
-    if(max(IndNF[,3]) <= AutoP) warning("None of the AMAX samples have greater than the AutoP percentage of non-flood years. The resulting pooling group is the same as the input pooling groups")
-    Index <- which(IndNF[,3] > AutoP)
-    if(length(Index) < 1) {Index <- seq(1, nrow(x), by = 1)}
+  if (is(x, "data.frame") == FALSE) stop("x must be a pooling group formed using Pool or PoolSmall functions and must have class data.frame")
+  if (ncol(x) != 24) stop("x must be a pooling group formed using Pool or PoolSmall functions")
+  if (is.null(Index) == FALSE & is.null(AutoP) == FALSE) stop("Warning: Either Index or AutoP should be applied. Not both")
+  if (is.null(AutoP) == FALSE) {
+    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[, 2])[[2]]
+    for (i in 2:nrow(x)) {
+      IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[, 2])[[2]])
+    }
+    if (max(IndNF[, 3]) <= AutoP) warning("None of the AMAX samples have greater than the AutoP percentage of non-flood years. The resulting pooling group is the same as the input pooling groups")
+    Index <- which(IndNF[, 3] > AutoP)
+    if (length(Index) < 1) {
+      Index <- seq(1, nrow(x), by = 1)
+    }
   }
-  if(is.null(Index) == TRUE & is.null(AutoP) == TRUE) {Index <- seq(1, nrow(x), by = 1)}
+  if (is.null(Index) == TRUE & is.null(AutoP) == TRUE) {
+    Index <- seq(1, nrow(x), by = 1)
+  }
   AMID <- unique(AMSP$id)
   IndexTest <- NULL
-  for(i in 1:length(Index)) {IndexTest[i] <- which(AMID == rownames(x)[Index[i]])}
-  if(anyNA(IndexTest)) stop("One or more sites is not suitable for pooling
+  for (i in 1:length(Index)) {
+    IndexTest[i] <- which(AMID == rownames(x)[Index[i]])
+  }
+  if (anyNA(IndexTest)) stop("One or more sites is not suitable for pooling
                             and the AMAX can't be extracted automatically for the adjustment procedure.
                             You could try using the Index option and exclude the sites that aren't suitable.
                             Another option is to use the LRatioChange option to make changes for individually sites")
 
 
-  NFAdjs <- NonFloodAdj(GetAM(rownames(x[Index[1],]))[,2])[[1]]
-  if(length(Index) > 1) {
-    for(i in 2:nrow(x[Index,])) {
-      NFAdjs <- rbind(NFAdjs, NonFloodAdj(GetAM(rownames(x[Index[i],]))[,2])[[1]])
+  NFAdjs <- NonFloodAdj(GetAM(rownames(x[Index[1], ]))[, 2])[[1]]
+  if (length(Index) > 1) {
+    for (i in 2:nrow(x[Index, ])) {
+      NFAdjs <- rbind(NFAdjs, NonFloodAdj(GetAM(rownames(x[Index[i], ]))[, 2])[[1]])
     }
   }
   x$Lcv[Index] <- NFAdjs$Lcv
   x$LSkew[Index] <- NFAdjs$LSkew
-  if(ReturnStats == TRUE) {
-    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[,2])[[2]]
-    for(i in 2:nrow(x)) {IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[,2])[[2]])}
+  if (ReturnStats == TRUE) {
+    IndNF <- NonFloodAdj(GetAM(rownames(x)[1])[, 2])[[2]]
+    for (i in 2:nrow(x)) {
+      IndNF <- rbind(IndNF, NonFloodAdj(GetAM(rownames(x)[i])[, 2])[[2]])
+    }
     IndNF <- data.frame(ID = rownames(x), IndNF)
     return(IndNF)
   }
@@ -4932,27 +6625,29 @@ NonFloodAdjPool <- function(x, Index = NULL, AutoP = NULL, ReturnStats = FALSE) 
 
 #' Adjust L-Ratios in a pooling group
 #'
-#'@description Adjusts the linear coefficient of variation (Lcv) and the linear skewness (LSkew) for a chosen site in a pooling group
-#'@details Pooling groups are formed from the NRFAData data.frame and all the Lcv and LSkew values are precalculated using the National River Flow Archive Peak flow dataset noted in the description file. The resulting pooled growth curve is calculated using the Lcv and Lskew in the pooled group. The user may have further data and be able to add further peak flows to the annual maximum samples within a pooling group. If that is the case a new Lcv and Lskew can be determined using the LMoments function. These new values can be added to the pooling group with this LRatioChange function. Also the permeable adjustment function may have been applied to a site, which provides a new Lcv and LSkew. In which case, the LRatioChange function can be applied. The function creates a new pooling group object and x will still exist in it's original state after the function is applied.
-#'@param x pooling group derived with the Pool function
-#'@param SiteID the identification number of the site in the pooling group that is to be changed (character or integer)
-#'@param lcv The user supplied Lcv. numeric
-#'@param lskew The user supplied LSkew. numeric
-#'@examples
-#'# Get some catchment descriptors and create a pooling group.
-#' CDs.39001 <- GetCDs(39001)
-#' Pool.39001 <- Pool(CDs.39001, iug = TRUE)
-#'# apply the function to create a new adjusted pooling group,
-#'#changing the subject site lcv and lskew to 0.187 and 0.164, respectively
-#'Pool.39001Adj <- LRatioChange(Pool.39001, SiteID = 39001, lcv = 0.187, lskew = 0.164)
-#'@return A new pooling group, the same as x except for the user adjusted Lcv and Lskew for the user selected site.
-#'@author Anthony Hammond
+#' @description Adjusts the linear coefficient of variation (Lcv) and the linear skewness (LSkew) for a chosen site in a pooling group
+#' @details Pooling groups are formed from the NRFAData data.frame and all the Lcv and LSkew values are precalculated using the National River Flow Archive Peak flow dataset noted in the description file. The resulting pooled growth curve is calculated using the Lcv and Lskew in the pooled group. The user may have further data and be able to add further peak flows to the annual maximum samples within a pooling group. If that is the case a new Lcv and Lskew can be determined using the LMoments function. These new values can be added to the pooling group with this LRatioChange function. Also the non-flood years adjustment function may have been applied to a site, which provides a new Lcv and LSkew. In which case, the LRatioChange function can be applied. The function creates a new pooling group object and x will still exist in it's original state after the function is applied.
+#' @param x pooling group derived with the Pool function
+#' @param SiteID the identification number of the site in the pooling group that is to be changed (character or integer)
+#' @param lcv The user supplied Lcv. numeric
+#' @param lskew The user supplied LSkew. numeric
+#' @examples
+#' # Get some catchment descriptors and create a pooling group
+#' cds_39001 <- GetCDs(39001)
+#' pool_39001 <- Pool(cds_39001, iug = TRUE)
+#'
+#' # Apply the function to create a new adjusted pooling group,
+#' # changing the subject site's lcv and lskew to 0.187 and 0.164, respectively
+#' pool_39001_adj <- LRatioChange(pool_39001, SiteID = 39001, lcv = 0.187, lskew = 0.164)
+#'
+#' @return A new pooling group, the same as x except for the user adjusted Lcv and Lskew for the user selected site.
+#' @author Anthony Hammond
 LRatioChange <- function(x, SiteID, lcv, lskew) {
-  if(ncol(x) != 24) stop ("x must be a pooled group. Pooled groups can be created with the Pool() function")
+  if (ncol(x) != 24) stop("x must be a pooled group. Pooled groups can be created with the Pool() function")
   SiteID <- as.character(SiteID)
   Ind <- which(rownames(x) == SiteID)
   NewPool <- x
-  NewPool[Ind,c(16, 17)] <- c(lcv, lskew)
+  NewPool[Ind, c(16, 17)] <- c(lcv, lskew)
   return(NewPool)
 }
 
@@ -4961,16 +6656,17 @@ LRatioChange <- function(x, SiteID, lcv, lskew) {
 
 #' Urban expansion factor
 #'
-#'@description This function provides a coefficient to multiply by URBEXT2000 to adjust it to a given year
-#'@details The urban expansion factor is detailed in Bayliss, A. Black, K. Fava-Verde, A. Kjeldsen, T. (2006). URBEXT2000 - A new FEH catchment descriptor: Calculation, dissemination and application. R&D Technical Report FD1919/TR, DEFRA, CEH Wallingford
-#'@param Year The year for consideration. Numeric
-#'@examples
-#'# Get an expansion factor for the year 2023
+#' @description This function provides a coefficient to multiply by URBEXT2000 to adjust it to a given year
+#' @details The urban expansion factor is detailed in Bayliss, A. Black, K. Fava-Verde, A. Kjeldsen, T. (2006). URBEXT2000 - A new FEH catchment descriptor: Calculation, dissemination and application. R&D Technical Report FD1919/TR, DEFRA, CEH Wallingford. The urban expansion model assumes a national average expansion as a function of year. This means that on some catchments the value will be overestimated (primarily on rural ones) and on others the value will be underestimated (primarily on urban ones).
+#' @param Year The year for consideration. Numeric
+#' @examples
+#' # Get an expansion factor for the year 2023
 #' UEF(2023)
-#'@return A numeric urban expansion factor.
-#'@author Anthony Hammond
+#'
+#' @return A numeric urban expansion factor.
+#' @author Anthony Hammond
 UEF <- function(Year) {
-  0.7851 + 0.2124*atan(((Year-1967.5)/20.32))
+  0.7851 + 0.2124 * atan(((Year - 1967.5) / 20.32))
 }
 
 
@@ -4979,51 +6675,59 @@ UEF <- function(Year) {
 
 #' Monthly Statistics
 #'
-#'@description Derives monthly statistics from a data.frame with Dates or POSIXct in the first column and variable of interest in the second
-#'@details The statistic of interest for each month is calculated for each calendar year in the data.frame. An aggregated result is also calculated for each month using an aggregating statistic (the mean by default). The data.frame is first truncated at the first occurrence of January 1st and last occurrence of December 31st.
-#'@param x a data.frame with Dates or POSIXct in the first column and numeric vector in the second.
-#'@param Stat A user chosen function to calculate the statistic of interest; mean or sum for example. Could be a user developed function.
-#'@param AggStat the aggregating statistic. The default is mean. The function applied must have an na.rm argument (base R stat functions such as mean, max, and sum all have an na.rm argument.).
-#'@param TS A logical statement with a default of FALSE. If TRUE, instead of a dataframe of monthly statistics and average statistics, a monthly time series is returned.
-#'@param Plot logical argument with a default of FALSE. If TRUE the monthly statistics are plotted.
-#'@param ylab A label for the y axis of the plot. The default is "Magnitude"
-#'@param main A title for the plot. The default is "Monthly Statistics"
-#'@param col A choice of colour for the bar plot. A single colour or a vector (a colour for each bar).
-#'@examples
-#'# Get the mean flows for each month for the Thames at Kingston
-#' QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], Stat = mean,
-#' ylab = "Discharge (m3/s)", main = "Thames at Kingston monthly mean flow", Plot = TRUE)
+#' @description Derives monthly statistics from a data.frame with Dates or POSIXct in the first column and variable of interest in the second
+#' @details The statistic of interest for each month is calculated for each calendar year in the data.frame. An aggregated result is also calculated for each month using an aggregating statistic (the mean by default). The data.frame is first truncated at the first occurrence of January 1st and last occurrence of December 31st.
+#' @param x a data.frame with Dates or POSIXct in the first column and numeric vector in the second.
+#' @param Stat A user chosen function to calculate the statistic of interest; mean or sum for example. Could be a user developed function.
+#' @param AggStat the aggregating statistic. The default is mean. The function applied must have an na.rm argument (base R stat functions such as mean, max, and sum all have an na.rm argument.).
+#' @param TS A logical statement with a default of FALSE. If TRUE, instead of a dataframe of monthly statistics and average statistics, a monthly time series is returned.
+#' @param Plot logical argument with a default of FALSE. If TRUE the monthly statistics are plotted.
+#' @param ylab A label for the y axis of the plot. The default is "Magnitude"
+#' @param main A title for the plot. The default is "Monthly Statistics"
+#' @param col A choice of colour for the bar plot. A single colour or a vector (a colour for each bar).
+#' @examples
+#' # Get the mean flows for each month for the Thames at Kingston
+#' qm_on_thames <- MonthlyStats(ThamesPQ[, c(1, 3)],
+#'   Stat = mean,
+#'   ylab = "Discharge (m^3/s)", main = "Thames at Kingston monthly mean flow", Plot = TRUE
+#' )
+#'
 #' # Get the monthly sums of rainfall for the Thames at Kingston
-#' PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], Stat = sum,
-#' ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall", Plot = TRUE)
-#'@return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided. However, of TS = TRUE, a monthly time series is returned - as a dataframe with date in the first column and monthly value in the second.
-#'@author Anthony Hammond
+#' pm_on_thames <- MonthlyStats(ThamesPQ[, c(1, 2)],
+#'   Stat = sum,
+#'   ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall", Plot = TRUE
+#' )
+#'
+#' @return A list with two elements. The first element is a data.frame with year in the first column and months in the next 12 (i.e. each row has the monthly stats for the year). The second element is a dataframe with month in the first column and the associated aggregated statistic in the second. i.e. the aggregated statistic (default is the mean) for each month is provided. However, of TS = TRUE, a monthly time series is returned - as a dataframe with date in the first column and monthly value in the second.
+#' @author Anthony Hammond
 MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab = "Magnitude", main = "Monthly Statistics", col = "grey") {
-  if(is(x[1,1], "Date") == FALSE & is(x[1,1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
-  if(anyNA(x[,2]) == TRUE) {
+  if (is(x[1, 1], "Date") == FALSE & is(x[1, 1], "POSIXct") == FALSE) stop("First column must be Date or POSIXct class")
+  if (anyNA(x[, 2]) == TRUE) {
     WarnTextNA <- "Warning: One or more missing values have been detected and the associated time periods have been removed"
     warning(WarnTextNA)
-    #x <- x[complete.cases(x),]
+    # x <- x[complete.cases(x),]
   }
-  if(is.na(as.Date(x[nrow(x),1]))) stop("The last time stamp in the data.frame is NA. Ideally the final value should be associated with a date.")
-  if((  as.numeric(as.Date(x[nrow(x),1]) - as.Date(x[1,1])) / 395) < 2) stop("To ensure a at least one full year is covered (Jan through Dec) the difference between the x end date and start date must be at least 1.6 years")
+  if (is.na(as.Date(x[nrow(x), 1]))) stop("The last time stamp in the data.frame is NA. Ideally the final value should be associated with a date.")
+  if ((as.numeric(as.Date(x[nrow(x), 1]) - as.Date(x[1, 1])) / 395) < 2) stop("To ensure a at least one full year is covered (Jan through Dec) the difference between the x end date and start date must be at least 1.6 years")
   PluckOutTime <- function(x, from, to, Plot = FALSE, type = "l") {
-    Ind <- which(as.POSIXct(x[,1]) >= as.POSIXct(from) & as.POSIXct(x[,1]) <= as.POSIXct(to))
-    Result <- x[Ind,]
-    if(Plot == TRUE) {plot(Result, type = type)}
+    Ind <- which(as.POSIXct(x[, 1]) >= as.POSIXct(from) & as.POSIXct(x[, 1]) <= as.POSIXct(to))
+    Result <- x[Ind, ]
+    if (Plot == TRUE) {
+      plot(Result, type = type)
+    }
     return(Result)
   }
-  Mons <- as.POSIXlt(x[,1])$mon +1
+  Mons <- as.POSIXlt(x[, 1])$mon + 1
   MinMon <- min(which(Mons == 1))
-  YearMinMon <- as.POSIXlt(x[MinMon,1])$year +1900
-  DateTimeMin <-  as.POSIXct(paste(YearMinMon, "-", 1, "-01", 0, ":00:00", sep = ""))
+  YearMinMon <- as.POSIXlt(x[MinMon, 1])$year + 1900
+  DateTimeMin <- as.POSIXct(paste(YearMinMon, "-", 1, "-01", 0, ":00:00", sep = ""))
   MaxMon <- max(which(Mons == 1))
-  YearMaxMon <- as.POSIXlt(x[MaxMon,1])$year +1900
-  DateTimeMax <-  as.POSIXct(paste(YearMaxMon, "-", 1, "-01", 0, ":00:00", sep = ""))
+  YearMaxMon <- as.POSIXlt(x[MaxMon, 1])$year + 1900
+  DateTimeMax <- as.POSIXct(paste(YearMaxMon, "-", 1, "-01", 0, ":00:00", sep = ""))
   x <- PluckOutTime(x, DateTimeMin, DateTimeMax)
   MonthInd <- function(x) {
     POSlt <- as.POSIXlt(x)
-    Mons <- (POSlt$mon)+1
+    Mons <- (POSlt$mon) + 1
     Jan <- which(Mons == 1)
     Feb <- which(Mons == 2)
     Mar <- which(Mons == 3)
@@ -5038,53 +6742,82 @@ MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab
     Dec <- which(Mons == 12)
     MonInd <- list(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
     names(MonInd) <- month.abb
-    return(MonInd)}
-  POSlt <- as.POSIXlt(x[,1])
-  Mons <- (POSlt$mon)+1
-  #Jan1Ind <- min(which(Mons == 1))
-  #Dec31Ind <- max(which(Mons == 12))
-  #x <- x[Jan1Ind:Dec31Ind,]
-  MonInd <- MonthInd(x[,1])
+    return(MonInd)
+  }
+  POSlt <- as.POSIXlt(x[, 1])
+  Mons <- (POSlt$mon) + 1
+  # Jan1Ind <- min(which(Mons == 1))
+  # Dec31Ind <- max(which(Mons == 12))
+  # x <- x[Jan1Ind:Dec31Ind,]
+  MonInd <- MonthInd(x[, 1])
   ListMons <- list()
-  for(i in 1:12) {ListMons[[i]] <- x[MonInd[[i]],]}
+  for (i in 1:12) {
+    ListMons[[i]] <- x[MonInd[[i]], ]
+  }
   AnnStats <- list()
-  for(i in 1:12) {AnnStats[[i]] <- suppressWarnings(AnnualStat(ListMons[[i]], Truncate = FALSE, Stat = Stat, Mon = 1, Hr = 0))}
+  for (i in 1:12) {
+    AnnStats[[i]] <- suppressWarnings(AnnualStat(ListMons[[i]], Truncate = FALSE, Stat = Stat, Mon = 1, Hr = 0))
+  }
   names(AnnStats) <- month.abb
   Nrows <- NULL
-  for(i in 1:12) {Nrows[i] <- nrow(AnnStats[[i]])}
-  if(is.null(AggStat) == TRUE) {AggStat <- mean} else {AggStat <- AggStat}
-  if(length(unique(Nrows)) == 1) {
+  for (i in 1:12) {
+    Nrows[i] <- nrow(AnnStats[[i]])
+  }
+  if (is.null(AggStat) == TRUE) {
+    AggStat <- mean
+  } else {
+    AggStat <- AggStat
+  }
+  if (length(unique(Nrows)) == 1) {
     MonDF <- AnnStats$Jan
-    for(i in 2:12) {MonDF <- cbind(MonDF, AnnStats[[i]][,2])}
+    for (i in 2:12) {
+      MonDF <- cbind(MonDF, AnnStats[[i]][, 2])
+    }
     colnames(MonDF) <- c("Year", month.abb)
-    Means <- as.numeric(apply(MonDF[,2:13], 2, AggStat, na.rm = TRUE))
+    Means <- as.numeric(apply(MonDF[, 2:13], 2, AggStat, na.rm = TRUE))
   }
 
-  if(length(unique(Nrows)) >1) {
+  if (length(unique(Nrows)) > 1) {
     stop("At least one month does not have the same number of years available as the others. This may be because you have at least one whole month missing (as opposed to a month of NA values for example). You need at least one time step within each month")
-    for(i in 1:12) {colnames(AnnStats[[i]])[2] <- "Stat"}
+    for (i in 1:12) {
+      colnames(AnnStats[[i]])[2] <- "Stat"
+    }
     Means <- NULL
-    for(i in 1:12) {Means[i] <- as.numeric(AggStat(AnnStats[[i]][,2], na.rm = TRUE))}
+    for (i in 1:12) {
+      Means[i] <- as.numeric(AggStat(AnnStats[[i]][, 2], na.rm = TRUE))
+    }
   }
-  Year <- as.POSIXlt(MonDF[,1])$year+ 1900
-  MonDF[,1] <- Year
-  ResDF <- data.frame(Month = month.abb,
-                      Statistic = Means)
-  if(length(unique(Nrows)) == 1) {ResList <- list(MonDF, ResDF)}
-  if(length(unique(Nrows)) > 1) {ResList <- list(AnnStats, ResDF)}
+  Year <- as.POSIXlt(MonDF[, 1])$year + 1900
+  MonDF[, 1] <- Year
+  ResDF <- data.frame(
+    Month = month.abb,
+    Statistic = Means
+  )
+  if (length(unique(Nrows)) == 1) {
+    ResList <- list(MonDF, ResDF)
+  }
+  if (length(unique(Nrows)) > 1) {
+    ResList <- list(AnnStats, ResDF)
+  }
   names(ResList) <- c("AnnualMonths", "Aggregated")
-  if(Plot == TRUE) {
-    barplot(ResList$Aggregated[,2], names.arg = ResList$Aggregated[,1],
-            xlab = "Month", ylab = ylab, main = main,
-            col = col, xpd = FALSE)
-    #abline(h = min(ResList$Aggregated[,2]))*0.999
+  if (Plot == TRUE) {
+    barplot(ResList$Aggregated[, 2],
+      names.arg = ResList$Aggregated[, 1],
+      xlab = "Month", ylab = ylab, main = main,
+      col = col, xpd = FALSE
+    )
+    # abline(h = min(ResList$Aggregated[,2]))*0.999
   }
-  if(TS == FALSE) {return(ResList)}
-  if(TS == TRUE) {
-    Transpose <- t(ResList$AnnualMonths)[-1,]
-    TS <- c(Transpose[,1], Transpose[,2])
-    for(i in 3:ncol(Transpose)) {TS <- c(TS, Transpose[,i])}
-    Mon1 <- ResList$AnnualMonths[1,1]
+  if (TS == FALSE) {
+    return(ResList)
+  }
+  if (TS == TRUE) {
+    Transpose <- t(ResList$AnnualMonths)[-1, ]
+    TS <- c(Transpose[, 1], Transpose[, 2])
+    for (i in 3:ncol(Transpose)) {
+      TS <- c(TS, Transpose[, i])
+    }
+    Mon1 <- ResList$AnnualMonths[1, 1]
     StDate <- as.Date(paste(Mon1, "-01-", "01", sep = ""))
     MonDates <- seq(StDate, length.out = length(TS), by = "month")
     TS <- data.frame(Date = MonDates, var = TS)
@@ -5098,198 +6831,266 @@ MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab
 
 #' Aggregate a time series
 #'
-#'@description Aggregates time series data, creating hourly data from 15 minute data for example.
-#'@details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
-#'@param x a data.frame with POSIXct in the first column and numeric vector in the second.
-#'@param func the function used for aggregation; mean, max, or sum, for example.
-#'@param Freq Choices are "Day", or "Hour".
-#'@param hour An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.
-#'@examples
-#'#Create a data.frame with a normally distributed variable at
-#'#a 15 minute sampling rate.
-#'TS <- seq(as.POSIXct("2000-01-01 00:00:00",
-#'tz = "Europe/London"), as.POSIXct("2001-01-01 00:00:00", tz = "Europe/London"), by = 60*15)
-#'TS <- data.frame(DateTime = TS, Var = rnorm(length(TS), 10, 2))
-#'#use the function to aggregate to an hourly sampling rate, taking the maximum of each hour
-#'Hourly <- AggDayHour(TS, func = max, Freq = "Hour")
-#'#now aggregate with the mean at a daily scale
-#'Daily <- AggDayHour(TS, func = mean, Freq = "Day")
-#'@return A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
-#'@author Anthony Hammond
+#' @description Aggregates time series data, creating hourly data from 15-minute data for example.
+#' @details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
+#' @param x a data.frame with POSIXct in the first column and numeric vector in the second.
+#' @param func the function used for aggregation; mean, max, or sum, for example.
+#' @param Freq Choices are "Day", or "Hour".
+#' @param hour An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.
+#' @examples
+#' # Create a data frame with a normally distributed variable at
+#' # a 15 minute sampling rate
+#' ts_seq <- seq(
+#'   as.POSIXct("2000-01-01 00:00:00", tz = "Europe/London"),
+#'   as.POSIXct("2001-01-01 00:00:00", tz = "Europe/London"),
+#'   by = 60 * 15
+#' )
+#' ts_df <- data.frame(DateTime = ts_seq, Var = rnorm(length(ts_seq), 10, 2))
+#'
+#' # Aggregate to an hourly sampling rate, taking the maximum of each hour
+#' hourly <- AggDayHour(ts_df, func = max, Freq = "Hour")
+#'
+#' # Aggregate with the mean at a daily scale
+#' daily <- AggDayHour(ts_df, func = mean, Freq = "Day")
+#'
+#' @return A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
+#' @author Anthony Hammond
 
 AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
-  if(anyNA(x[,2]) == TRUE) {
+  if (anyNA(x[, 2]) == TRUE) {
     NAWarning <- "Warning: There is at least one missing value in the time series, this may have compromised the aggregation"
     warning(NAWarning)
   }
-  if(Freq != "Day" & Freq != "Hour") stop("The Freq argument must equal Day or Hour")
+  if (Freq != "Day" & Freq != "Hour") stop("The Freq argument must equal Day or Hour")
 
-  if(is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
-  if(is(x[,1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
-  SampleRate <- x[2,1] - x[1,1]
-  #DummySample <- seq(as.Date("2021-10-01"), as.Date("2021-10-02"), by = 1)
-  #if(SampleRate >= (DummySample[2]-DummySample[1])) stop("The time series you're attempting to aggregate already appears to be at a daily or lower sampling rate")
-  if(Freq == "Day") {
-    if(hour < 0 | hour > 23) stop("hour must be an integer >= 0 and <= 23")
-    POSlt <- as.POSIXlt(x[,1])
+  if (is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
+  if (is(x[, 1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
+  SampleRate <- x[2, 1] - x[1, 1]
+  # DummySample <- seq(as.Date("2021-10-01"), as.Date("2021-10-02"), by = 1)
+  # if(SampleRate >= (DummySample[2]-DummySample[1])) stop("The time series you're attempting to aggregate already appears to be at a daily or lower sampling rate")
+  if (Freq == "Day") {
+    if (hour < 0 | hour > 23) stop("hour must be an integer >= 0 and <= 23")
+    POSlt <- as.POSIXlt(x[, 1])
     NineInd <- which(POSlt$hour == hour & POSlt$min == 0 & POSlt$sec == 0)
-    Date <- as.Date(x[NineInd,1])
+    Date <- as.Date(x[NineInd, 1])
     LLoop <- length(NineInd)
     IndMin1 <- NineInd - 1
     NineInd <- NineInd[-LLoop]
     IndMin1 <- IndMin1[-1]
     StatRain <- NULL
-    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
-    if(hour == 0) {Date <- Date[2:LLoop]} else {Date <- Date[-LLoop]}
-    DF <- data.frame(Date, StatRain)
-    colnames(DF)[2] <-  ("Var")
-    LengthInf <- length(DF$Var[DF$Var == -Inf])
-    if(length(LengthInf) < 1) {DF <- DF} else {
-      InfInd <- which(DF$Var == -Inf)
-      DF$Var[InfInd] <- NA
+    for (i in 1:length(NineInd)) {
+      StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i], 2], na.rm = TRUE))
     }
-    return(DF) }
-
-  if(Freq == "Hour"){
-    POSlt <- as.POSIXlt(x[,1])
-    NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
-    DateTime <- as.POSIXct(x[NineInd,1])
-    LLoop <- length(NineInd)
-    IndMin1 <- NineInd - 1
-    NineInd <- NineInd[-LLoop]
-    IndMin1 <- IndMin1[-1]
-    StatRain <- NULL
-    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
-    DateTime <- DateTime[-LLoop]
-    DF <- data.frame(DateTime, StatRain)
-    colnames(DF)[2] <-  ("Var")
+    if (hour == 0) {
+      Date <- Date[2:LLoop]
+    } else {
+      Date <- Date[-LLoop]
+    }
+    DF <- data.frame(Date, StatRain)
+    colnames(DF)[2] <- ("Var")
     LengthInf <- length(DF$Var[DF$Var == -Inf])
-    if(length(LengthInf) < 1) {DF <- DF} else {
+    if (length(LengthInf) < 1) {
+      DF <- DF
+    } else {
       InfInd <- which(DF$Var == -Inf)
       DF$Var[InfInd] <- NA
     }
     return(DF)
   }
-  if(is.numeric(Freq) == TRUE) {
-    POSlt <- as.POSIXlt(x[,1])
+
+  if (Freq == "Hour") {
+    POSlt <- as.POSIXlt(x[, 1])
     NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
-    DateTime <- as.POSIXct(x[NineInd,1])
+    DateTime <- as.POSIXct(x[NineInd, 1])
     LLoop <- length(NineInd)
     IndMin1 <- NineInd - 1
     NineInd <- NineInd[-LLoop]
     IndMin1 <- IndMin1[-1]
     StatRain <- NULL
-    for(i in 1:length(NineInd)) {StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i],2], na.rm = TRUE))}
+    for (i in 1:length(NineInd)) {
+      StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i], 2], na.rm = TRUE))
+    }
     DateTime <- DateTime[-LLoop]
     DF <- data.frame(DateTime, StatRain)
-    colnames(DF)[2] <-  ("Var")
+    colnames(DF)[2] <- ("Var")
     LengthInf <- length(DF$Var[DF$Var == -Inf])
-    if(length(LengthInf) < 1) {DF <- DF} else {
+    if (length(LengthInf) < 1) {
+      DF <- DF
+    } else {
+      InfInd <- which(DF$Var == -Inf)
+      DF$Var[InfInd] <- NA
+    }
+    return(DF)
+  }
+  if (is.numeric(Freq) == TRUE) {
+    POSlt <- as.POSIXlt(x[, 1])
+    NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
+    DateTime <- as.POSIXct(x[NineInd, 1])
+    LLoop <- length(NineInd)
+    IndMin1 <- NineInd - 1
+    NineInd <- NineInd[-LLoop]
+    IndMin1 <- IndMin1[-1]
+    StatRain <- NULL
+    for (i in 1:length(NineInd)) {
+      StatRain[i] <- suppressWarnings(func(x[NineInd[i]:IndMin1[i], 2], na.rm = TRUE))
+    }
+    DateTime <- DateTime[-LLoop]
+    DF <- data.frame(DateTime, StatRain)
+    colnames(DF)[2] <- ("Var")
+    LengthInf <- length(DF$Var[DF$Var == -Inf])
+    if (length(LengthInf) < 1) {
+      DF <- DF
+    } else {
       InfInd <- which(DF$Var == -Inf)
       DF$Var[InfInd] <- NA
     }
     Nx <- nrow(DF)
     N <- Freq
-    RatioN <- round(Nx/N)
-    xRow <- RatioN*N
+    RatioN <- round(Nx / N)
+    xRow <- RatioN * N
     Mat <- matrix(DF[1:xRow, 2], nrow = N, ncol = RatioN)
     Var <- apply(Mat, 2, func)
-    DateTime <- seq(as.POSIXct(DF[1,1]), length.out = length(Var), by = N*60*60)
+    DateTime <- seq(as.POSIXct(DF[1, 1]), length.out = length(Var), by = N * 60 * 60)
     DFHour <- data.frame(DateTime, Var)
     return(DFHour)
   }
-
 }
 
 
 
 
-#'Kappa3 distribution estimates from parameters
+#' Kappa3 distribution estimates from parameters
 #'
-#'Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
+#' Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.' (Circulation - The Newsletter of the British Hydrological Society, no. 142).
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param loc location parameter
 #' @param scale scale parameter
 #' @param shape shape parameter
 #' @param q quantile. magnitude of the variable under consideration
 #' @param RP return period
 #' @examples
-#' #Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' #Get parameters and Store as an object
-#' Pars <- as.numeric(Kappa3Pars(AM.27090$Flow))
-#' #get estimate of 50-yr flow
-#' Kappa3Est(Pars[1], Pars[2], Pars[3], RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' Kappa3Est(Pars[1], Pars[2], Pars[3], q = 600)
+#' # Get an annual maximum sample, estimate the parameters, and the 50-year RP flow
+#' am_27090 <- GetAM(27090)
+#'
+#' # Get the parameters and store in an object
+#' pars <- as.numeric(Kappa3Pars(am_27090$Flow))
+#'
+#' # Get an estimate of the 50-year flow
+#' Kappa3Est(pars[1], pars[2], pars[3], RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' Kappa3Est(pars[1], pars[2], pars[3], q = 600)
+#'
 #' @return quantile as a function of RP or vice versa
 #' @author Anthony Hammond
 
 Kappa3Est <- function(loc, scale, shape, q = NULL, RP = 100) {
   h <- -0.4
-  if(is.null(q) == TRUE) {
-    res <- loc + (scale/shape) * (1 - ((1 - (1-(1/RP))^h)/h)^shape)}
-  else {
-    res <- (1 - h * (1 - shape * (q - loc)/scale)^(1/shape))^(1/h)
-    res <- 1/(1-res)
+
+  # Parameter checks
+  if (scale <= 0) stop("Scale parameter must be positive.")
+
+  if (!is.null(q)) {
+    if (shape > 0) {
+      upper_limit <- loc + scale / shape
+      if (q >= upper_limit) stop("Quantile exceeds theoretical upper bound for given parameters.")
+    } else if (shape < 0) {
+      lower_limit <- loc + scale / shape
+      if (q <= lower_limit) stop("Quantile below theoretical lower bound for given parameters.")
+    }
   }
+
+  # Handle Gumbel case via delegation
+  if (shape == 0) {
+    res <- GumbelEst(loc = loc, scale = scale, q = q, RP = RP)
+    return(res)
+  }
+
+  # Standard Kappa3 case
+  if (is.null(q)) {
+    A <- (1 - (1 - (1 / RP))^h) / h
+    res <- loc + (scale / shape) * (1 - A^shape)
+  } else {
+    B <- 1 - shape * (q - loc) / scale
+    if (B <= 0) stop("Invalid input: root of negative number.")
+    C <- (1 - h * B^(1 / shape))^(1 / h)
+    res <- 1 / (1 - C)
+  }
+
   return(res)
 }
 
 
-#'Kappa3 distribution parameter estimates
+
+
+
+#' Kappa3 distribution parameter estimates
 #'
-#'Estimated parameters from a sample (using Lmoments) or from user supplied L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
+#' Estimated parameters from a sample (using Lmoments) or from user supplied L1 (first L-moment), Lcv (linear coefficient of variation), and LSkew (linear skewness)
 #'
-#'@details The L-moment estimated parameters are by the method detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The Kappa3 distribution is as defined by This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#' @details The L-moment estimated parameters are by the method detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.' (Circulation - The Newsletter of the British Hydrological Society, no. 142).
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #'
 #' @param x numeric vector. The sample
 #' @param L1 first Lmoment
 #' @param LCV linear coefficient of variation
 #' @param LSKEW linear skewness
 #' @examples
-#' #Get an annual maximum sample and estimate the parameters.
-#' AM.27090 <- GetAM(27090)
-#' Kappa3Pars(AM.27090$Flow)
-#' #calculate Lmoments and estimate the parmeters with L1, L2, Lcv, and Lskew
-#' LPars <- as.numeric(LMoments(AM.27090$Flow))[c(1,2,5,6)]
-#' Kappa3Pars(L1 = LPars[1], LCV = LPars[2], LSKEW = LPars[3])
+#' # Get an annual maximum sample and estimate the parameters
+#' am_27090 <- GetAM(27090)
+#' Kappa3Pars(am_27090$Flow)
+#'
+#' # Calculate L-moments and estimate the parameters with L1, LCV, and LSKEW
+#' l_pars <- as.numeric(LMoments(am_27090$Flow))[c(1, 5, 6)]
+#' Kappa3Pars(L1 = l_pars[1], LCV = l_pars[2], LSKEW = l_pars[3])
+#'
 #' @return Parameter estimates (location, scale, shape)
 #' @author Anthony Hammond
 
-Kappa3Pars <- function(x = NULL, L1, LCV, LSKEW) {
-  if(is.null(x) == FALSE & is.numeric(x) == FALSE) {stop("x must be a numeric vector")}
-  gr <- function(k){
-    g1 <- (1*gamma(1+k)*gamma(-k-1/-0.4))/((0.4)^(1+k)*gamma(1-1/-0.4))
-    g2 <- (2*gamma(1+k)*gamma(-k-2/-0.4))/((0.4)^(1+k)*gamma(1-2/-0.4))
-    g3 <- (3*gamma(1+k)*gamma(-k-3/-0.4))/((0.4)^(1+k)*gamma(1-3/-0.4))
-    vec <- c(g1,g2,g3)
+Kappa3Pars <- function(x = NULL, L1 = NULL, LCV = NULL, LSKEW = NULL) {
+  if (is.null(x) == FALSE & is.numeric(x) == FALSE) {
+    stop("x must be a numeric vector")
+  }
+  gr <- function(k) {
+    g1 <- (1 * gamma(1 + k) * gamma(-k - 1 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 1 / -0.4))
+    g2 <- (2 * gamma(1 + k) * gamma(-k - 2 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 2 / -0.4))
+    g3 <- (3 * gamma(1 + k) * gamma(-k - 3 / -0.4)) / ((0.4)^(1 + k) * gamma(1 - 3 / -0.4))
+    vec <- c(g1, g2, g3)
     return(vec)
   }
   KSolve <- function(k) {
-    abs(((- gr(k)[1] + 3*gr(k)[2] - 2*gr(k)[3])/ (gr(k)[1] - gr(k)[2])) - LSKEW)
+    abs(((-gr(k)[1] + 3 * gr(k)[2] - 2 * gr(k)[3]) / (gr(k)[1] - gr(k)[2])) - LSKEW)
   }
 
-  if(is.null(x)) {
+  if (is.null(x)) {
+    if (any(sapply(list(L1, LCV, LSKEW), is.null))) {
+      warning("L1, LCV, and LSKEW must be supplied when x is NULL. Returning empty.")
+      return(data.frame(Loc = numeric(0), Scale = numeric(0), Shape = numeric(0)))
+    }
     k <- 0.01
-    #lskew <- LSKEW
-    #lcv <- LCV
+    # lskew <- LSKEW
+    # lcv <- LCV
     L2 <- LCV * L1
-    KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
+    KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -1, upper = 2.5)$par[1]
     GrRes <- gr(KRes)
     Scale <- (L2 * KRes) / (GrRes[1] - GrRes[2])
-    Loc <- L1  - (Scale *(1- GrRes[1])/KRes)
+    Loc <- L1 - (Scale * (1 - GrRes[1]) / KRes)
     Shape <- KRes
     Result <- data.frame(Loc, Scale, Shape)
   }
-  if(is.null(x) == FALSE) {
+  if (is.null(x) == FALSE) {
     Sort.x <- sort(x)
-    Rank <- seq(1, length(x))
+    n <- length(x)
     b0 <- mean(x, na.rm = TRUE)
-    b1 <- mean((Rank-1)/(length(x)-1)*Sort.x, na.rm = TRUE)
+    indices_b1 <- 2:n
+    weights_b1 <- (indices_b1 - 1) / (n - 1)
+    b1 <- sum(weights_b1 * Sort.x[indices_b1]) / n
     L1 <- b0
-    L2 <- 2*b1-b0
+    L2 <- 2 * b1 - b0
     LCV <- Lcv(x)
     LSKEW <- LSkew(x)
     k <- 0.01
@@ -5297,7 +7098,7 @@ Kappa3Pars <- function(x = NULL, L1, LCV, LSKEW) {
     KRes <- optim(par = k, fn = KSolve, method = "Brent", lower = -0.99, upper = 1)$par[1]
     GrRes <- gr(KRes)
     Scale <- (L2 * KRes) / (GrRes[1] - GrRes[2])
-    Loc <- L1  - (Scale *(1- GrRes[1])/KRes)
+    Loc <- L1 - (Scale * (1 - GrRes[1]) / KRes)
     Shape <- KRes
     Result <- data.frame(Loc, Scale, Shape)
   }
@@ -5305,20 +7106,24 @@ Kappa3Pars <- function(x = NULL, L1, LCV, LSKEW) {
 }
 
 
-#'Kappa3 distribution - estimates directly from sample
+#' Kappa3 distribution - estimates directly from sample
 #'
-#'Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
+#' Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 #'
-#'If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. The Kappa3 distribution is as defined by This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+#' If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'. This is the Kappa3 distribution as defined in Kjeldsen, T. (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.' (Circulation - The Newsletter of the British Hydrological Society, no. 142).
+#'
+#' This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 #' @param x numeric vector (block maxima sample)
 #' @param RP return period (default = 100)
 #' @param q quantile (magnitude of variable)
 #' @examples
-#' #Get an annual maximum sample and estimate the 50-year RP
-#' AM.27090 <- GetAM(27090)
-#' Kappa3AM(AM.27090$Flow, RP = 50)
-#' #Estimate the RP for a 600m3/s discharge
-#' Kappa3AM(AM.27090$Flow, q = 600)
+#' # Get an annual maximum sample and estimate the 50-year RP
+#' am_27090 <- GetAM(27090)
+#' Kappa3AM(am_27090$Flow, RP = 50)
+#'
+#' # Estimate the RP for a 600 m^3/s discharge
+#' Kappa3AM(am_27090$Flow, q = 600)
+#'
 #' @return quantile as a function of RP or vice versa.
 #' @author Anthony Hammond
 
@@ -5329,28 +7134,38 @@ Kappa3AM <- function(x, RP = 100, q = NULL) {
 }
 
 
-#Add AMAX sample----
+# Add AMAX sample----
 
-#'Add an AMAX sample
+#' Add an AMAX sample
 #'
-#'This function allows the user to add an AMAX sample and associated catchment descriptors for use with the FEH process.
+#' This function allows the user to add an AMAX sample and associated catchment descriptors for use with the FEH process.
 #'
-#'The function provides the necessary AMAX sample statistics and data.frame for adding catchment descriptors to the NRFAData data.frame. The user must then add these outputs using the rbind function (see example). The AMAX could be read in or pasted in by the user or imported using the AMImport function. Once they are added they can be used in the current R session. If a new session is started (rather than a saved workspace) the added AMAX would need to be added again.
+#' The function provides the necessary AMAX sample statistics and data.frame for adding catchment descriptors to the NRFAData data.frame. The user must then add these outputs using the rbind function (see example). The AMAX could be read in or pasted in by the user or imported using the AMImport function. Once they are added they can be used in the current R session. If a new session is started (rather than a saved workspace) the added AMAX would need to be added again.
 #' @param CDs catchment descriptor object imported using the CDsXML function.
 #' @param AMAX Either a data.frame with date (or POSIXct) in the first column and a numeric vector in the second (the AMAX). Or an AMAX sample (a numeric vector).
 #' @param ID This is a user supplied identification number for the AMAX.
 #' @examples
-#' #Read in AMAX and catchment descriptors
-#' \dontrun{AMAdd <- AMImport(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.am}")}
-#' \dontrun{CDsAdd <- CDsXML(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.xml}")}
+#' # Read in AMAX and catchment descriptors
+#' \dontrun{
+#' am_add <- AMImport(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.am}")
+#' cds_add <- CDsXML(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.xml}")
+#' }
 #'
-#' #Apply the function and then add the results to the necessary data.frames.
+#' # Apply the function and add the results to the necessary data frames
+#' \dontrun{
+#' gauge_27003 <- AddGauge(cds_add, am_add, ID = "27003")
+#' }
 #'
-#' \dontrun{Gauge27003 <- AddGauge(CDsAdd, AMAdd, ID = "27003")}
-#' #Add the descriptors and stats (the first element of the output) to the NRFAData data.frame
-#' \dontrun{NRFAData <- rbind(NRFAData, Gauge27003[[1]])}
-#' #Add the AMAX to the AMSP data.frame.
-#' \dontrun{AMSP <- rbind(AMSP, Gauge27003[[2]])}
+#' # Append the descriptors and stats (element[[1]]) to NRFAData
+#' \dontrun{
+#' nrfa_data <- rbind(NRFAData, gauge_27003[[1]])
+#' }
+#'
+#' # Append the AMAX series (element[[2]]) to AMSP
+#' \dontrun{
+#' amsp <- rbind(AMSP, gauge_27003[[2]])
+#' }
+#'
 #' @return A list object. The first element is a data.frame which is a
 #' row of statistics and descriptors to be added to the NRFAData data.frame.
 #' The second element is the AMAX sample formatted to be added to the AMSP data.frame
@@ -5359,27 +7174,31 @@ Kappa3AM <- function(x, RP = 100, q = NULL) {
 
 AddGauge <- function(CDs, AMAX, ID) {
   MatchTest <- match(ID, rownames(NRFAData))
-  if(is.na(MatchTest) == FALSE) stop("ID is already in the NRFAData data.frame")
-  if(is(AMAX, "data.frame")) {
-    Dates <- AMAX[,1]
-    AMAXvec <- AMAX[,2]
+  if (is.na(MatchTest) == FALSE) stop("ID is already in the NRFAData data.frame")
+  if (is(AMAX, "data.frame")) {
+    Dates <- AMAX[, 1]
+    AMAXvec <- AMAX[, 2]
   }
-  if(is(AMAX, "numeric")) {
+  if (is(AMAX, "numeric")) {
     AMAXvec <- AMAX
   }
-  if(class(AMAXvec) != class(runif(10))) stop("AMAX must be a numeric vector")
+  if (class(AMAXvec) != class(runif(10))) stop("AMAX must be a numeric vector")
   LMomentsAMAX <- LMoments(AMAXvec)
-  PoolRow <- t(data.frame(CDs[1:20,2]))
-  colnames(PoolRow) <- CDs[1:20,1]
+  PoolRow <- t(data.frame(CDs[1:20, 2]))
+  colnames(PoolRow) <- CDs[1:20, 1]
   rownames(PoolRow) <- ID
   QMEDIAN <- median(AMAXvec)
-  PoolRow <- cbind(PoolRow, QMED = QMEDIAN, Lcv = LMomentsAMAX$Lcv, LSkew = LMomentsAMAX$LSkew, LKurt = LMomentsAMAX$LKurt,
-                   L1 = LMomentsAMAX$L1, L2 = LMomentsAMAX$L2, N = length(AMAXvec))
+  PoolRow <- cbind(PoolRow,
+    QMED = QMEDIAN, Lcv = LMomentsAMAX$Lcv, LSkew = LMomentsAMAX$LSkew, LKurt = LMomentsAMAX$LKurt,
+    L1 = LMomentsAMAX$L1, L2 = LMomentsAMAX$L2, N = length(AMAXvec)
+  )
 
-  if(is(AMAX, "data.frame")) {
-    AM <- data.frame(Date = Dates, Flow = AMAX[,2], id = ID)}
-  if(is(AMAX, "numeric")) {
-    AM <- data.frame(Date = rep(NA, length(AMAX)), Flow = AMAX, id = ID)}
+  if (is(AMAX, "data.frame")) {
+    AM <- data.frame(Date = Dates, Flow = AMAX[, 2], id = ID)
+  }
+  if (is(AMAX, "numeric")) {
+    AM <- data.frame(Date = rep(NA, length(AMAX)), Flow = AMAX, id = ID)
+  }
   ResultList <- list(PoolRow, AM)
   names(ResultList) <- c("PoolRow", "AM")
   return(ResultList)
@@ -5391,31 +7210,36 @@ AddGauge <- function(CDs, AMAX, ID) {
 
 #' Goodness of fit comparison (single sample)
 #'
-#'@description compares the RMSE of four distribution fits for a single AMAX sample.
-#'@details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
-#'It works as follows. For each distribution:
-#'Step1. Simulate 500 samples the same size as x.
-#'Step2. Calculate the mean across all 500 samples for each rank to create an ordered central estimate.
-#'Step3. Calculate the RMSE between the result of step 2 and the ordered x.
-#'Step4. Standardise the RMSE by dividing it by the mean of x and multiply it by 100 (RMSE as a percentage of mean).
-#'Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
-#'@param x a numeric vector (your AMAX sample)
-#'@examples
-#'# Get an AMAX sample then compare the fit..
-#' AM15006 <- GetAM(15006)
-#' GoFCompare(AM15006$Flow)
-#'@return A list. The first element is a dataframe with four columns and one row of results. Each column has
-#'the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
-#'The second element is a character string stating the distribution with the best fit.
-#'@author Anthony Hammond
+#' @description compares the RMSE of four distribution fits for a single AMAX sample.
+#' @details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
+#' It works as follows. For each distribution:
+#' Step1. Simulate 500 samples the same size as x.
+#' Step2. Calculate the mean across all 500 samples for each rank to create an ordered central estimate.
+#' Step3. Calculate the RMSE between the result of step 2 and the ordered x.
+#' Step4. Standardise the RMSE by dividing it by the mean of x and multiply it by 100 (RMSE as a percentage of mean).
+#' Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
+#' @param x a numeric vector (your AMAX sample)
+#' @examples
+#' # Get an AMAX sample and then compare the fit
+#' am_15006 <- GetAM(15006)
+#' GoFCompare(am_15006$Flow)
+#'
+#' @return A list. The first element is a dataframe with four columns and one row of results. Each column has
+#' the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
+#' The second element is a character string stating the distribution with the best fit.
+#' @author Anthony Hammond
 
 GoFCompare <- function(x) {
-  if(class(x) != class(runif(10))) stop("x must be a numeric vector. Make sure x isn't a dataframe (if it is you may need to select a column)")
-  RMSE <- function(x, y) {sqrt(mean( (x-y)^2  ))}
+  if (class(x) != class(runif(10))) stop("x must be a numeric vector. Make sure x isn't a dataframe (if it is you may need to select a column)")
+  RMSE <- function(x, y) {
+    sqrt(mean((x - y)^2))
+  }
   MeanSortFunc <- function(xSim) {
-    MatSim <- matrix(xSim, nrow = length(xSim)/500, ncol = 500)
+    MatSim <- matrix(xSim, nrow = length(xSim) / 500, ncol = 500)
     xSimSort <- MatSim
-    for(i in 1:500) {xSimSort[,i] <- sort(xSimSort[,i])}
+    for (i in 1:500) {
+      xSimSort[, i] <- sort(xSimSort[, i])
+    }
     xSimSortMean <- apply(xSimSort, 1, mean)
     return(xSimSortMean)
   }
@@ -5423,19 +7247,21 @@ GoFCompare <- function(x) {
   N <- length(x)
   Seed <- sample(seq(1, 10000), 1)
   set.seed(Seed)
-  xGEV <- SimData(n = N*500, pars = as.numeric(GEVPars(x)), dist = "GEV")
+  xGEV <- SimData(n = N * 500, pars = as.numeric(GEVPars(x)), dist = "GEV")
   RMSE.GEV <- signif(RMSE(sort(x), MeanSortFunc(xGEV)), 3)
   set.seed(Seed)
-  xGumbel <- SimData(n = N*500, pars = as.numeric(GumbelPars(x)), dist = "Gumbel")
+  xGumbel <- SimData(n = N * 500, pars = as.numeric(GumbelPars(x)), dist = "Gumbel")
   RMSE.Gumbel <- signif(RMSE(sort(x), MeanSortFunc(xGumbel)), 3)
   set.seed(Seed)
-  xGLO <- SimData(n = N*500, pars = as.numeric(GenLogPars(x)), dist = "GenLog")
+  xGLO <- SimData(n = N * 500, pars = as.numeric(GenLogPars(x)), dist = "GenLog")
   RMSE.GLO <- signif(RMSE(sort(x), MeanSortFunc(xGLO)), 3)
   set.seed(Seed)
-  xKappa3 <- SimData(n = N*500, pars = as.numeric(Kappa3Pars(x)), dist = "Kappa3")
+  xKappa3 <- SimData(n = N * 500, pars = as.numeric(Kappa3Pars(x)), dist = "Kappa3")
   RMSE.Kappa3 <- signif(RMSE(sort(x), MeanSortFunc(xKappa3)), 3)
-  Result <- data.frame(GEV = RMSE.GEV, GenLog = RMSE.GLO,
-                       Gumbel = RMSE.Gumbel, Kappa3 = RMSE.Kappa3)
+  Result <- data.frame(
+    GEV = RMSE.GEV, GenLog = RMSE.GLO,
+    Gumbel = RMSE.Gumbel, Kappa3 = RMSE.Kappa3
+  )
   Result <- signif((Result / mean(x)) * 100, 3)
   BestInd <- which.min(as.numeric(Result))
   Winner <- c("GEV", "GenLog", "Gumbel", "Kappa3")[BestInd]
@@ -5450,29 +7276,36 @@ GoFCompare <- function(x) {
 
 #' Goodness of fit comparison (for a pooling group)
 #'
-#'@description compares the RMSE of four distribution fits for a pooling group.
-#'@details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
-#'It works for pooling groups created using the Pool or PoolSmall function. It uses the same method as GoFCompare (see the associated details of that function).
-#'It first standardises the pooled AMAX samples (by dividing them by median) and then treats them as a single large sample.
-#'Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
-#'@param x a numeric vector (your AMAX sample)
-#'@examples
-#'# Get a pooling group then compare the fit..
-#' Pool60009 <- Pool(GetCDs(60009))
-#' GoFComparePool(Pool60009)
-#'@return A list. The first element is a dataframe with four columns and one row of results. Each column has
-#'the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
-#'The second element is a character string stating the distribution with the best fit.
-#'@author Anthony Hammond
+#' @description compares the RMSE of four distribution fits for a pooling group.
+#' @details This function calculates an RMSE fit score for four distributions (GEV, GenLog, Gumbel, & Kappa3). The lowest RMSE is the best fit.
+#' It works for pooling groups created using the Pool or PoolSmall function. It uses the same method as GoFCompare (see the associated details of that function).
+#' It first standardises the pooled AMAX samples (by dividing them by median) and then treats them as a single large sample.
+#' Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
+#' @param x a numeric vector (your AMAX sample)
+#' @examples
+#' # Get a pooling group and then compare the fit
+#' pool_60009 <- Pool(GetCDs(60009))
+#' GoFComparePool(pool_60009)
+#'
+#' @return A list. The first element is a dataframe with four columns and one row of results. Each column has
+#' the standardised RMSE associated with one of the four distributions (GEV, GenLog, Gumbel, Kappa3).
+#' The second element is a character string stating the distribution with the best fit.
+#' @author Anthony Hammond
 GoFComparePool <- function(x) {
-  if(class(x) != class(data.frame(seq(1,12), nrow = 3, ncol = 4))  ) stop("x must be a pooling group derived from the Pool or PoolSmall function")
-  if(ncol(x) != ncol(Pool(GetCDs(39001)))) stop("x must be a pooling group derived from the Pool or PoolSmall function")
-  #if(isClass("data.frame", Pool69047) == FALSE) {stop(x )}
-  Standardise <- function(y) {GetAM(rownames(x)[1])[,2] / median(GetAM(rownames(x)[1])[,2])}
+  if (class(x) != class(data.frame(seq(1, 12), nrow = 3, ncol = 4))) stop("x must be a pooling group derived from the Pool or PoolSmall function")
+  if (ncol(x) != ncol(Pool(GetCDs(39001)))) stop("x must be a pooling group derived from the Pool or PoolSmall function")
+  # if(isClass("data.frame", Pool69047) == FALSE) {stop(x )}
+  Standardise <- function(y) {
+    GetAM(rownames(x)[1])[, 2] / median(GetAM(rownames(x)[1])[, 2])
+  }
   AMList <- list()
-  for(i in 1:nrow(x)) {AMList[[i]] <- Standardise(rownames(x)[i])}
+  for (i in 1:nrow(x)) {
+    AMList[[i]] <- Standardise(rownames(x)[i])
+  }
   AMvec <- AMList[[1]]
-  for(i in 2:length(AMList)) {AMvec <- append(AMvec, AMList[[i]])}
+  for (i in 2:length(AMList)) {
+    AMvec <- append(AMvec, AMList[[i]])
+  }
   GoFCompare(AMvec)
 }
 
@@ -5483,80 +7316,114 @@ GoFComparePool <- function(x) {
 #' A plot to inspect the distribution of ordered data
 #'
 #' By default this plot compares the percentage difference of simulated results with observed for each rank of the data. Another option (see ERType argument) compares the simulated flows for each rank of the sample with the observed of the same rank. For both plots 500 simulated samples are used. With the second option for each rank they are plotted and the mean of these is highlighted in red. There is a line of perfect fit so you can see how much this "cloud" of simulation differs from the observed.
-#' By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. This ERplot is an updated version of that described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
+#' By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. This ERplot is an updated version of that described in Hammond, A. (2019). Proposal of the 'extreme rank plot' for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495-1507.
 #' @param x numeric vector. A sample for inspection
 #' @param main a character string to change the default title, which is the distribution choice.
 #' @param dist a choice of distribution. The choices are "GenLog" (the default), "GEV", "Kappa3,"Gumbel", and "GenPareto"
 #' @param Pars a vector of parameters for the distribution. In the order of location, scale, & shape (ignoring the latter if Gumbel). If left null the parameters are estimated from x.
 #' @param GF a vector of length growth curve parameters, in the order of; Lcv, LSkew and Median (ignoring the LSkew if Gumbel).
-#' @param ERType Either 1, 2. If it is the defaul 1 then ranks are plotted on the x axis and percentage difference of modelled from observed is plotted on the y axis.
+#' @param ERType Either 1, 2. If it is the default 1 then ranks are plotted on the x axis and percentage difference of modelled from observed is plotted on the y axis.
 #' @examples
-#' #Get an AMAX sample and plot
-#' \donttest{AM.27083 <- GetAM(27083)}
-#' \donttest{ERPlot(AM.27083$Flow)}
-#' #Get a pooled estimate of Lcv & LSkew to use with the GF argument
-#' \donttest{QuickResults(GetCDs(27083), gauged = TRUE)}
-#' #Use the resulting Lcv, Lskew and RP2 for the GF argument and change the title
-#' \donttest{ERPlot(AM.27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))}
+#' # Get an AMAX sample and plot
+#' \dontrun{
+#' am_27083 <- GetAM(27083)
+#' ERPlot(am_27083$Flow)
+#' }
+#'
+#' # Get a pooled estimate of Lcv and LSkew to use with the GF argument
+#' \dontrun{
+#' QuickResults(GetCDs(27083), gauged = TRUE)
+#' }
+#'
+#' # Use the resulting Lcv, Lskew and QMED for the GF argument and change the title
+#' \dontrun{
+#' ERPlot(am_27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))
+#' }
+#'
 #' @return The extreme rank plot as described in the details
 #' @author Anthony Hammond
 
 ERPlot <- function(x, dist = "GenLog", main = NULL, Pars = NULL, GF = NULL, ERType = 1) {
-  if(dist != "GEV" & dist != "GenLog" & dist != "Kappa3" & dist != "Gumbel")
+  if (dist != "GEV" & dist != "GenLog" & dist != "Kappa3" & dist != "Gumbel") {
     stop("dist must be either GEV, GenLog, Kappa3, or Gumbel")
-
-  if(dist == "GEV") {Params <- as.numeric(GEVPars(x))}
-  if(dist == "GenLog") {Params <- as.numeric(GenLogPars(x))}
-  if(dist == "Kappa3") {Params <- as.numeric(Kappa3Pars(x))}
-  if(dist == "Gumbel") {Params <- as.numeric(GumbelPars(x))}
-
-  if(is.null(Pars) == FALSE) {Params <- Pars}
-  if(is.null(GF)) {
-    xSim <- SimData(500*length(x), pars = as.numeric(Params), dist = dist)
   }
-  if(is.null(GF) == FALSE) {
-    xSim <- SimData(500*length(x), dist = dist, GF = GF)
+
+  if (dist == "GEV") {
+    Params <- as.numeric(GEVPars(x))
+  }
+  if (dist == "GenLog") {
+    Params <- as.numeric(GenLogPars(x))
+  }
+  if (dist == "Kappa3") {
+    Params <- as.numeric(Kappa3Pars(x))
+  }
+  if (dist == "Gumbel") {
+    Params <- as.numeric(GumbelPars(x))
+  }
+
+  if (is.null(Pars) == FALSE) {
+    Params <- Pars
+  }
+  if (is.null(GF)) {
+    xSim <- SimData(500 * length(x), pars = as.numeric(Params), dist = dist)
+  }
+  if (is.null(GF) == FALSE) {
+    xSim <- SimData(500 * length(x), dist = dist, GF = GF)
   }
   MatSim <- matrix(xSim, nrow = length(x), ncol = 500)
   xSimSort <- MatSim
-  for(i in 1:500) {xSimSort[,i] <- sort(xSimSort[,i])}
-  xSimSortMean <- apply(xSimSort, 1, mean)
-  if(is.null(main)) {
-    if(dist == "GEV") {main <- "generalised extreme value"}
-    if(dist == "GenLog") {main <- "generalised logistic"}
-    if(dist == "Kappa3") {main <- "Kappa 3"}
-    if(dist == "Gumbel") {main <- "Gumbel"}
-  } else {main <- main}
-
-  if(ERType == 1){
-    ResGOF <- GoFCompare(x)
-    #YMax <- sort(as.numeric(apply(xSimSort, 2, max)))[450]
-    #YMin <- sort(as.numeric(apply(xSimSort, 2, min)))[50]
-    Quantsx <- signif(as.numeric(quantile(x, c(0,0.5,1))), 3)
-
-    Quants.Lower <- ((apply(xSimSort,1, quantile,0.05) - sort(x)) / sort(x)) *100
-    Quants.Upper <- ((apply(xSimSort,1, quantile,0.95) - sort(x)) / sort(x)) *100
-    Quants.Middle <- ((apply(xSimSort,1, mean) - sort(x)) / sort(x)) * 100
-    PlotData <- data.frame(rep(0,length(sort(x))), Quants.Lower, Quants.Upper, Quants.Middle)
-    #matplot(log(PlotData), yaxt = "n",type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, xlab = "Rank", main = main, ylab = ylab, ylim = c(min(x)-0.1*min(x), max(x)+0.1*max(x)))
-    #Ymin <- min(log10(c(Quants.Middle, sort(x))))
-    #Ymax <- max(log10(c(Quants.Middle, sort(x))))
-    #matplot(log10(PlotData), yaxt = "n",type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, xlab = "Rank", main = main, ylab = ylab, ylim = c(Ymin, Ymax))
-    matplot(PlotData, type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, xlab = "Rank", main = main, ylab = "Percent difference", ylim = c(-45, 40))
-    #axis(side = 2, at = log10(Quantsx), tick = TRUE, labels = Quantsx)
-    #axis(side = 2, at = log10(seq(0.01, 0.05, 0.1, 0.5, 1, 5, 10,50,100,500, 1000, 5000)), tick = TRUE, labels = c(0.01, 0.05, 0.1, 0.5, 1, 5, 10,50,100,500, 1000, 5000))
-    legend("top", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue","black","black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)
-    #plot(sort(x), xlab = "Modelled", ylab = "Observed", ylim = c(YMin, YMax), main = main)
-    #for(i in 1:500) {points(xSimSort[,i], col = rgb(0.5,0.5,0.5,0.1), pch = 16)}
-    #points(sort(x), pch = 16, col = rgb(0,0.3,0.7), cex = 1.2)
-    #points(xSimSortMean, col = "red", pch = 16, type ="l", lwd = 2)
-    #legend("topleft", legend = c("Observed", "Central Estimate", "500 samples"), pch = c(16,NA,16), lty = c(NA,1,NA), col = c("black", "red", "grey"), bty = "n")
+  for (i in 1:500) {
+    xSimSort[, i] <- sort(xSimSort[, i])
   }
-  if(ERType == 2){
+  xSimSortMean <- apply(xSimSort, 1, mean)
+  if (is.null(main)) {
+    if (dist == "GEV") {
+      main <- "generalised extreme value"
+    }
+    if (dist == "GenLog") {
+      main <- "generalised logistic"
+    }
+    if (dist == "Kappa3") {
+      main <- "Kappa 3"
+    }
+    if (dist == "Gumbel") {
+      main <- "Gumbel"
+    }
+  } else {
+    main <- main
+  }
+
+  if (ERType == 1) {
+    ResGOF <- GoFCompare(x)
+    # YMax <- sort(as.numeric(apply(xSimSort, 2, max)))[450]
+    # YMin <- sort(as.numeric(apply(xSimSort, 2, min)))[50]
+    Quantsx <- signif(as.numeric(quantile(x, c(0, 0.5, 1))), 3)
+
+    Quants.Lower <- ((apply(xSimSort, 1, quantile, 0.05) - sort(x)) / sort(x)) * 100
+    Quants.Upper <- ((apply(xSimSort, 1, quantile, 0.95) - sort(x)) / sort(x)) * 100
+    Quants.Middle <- ((apply(xSimSort, 1, mean) - sort(x)) / sort(x)) * 100
+    PlotData <- data.frame(rep(0, length(sort(x))), Quants.Lower, Quants.Upper, Quants.Middle)
+    # matplot(log(PlotData), yaxt = "n",type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, xlab = "Rank", main = main, ylab = ylab, ylim = c(min(x)-0.1*min(x), max(x)+0.1*max(x)))
+    # Ymin <- min(log10(c(Quants.Middle, sort(x))))
+    # Ymax <- max(log10(c(Quants.Middle, sort(x))))
+    # matplot(log10(PlotData), yaxt = "n",type = c("p", "l", "l", "l"), pch =1, lty = c(1,2,2), col = c("blue", "black", "black","black"),lwd = 1.5, xlab = "Rank", main = main, ylab = ylab, ylim = c(Ymin, Ymax))
+    matplot(PlotData, type = c("p", "l", "l", "l"), pch = 1, lty = c(1, 2, 2), col = c("blue", "black", "black", "black"), lwd = 1.5, xlab = "Rank", main = main, ylab = "Percent difference", ylim = c(-45, 40))
+    # axis(side = 2, at = log10(Quantsx), tick = TRUE, labels = Quantsx)
+    # axis(side = 2, at = log10(seq(0.01, 0.05, 0.1, 0.5, 1, 5, 10,50,100,500, 1000, 5000)), tick = TRUE, labels = c(0.01, 0.05, 0.1, 0.5, 1, 5, 10,50,100,500, 1000, 5000))
+    legend("top", legend = c("Observed", "Modelled Central", "Modelled 90% Intervals"), lty = c(0, 1, 2), pch = 1, pt.cex = c(1, 0, 0), lwd = 1.5, col = c("blue", "black", "black"), bty = "n", y.intersp = 1, x.intersp = 0.3, seg.len = 1)
+    # plot(sort(x), xlab = "Modelled", ylab = "Observed", ylim = c(YMin, YMax), main = main)
+    # for(i in 1:500) {points(xSimSort[,i], col = rgb(0.5,0.5,0.5,0.1), pch = 16)}
+    # points(sort(x), pch = 16, col = rgb(0,0.3,0.7), cex = 1.2)
+    # points(xSimSortMean, col = "red", pch = 16, type ="l", lwd = 2)
+    # legend("topleft", legend = c("Observed", "Central Estimate", "500 samples"), pch = c(16,NA,16), lty = c(NA,1,NA), col = c("black", "red", "grey"), bty = "n")
+  }
+  if (ERType == 2) {
     plot(xSimSortMean, sort(x), xlab = "Modelled", ylab = "Observed", main = main)
-    for(i in 1:500) {points(xSimSort[,i], sort(x), col = rgb(0.5,0.5,0.5,0.5))}
+    for (i in 1:500) {
+      points(xSimSort[, i], sort(x), col = rgb(0.5, 0.5, 0.5, 0.5))
+    }
     points(xSimSortMean, sort(x), col = "red", pch = 16)
-    abline(0,1)
-    legend("bottomright", legend = c("Perfect fit", "Central Estimate", "500 samples"), pch = c(NA,16,1), lty = c(1,NA,NA), col = c("black", "red", "grey"), bty = "n")
+    abline(0, 1)
+    legend("bottomright", legend = c("Perfect fit", "Central Estimate", "500 samples"), pch = c(NA, 16, 1), lty = c(1, NA, NA), col = c("black", "red", "grey"), bty = "n")
   }
 }

@@ -25,17 +25,27 @@ This function allows the user to add an AMAX sample and associated catchment des
 The function provides the necessary AMAX sample statistics and data.frame for adding catchment descriptors to the NRFAData data.frame. The user must then add these outputs using the rbind function (see example). The AMAX could be read in or pasted in by the user or imported using the AMImport function. Once they are added they can be used in the current R session. If a new session is started (rather than a saved workspace) the added AMAX would need to be added again.
 }
 \examples{
-#Read in AMAX and catchment descriptors
-\dontrun{AMAdd <- AMImport(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.am}")}
-\dontrun{CDsAdd <- CDsXML(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.xml}")}
+# Read in AMAX and catchment descriptors
+\dontrun{
+am_add <- AMImport(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.am}")
+cds_add <- CDsXML(r"{D:\NRFAPeakFlow_v12_1_0\suitable-for-neither\027003.xml}")
+}
 
-#Apply the function and then add the results to the necessary data.frames.
+# Apply the function and add the results to the necessary data frames
+\dontrun{
+gauge_27003 <- AddGauge(cds_add, am_add, ID = "27003")
+}
 
-\dontrun{Gauge27003 <- AddGauge(CDsAdd, AMAdd, ID = "27003")}
-#Add the descriptors and stats (the first element of the output) to the NRFAData data.frame
-\dontrun{NRFAData <- rbind(NRFAData, Gauge27003[[1]])}
-#Add the AMAX to the AMSP data.frame.
-\dontrun{AMSP <- rbind(AMSP, Gauge27003[[2]])}
+# Append the descriptors and stats (element[[1]]) to NRFAData
+\dontrun{
+nrfa_data <- rbind(NRFAData, gauge_27003[[1]])
+}
+
+# Append the AMAX series (element[[2]]) to AMSP
+\dontrun{
+amsp <- rbind(AMSP, gauge_27003[[2]])
+}
+
 }
 \author{
 Anthony Hammond

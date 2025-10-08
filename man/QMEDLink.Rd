@@ -19,11 +19,12 @@ QMEDLink(Q5dmf, Q10dmf, DPSBAR, BFI)
 Estimates the median annual maximum flow (QMED) from non-flood flows
 }
 \details{
-The QMED Linking equation estimates QMED as a function of the flow that is exceeded five percent of the time, the flow that is exceeded 10 percent of the time, the baseflow index, and the catchment desciptor; drainage path slope (DPSBAR). All of these can be found for sites on the National River Flow Archive (NRFA) website. The method is provided in the guidance note 'WINFAP 4 QMED Linking equation' (2016) by Wallingford HydroSolutions.
+The QMED Linking equation estimates QMED as a function of the flow that is exceeded five percent of the time, the flow that is exceeded 10 percent of the time, the baseflow index, and the catchment descriptor drainage path slope (DPSBAR). All of these can be found for sites on the National River Flow Archive (NRFA) website. The method is provided in the guidance note 'WINFAP 4 QMED Linking equation' (2016) by Wallingford HydroSolutions.
 }
 \examples{
-#Calculate the QMED for site 1001 (Wick at Tarroul)
+# Calculate the QMED for site 1001 (Wick at Tarroul)
 QMEDLink(10.14, 7.352, 29.90, 0.39)
+
 }
 \author{
 Anthony Hammond

@@ -18,13 +18,14 @@ A vector of two characters; the first representing the H2 score and the second s
 Quantifies the heterogeneity of a pooled group
 }
 \details{
-The H2 measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: an approach based on LMoments (1997). It was also adopted for use by the Flood Estimation Handbook (1999) and is described in volume 3.
+The H2 measure was developed by Hosking & Wallis and can be found in their book 'Regional Frequency Analysis: An Approach Based on L-Moments' (1997). It was also adopted for use by the Flood Estimation Handbook (1999) and is described in volume 3. It works by recreating 500 pooling groups with the same sample sizes, assuming a four parameter Kappa distribution (parameters from the pooled L-moments). L-moment ratios are calculated for each of the 500 simulated pooling groups. The heterogeneity is determined by comparing the variance of L-moment ratios in the observed pooling group with the variance of the L-moment ratios across the simulated pooling groups. The simulations are homogeneous, therefore if the observed pooling group is homogeneous the expectation is that the variance will be similar to the average of the simulated variance.
 }
 \examples{
-#Get CDs, form a pooling group and calculate H2
-CDs.203018 <- GetCDs(203018)
-Pool.203018 <- Pool(CDs.203018)
-H2(Pool.203018)
+# Get CDs, form a pooling group, and calculate H2
+cds_203018 <- GetCDs(203018)
+pool_203018 <- Pool(cds_203018)
+H2(pool_203018)
+
 }
 \author{
 Anthony Hammond

@@ -42,20 +42,22 @@ If RP is default then a list of length 4. Element one is a data frame with colum
 Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
 }
 \details{
-PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. If the catchment of interest is urban, the UrbAdj argument can be set to TRUE. If this is done, either URBEXT (urban extent) needs to be provided or the catchment descriptors, derived from CDsXML or GetCDs. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'.
+PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. The UrbAdj argument can be set to TRUE to provide urbanised results. If this is done, either URBEXT(urban & suburban extent) or CDs (the catchment descriptors derived from CDsXML or GetCDs) need to be provided. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. The gauged argument can be set to TRUE to form the growth curve with the gauged weighting procedure (often known as enhanced single site).  Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. It is important to check that this is the case because if the site is urban it may not be included by default. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The estimation procedure assumes that the pooled AMAX samples are from the same underlying distribution (aside from the QMED scaling factor), that the distribution is correctly specified, that the individual samples are all independent and identically distributed, and that the samples are independent of each other.  The urban adjustment assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The confidence intervals are different between the gauged and ungauged pooling. This is because the intervals for the ungauged site are uncomfortably large, and therefore 68% intervals are applied. Whereas 95% intervals are applied for the gauged case.
 }
 \examples{
-#Get some catchment descriptors and form a pooling group. It's urban and
-#therefore the site of interest is not included.
-CDs.27083 <- GetCDs(27083)
-Pool.27083 <- Pool(CDs.27083)
-#Get results for the ungauged case, with urban adjustment
-PoolEst(Pool.27083, QMED = 12, UrbAdj = TRUE, CDs = CDs.27083)
-#Form the group again with the urban gauge included & undertake a gauged estimate
-#with urban adjustment. QMED in this example is estimated as the median of the annual
-#maximum series for site 27083.
-PoolG.27083 <- PoolG.27083 <- Pool(CDs.27083, iug = TRUE, DeUrb = TRUE)
-PoolEst(PoolG.27083, QMED = 12.5, UrbAdj = TRUE, CDs = CDs.27083)
+# Get some catchment descriptors and form a pooling group. It's urban and
+# therefore the site of interest is not included
+cds_27083 <- GetCDs(27083)
+pool_27083 <- Pool(cds_27083)
+
+# Get results for the ungauged case, with urban adjustment
+PoolEst(pool_27083, QMED = 12, UrbAdj = TRUE, CDs = cds_27083)
+
+# Form the group again with the urban gauge included & undertake a gauged estimate
+# with urban adjustment. QMED in this example is estimated as the median of the annual
+# maximum series for site 27083.
+pool_g_27083 <- Pool(cds_27083, iug = TRUE, DeUrb = TRUE)
+PoolEst(pool_g_27083, QMED = 12.5, UrbAdj = TRUE, CDs = cds_27083)
 
 }
 \author{

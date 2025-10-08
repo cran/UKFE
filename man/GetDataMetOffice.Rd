@@ -17,16 +17,22 @@ GetDataMetOffice(Variable, Region)
 A data.frame with 18 columns; year, months, seasons, and annual. Rows then represent each year of the timeseries.
 }
 \description{
-Extracts regional mean temperature or rainfall from the met office UK & regional series. The total duration of bright sunshine is also available.
+Extracts regional mean temperature or rainfall from the Met Office UK & regional series. The total duration of bright sunshine is also available.
 }
 \details{
 The function returns time series data from the 19th century through to the present month.
 }
 \examples{
-#Get the Rainfall series for the UK
-\dontrun{UKRain <-  GetDataMetOffice(Variable = "Rainfall", Region = "UK") }
-#Now we'll get mean temperature data for East Anglia
-\dontrun{TempEastAnglia <- GetDataMetOffice(Variable = "Tmean", Region = "East_Anglia") }
+# Get the rainfall time series for the UK
+\dontrun{
+uk_rain <- GetDataMetOffice(Variable = "Rainfall", Region = "UK")
+}
+
+# Get the mean temperature data for East Anglia
+\dontrun{
+temp_east_anglia <- GetDataMetOffice(Variable = "Tmean", Region = "East_Anglia")
+}
+
 }
 \author{
 Anthony Hammond

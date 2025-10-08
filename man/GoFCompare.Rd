@@ -27,9 +27,10 @@ Step4. Standardise the RMSE by dividing it by the mean of x and multiply it by 1
 Note that this is not a hypothesis test. It is only for comparing the fit across the distributions.
 }
 \examples{
-# Get an AMAX sample then compare the fit..
-AM15006 <- GetAM(15006)
-GoFCompare(AM15006$Flow)
+# Get an AMAX sample and then compare the fit
+am_15006 <- GetAM(15006)
+GoFCompare(am_15006$Flow)
+
 }
 \author{
 Anthony Hammond

@@ -11,7 +11,7 @@ Bootstrap(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
 
 \item{Stat}{the function (to calculate the statistic) to be applied to the bootstrapped samples. For example mean, max, or median.}
 
-\item{n}{the number of boostrapped samples (default 500). i.e. the size of the derived sampling distribution.}
+\item{n}{the number of bootstrapped samples (default 500). i.e. the size of the derived sampling distribution.}
 
 \item{Conf}{the confidence level of the intervals (default 0.95). Must be between 0 and 1.}
 
@@ -29,14 +29,17 @@ Resampling with replacement to approximate the sampling distribution of a statis
 The bootstrapping procedure resamples from a sample length(x) * n times with replacement. After splitting into n samples of size length(x), the statistic of interest is calculated on each.
 }
 \examples{
-#Extract an AMAX sample and quantify uncertainty for the Gumbel estimated 50-year flow.
-AM.203018 <- GetAM(203018)
-Bootstrap(AM.203018$Flow, Stat = GumbelAM, RP = 50)
-#Quantify uncertainty for the sample standard deviation at the 90 percent confidence level
-Bootstrap(AM.203018$Flow, Stat = sd, Conf = 0.90)
-#Return the sampling distribution of the mean and plot an associated histogram
-SampDist <- Bootstrap(AM.203018$Flow, Stat = mean, ReturnSD = TRUE)
-hist(SampDist)
+# Extract an AMAX sample and quantify uncertainty for the Gumbel estimated 50-year flow
+am_203018 <- GetAM(203018)
+Bootstrap(am_203018$Flow, Stat = GumbelAM, RP = 50)
+
+# Quantify uncertainty for the sample standard deviation at the 90\% confidence level
+Bootstrap(am_203018$Flow, Stat = sd, Conf = 0.90)
+
+# Return the sampling distribution of the mean and plot an associated histogram
+samp_dist <- Bootstrap(am_203018$Flow, Stat = mean, ReturnSD = TRUE)
+hist(samp_dist)
+
 }
 \author{
 Anthony Hammond

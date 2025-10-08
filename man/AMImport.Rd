@@ -13,15 +13,20 @@ AMImport(x)
 A data.frame with columns; Date and Flow
 }
 \description{
-Imports the peak flows and dates from from NRFA peak flow .AM files, exluding the rejected years
+Imports the peak flows and dates from from NRFA peak flow .AM files, excluding the rejected years
 }
 \details{
 File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
 \examples{
-#Import an AMAX sample and display the first six rows in the console
-\dontrun{AM.4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")}
-\dontrun{head(AM.4003)]}
+# Import an AMAX sample and display the first six rows in the console
+\dontrun{
+am_4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")
+}
+\dontrun{
+head(am_4003)
+}
+
 }
 \author{
 Anthony Hammond

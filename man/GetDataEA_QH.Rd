@@ -43,20 +43,34 @@ When extracting flow or level data with a WISKI ID then a dataframe with two col
 Function to extract flow or level data from the Environment Agency's Hydrology Data Explorer.
 }
 \details{
-To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function (you can also get lat and lon by left clicking on google maps). The lat and lon option will provide all flow and level gauges within a specified range (default of 10km). This provides gauged details including the WISKI ID. You can get data from specific gauges using the WISKI_ID. Note that flow gauges also have level data available. You can get data from a date range using the From and To arguments or you can return all data by leaving the From and To as the default (NULL). Lastly, WISKI IDs are sometimes returned without a preceding 0 which might be necessary for the data extraction (oddly, most do have the necessary 0). If data extraction fails try adding a 0 to the beginning of the WISKI ID.
+To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function (you can also get lat and lon by left clicking on Google maps). The lat and lon option will provide all flow and level gauges within a specified range (default of 10km). This provides gauged details including the WISKI ID. You can get data from specific gauges using the WISKI_ID. Note that flow gauges also have level data available. You can get data from a date range using the From and To arguments or you can return all data by leaving the From and To as the default (NULL). Lastly, WISKI IDs are sometimes returned without a preceding 0 which might be necessary for the data extraction (oddly, most do have the necessary 0). If data extraction fails try adding a 0 to the beginning of the WISKI ID.
 }
 \examples{
-#Find gauges on the river Tame
-\dontrun{GetDataEA_QH(RiverName = "Tame")}
-#Find gauges within 10km of a latlon grid reference somewhere near the
-#centre of Dartmoor
-\dontrun{GetDataEA_QH(Lat = 50.6, Lon = -3.9, Range = 10)}
-#Get all available daily maximum flow data from the Bellever gauge on the
-#East Dart River.
-\dontrun{BelleverMax <- GetDataEA_QH(WISKI_ID = "SX67F051")}
-#Get 15-minute data from the Bellever for the Novermeber 2024 event
-\dontrun{BelleverNov2024 <- GetDataEA_QH(WISKI_ID = "SX67F051",
-From = "2024-11-23", To = "2024-11-25", Period = "15Mins")}
+# Find gauges on the River Tame
+\dontrun{
+GetDataEA_QH(RiverName = "Tame")
+}
+
+# Find gauges within 10km of a latitude/longitude coordinate somewhere near the
+# centre of Dartmoor
+\dontrun{
+GetDataEA_QH(Lat = 50.6, Lon = -3.9, Range = 10)
+}
+
+# Get all available daily maximum flow data from the Bellever gauge on the
+# East Dart River
+\dontrun{
+bellever_max <- GetDataEA_QH(WISKI_ID = "SX67F051")
+}
+
+# Get 15-minute data from the Bellever for the November 2024 event
+\dontrun{
+bellever_nov_2024 <- GetDataEA_QH(
+  WISKI_ID = "SX67F051",
+  From = "2024-11-23", To = "2024-11-25", Period = "15Mins"
+)
+}
+
 }
 \author{
 Anthony Hammond

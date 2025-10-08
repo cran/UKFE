@@ -9,29 +9,31 @@ LSkewUrb(lskew, URBEXT2000, DeUrb = FALSE)
 \arguments{
 \item{lskew}{the LSkew (numeric)}
 
-\item{URBEXT2000}{quantiication of urban and suburbanisation for the subject site}
+\item{URBEXT2000}{quantification of urban and suburbanisation for the subject site}
 
 \item{DeUrb}{logical argument with a default of FALSE. If set to TRUE, de-urbanisation adjustment is performed, if FALSE, urbanisation adjustment is performed}
 }
 \value{
-The urban adjust Lcv or the de-urbanised Lcv
+The urban adjust Lskew or the de-urbanised LSkew
 }
 \description{
 Urbanises or de-urbanises the LSkew using the methods outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'
 }
 \details{
-The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangment of the urbanisation equation, solving for LSkew rather than LSkew-urban.
+The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangement of the urbanisation equation, solving for LSkew rather than LSkew-urban. The functionality assumes that the skewness of an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of URBEXT2000.
 }
 \examples{
-#Choose an urban site (site 53006) from the NRFA data then apply a de-urban
-#adjustment using the Lcv and URBEXT2000 displayed
-NRFAData[which(rownames(NRFAData) == 53006),]
+# Choose an urban site (site 53006) from the NRFA data then apply a de-urban
+# adjustment using the Lcv and URBEXT2000 displayed
+NRFAData[which(rownames(NRFAData) == 53006), ]
 LSkewUrb(0.124, 0.1138, DeUrb = TRUE)
-#Get the pooled Lmoment ratios results for catchment 53006 and apply the urban
-#Get the CDS & adjustment using the pooled LSkew, and the URBEXT2000 for site 53006.
-CDs.53006 <- GetCDs(53006)
-QuickResults(CDs.53006)[[2]]
+
+# Get the pooled L-moment ratios results for catchment 53006 and apply the
+# urban adjustment using the pooled LSkew and the URBEXT2000 for site 53006
+cds_53006 <- GetCDs(53006)
+QuickResults(cds_53006)[[2]]
 LSkewUrb(0.194, 0.1138)
+
 }
 \author{
 Anthony Hammond

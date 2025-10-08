@@ -9,9 +9,9 @@ BFI(Q, x.lim = NULL, y.lim = NULL, PlotTitle = "Baseflow plot", Plot = TRUE)
 \arguments{
 \item{Q}{the daily mean flow series. Numeric vector}
 
-\item{x.lim}{the x axis limits of the plot. Numeric vector of length two Default is the extents of the data}
+\item{x.lim}{the x axis limits of the plot. Numeric vector of length two. Default is the extent of the data}
 
-\item{y.lim}{the y axis limits of the plot. Numeric vector of length two. Default is the extents of the data}
+\item{y.lim}{the y axis limits of the plot. Numeric vector of length two. Default is the extent of the data}
 
 \item{PlotTitle}{the title of the plot. The default is "Baseflow plot"}
 
@@ -27,9 +27,10 @@ Calculates the baseflow index from a daily mean flow series
 The baseflow index is calculated using the method outlined in Gustard, A. Bullock, A. Dixon, J. M.. (1992). Low flow estimation in the United Kingdom. Wallingford, Institute of Hydrology, 88pp. (IH Report No.108)
 }
 \examples{
-# Calculate the BFI from daily discharge at Kingston upon Thames;
+# Calculate the BFI from the daily discharge at Kingston upon Thames,
 # which is in column three of the ThamesPQ data
-BFI(ThamesPQ[,3])
+BFI(ThamesPQ[, 3])
+
 }
 \author{
 Anthony Hammond

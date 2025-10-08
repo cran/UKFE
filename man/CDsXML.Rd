@@ -19,11 +19,18 @@ Imports catchment descriptors from xml files either from an FEH webservice downl
 File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
 }
 \examples{
-#Import catchment descriptors from a NRFA peakflows xml file and display in console
-\dontrun{CDs.4003 <- CDsXML("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.xml")}
-\dontrun{CDs.4003}
-#Import catchment descriptors from a FEH webserver xml file and display xml in the console
-\dontrun{CDs.MySite <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")}
+# Import catchment descriptors from an NRFA Peak Flows XML file and display in console
+\dontrun{
+cds_4003 <- CDsXML("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.xml")
+cds_4003
+}
+
+# Import catchment descriptors from a FEH webserver XML file and display XML in the console
+\dontrun{
+cds_my_site <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")
+cds_my_site
+}
+
 }
 \author{
 Anthony Hammond

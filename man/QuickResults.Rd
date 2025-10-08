@@ -23,7 +23,7 @@ QuickResults(
 
 \item{Qmed}{user supplied QMED which overrides the default QMED estimate}
 
-\item{FUngauged}{logical argument with a default of FALSE. TRUE provides an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs)}
+\item{FUngauged}{logical argument with a default of FALSE. TRUE provides a fake ungauged estimate (an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs))}
 
 \item{plot}{logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot}
 
@@ -36,18 +36,22 @@ A list of length two. Element one is a data frame with columns; return period (R
 Provides pooled gauged, ungauged, or fake ungauged results, directly from the catchment descriptors
 }
 \details{
-The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation and then adjusted with two of the closest un-urban gauged sites (can be changed to 0 or 1 donors). If the site is urban, an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). If the gauged catchment is urban, it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. If FUngauged = TRUE, the top site in the pooling group is excluded and the estimate is performed henceforth in the manner of gauged = FALSE. If the CDs are from a gauged site that is not in the list of sites that are considered suitable for pooling, it won't be included in the pooling group. In which case, if gauged = TRUE, the result will be erroneous.
+The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation adjusted with the 2 closest non-urban gauged sites as donors (though 0 or 1 donors can instead be used if specified) and the growth curve is formed from the ungauged pooling group. If the ungauged site is urban (URBEXT > 0.03), an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. If the gauged catchment is urban (URBEXT > 0.03), it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. However, the urban expansion (UEF) is not applied. Note that gauged = TRUE should only be applied where the site is suitable for pooling. If FUngauged = TRUE, the top site in the pooling group is excluded and the QMED and growth curve estimates are performed henceforth in the manner of gauged = FALSE. Note that FUngauged = TRUE should only be applied where the site is suitable for pooling and in conjunction with the argument gauged = FALSE.
+
+This function applies the index flood procedure in a quick way and therefore encompasses all the associated assumptions. Note that it is recommended that the default results should only be used for broad-scale and/or initial assessments.
 }
 \examples{
-#Get some catchment descriptors
-CDs.73005 <- GetCDs(73005)
-#Get default ungauged results
-QuickResults(CDs.73005)
-#Get gauged results with a GEV distribution
-QuickResults(CDs.73005, gauged = TRUE, dist = "GEV")
-#Get fake ungauged results with one donor
-QuickResults(CDs.73005, FUngauged = TRUE, dons = 1)
+# Get some catchment descriptors
+cds_73005 <- GetCDs(73005)
 
+# Get default ungauged results
+QuickResults(cds_73005)
+
+# Get gauged results with a GEV distribution
+QuickResults(cds_73005, gauged = TRUE, dist = "GEV")
+
+# Get fake ungauged results with one donor
+QuickResults(cds_73005, FUngauged = TRUE, dons = 1)
 
 }
 \author{

@@ -18,9 +18,10 @@ Estimates the median annual maximum flow (QMED) from peaks over threshold data
 If there are multiple peaks per year, the peaks per year (ppy) argument is used to convert to the annual scale to derive QMED. If ppy is one, then the median of the POT sample is returned (the median of x).
 }
 \examples{
-#Extract some POT data and estimate QMED
-ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-QMEDPOT(ThamesPOT$peak, ppy = 1.867263)
+# Extract some POT data and estimate QMED
+thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+QMEDPOT(thames_pot$peak, ppy = 1.867263)
+
 }
 \author{
 Anthony Hammond

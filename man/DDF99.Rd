@@ -28,14 +28,18 @@ The depth duration frequency rainfall model is detailed in the Flood Estimation 
 A note about the discretisation: The user can choose between "daily" or "hourly" for the sliding duration to fixed duration conversion. If the 'Depth' argument is used, it overrides the return period (RP) argument and provides RP as a function of depth. However, if both the 'Depth' and the 'disc' arguments are used, the sliding duration depth is provided as a function of the user input depth. This resulting depth can then be used without the 'disc' argument to determine the sliding duration RP.
 }
 \examples{
-#Examples from FEH volume 2
-#The parameters for these examples are from FEH v2
-#What is the 2-day rainfall with return period 100-years for Norwich.
+# Examples from FEH volume 2
+# The parameters for these examples are from FEH v2
+
+# What is the 2-day rainfall with return period 100 years for Norwich?
 DDF99(Duration = 48, RP = 100, pars = c(-0.023, 0.273, 0.351, 0.236, 0.309, 2.488))
-#What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment
+
+# What is the 4-hour rainfall with return period 20 years for a typical point in the Lyne catchment?
 DDF99(Duration = 4, RP = 20, pars = c(-0.025, 0.344, 0.485, 0.402, 0.287, 2.374))
-#How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
+
+# How rare was the rainfall of 6th August 1978 at Broughshane, County Antrim?
 DDF99(Duration = 5, Depth = 47.7, pars = c(-0.022, 0.412, 0.551, 0.276, 0.261, 2.252))
+
 }
 \author{
 Anthony Hammond

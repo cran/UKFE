@@ -16,9 +16,10 @@ A data.frame with columns; Descriptor and Value.
 Extracts the catchment descriptors for a site of interest from the National River Flow Archive. If the site is considered suitable for QMED and pooling the CDs are extracted from the QMEDData data.frame. Otherwise they are extracted using the NRFA API.
 }
 \examples{
-#Get CDs and display in the console
-CDs.203018 <- GetCDs(203018)
-CDs.203018
+# Get CDs and display in the console
+cds_203018 <- GetCDs(203018)
+cds_203018
+
 }
 \author{
 Anthony Hammond

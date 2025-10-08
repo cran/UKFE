@@ -1,0 +1,122 @@
+---
+title: "R quick start guide"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{R-quick-start-guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This article introduces some basic R concepts that may help when using the UKFE package as well as links to other R resources.
+
+# R basics
+
+## Numerical operations  
+In R, we can perform arithmetic operations, for example, try typing the following in the console:
+
+```{r}
+1 + 2
+3 - 5
+4 * 2
+6 / 3
+```
+
+## Objects
+An object acts as a container for storing data. For example, you can assign some text (called a string) to the object called `greeting`:
+```{r}
+greeting <- "Hello!"
+```
+
+You can then use this variable later: 
+```{r}
+greeting
+```
+
+Numbers can be stored in numeric variables:
+```{r}
+number <- 1
+```
+
+These can then be used in arithmetic operations: 
+```{r}
+number + 10
+```
+
+## Vectors 
+Vectors are one-dimensional arrays that store data. Each element has the same data type. To create one, you can use the `c` function, which stands for `combine` or `concatenate`. UKFE uses lots of numeric vectors. 
+```{r}
+vec <- c(1, 2, 3, 4)
+```
+
+You can perform calculations with vectors:
+```{r}
+a <- c(1, 2, 3)
+b <- c(4, 5, 6)
+a + b
+```
+
+```{r}
+a <- c(1, 2, 3)
+a * 2
+```
+
+## Data frames
+Data frames are structures made up of rows and columns, similar to the structure of a csv file. Each column in a data frame is a vector. 
+
+``` {r}
+column_1 <- c(1, 2, 3, 4)
+column_2 <- c(4, 3, 2, 1)
+
+df <- data.frame(column_1, column_2)
+head(df)
+```
+
+## Functions
+R contains some built-in functions. For example, we can use the `mean()` function to find the mean of a vector: 
+```{r}
+mean(c(1, 2, 3))
+```
+
+We can also use a variable inside a function:
+```{r}
+vector_of_numbers <- c(2, 4, 6)
+mean(vector_of_numbers)
+```
+
+You can learn about the functions in the UKFE package using this documentation and the functions' help files.
+
+# Learning resources for R
+
+If you are finding the UKFE documentation difficult to follow, or if you would like to further develop your knowledge of R, there are many resources available to help. The following suggestions are particularly useful for those who are new to R or programming in general.
+
+## Online books
+
+- [**R for Data Science**](https://r4ds.hadley.nz/) and [**R Programming for Data Science**](https://bookdown.org/rdpeng/rprogdatascience/) are introductory texts, freely available online. They cover the essentials of working with R, including practical examples and exercises.  
+- Both books include lists of additional resources in their 'R Resources' sections.
+
+## Interactive courses
+
+- [**DataCamp**](https://www.datacamp.com) offers interactive, browser-based courses in R. Some introductory content is available for free.
+
+## Webinars and video tutorials
+
+- [**Posit Webinars**](https://posit.co/resources/videos/) feature recorded sessions on a wide range of topics, from beginner to advanced level.
+- **YouTube** also hosts many high-quality R tutorials and lecture series. Searching for “R programming for beginners” will return playlists of relevant material.  
+- **Coursera** offers structured R courses from universities such as Johns Hopkins and the University of Washington. These courses are suitable for beginners and are sometimes available for free or with financial aid.
+
+## Blogs and tutorials
+
+- [**R-bloggers**](https://www.r-bloggers.com) contains tutorials and articles from across the R community. Posts range from beginner-friendly guides to advanced techniques, and often include worked examples and practical applications.
+
+## Support and questions
+
+- If you have questions specifically about this package, you may find it helpful to visit the [**GitHub Discussions**](https://github.com/agqhammond/UKFE/discussions) forum associated with the repository. This is a good place to ask questions, report issues, or see if others have encountered similar problems.
+
+- [**Stack Overflow**](http://www.stackoverflow.com) is a useful resource for general R-related queries, especially for language syntax, errors, and troubleshooting.

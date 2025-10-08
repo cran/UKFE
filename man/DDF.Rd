@@ -23,14 +23,20 @@ Extracts results from a data frame imported using the DDFImport function
 The .xml files only provide a set number of durations and return periods for DDF13 and DDF22.
 This function optimises the GEV distribution on the results in order to interpolate
 across return periods. A linear interpolation is used between durations.
-The interpolation method may provide results that differ from the FEH webserver in the region of 0.1mm.
+The interpolation method may provide results that differ from the FEH webservice in the region of 0.1mm.
 The result is then rounded to an integer.
 }
 \examples{
-#Get DDF13 results from a the DDF
-\dontrun{DDF13.4003 <- DDFImport("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml")}
-#Estimate the 20-year, 5 hour depth
-\dontrun{DDF(DDF13.4003, duration = 5, RP = 20)}
+# Import DDF13 results from an NRFA Peak Flows XML file
+\dontrun{
+ddf13_4003 <- DDFImport("C:/Data/NRFAPeakFlow_v9/Suitable for QMED/04003.xml", DDFVersion = 13)
+}
+
+# Estimate the 20-year, 5-hour depth
+\dontrun{
+DDF(ddf13_4003, duration = 5, RP = 20)
+}
+
 }
 \author{
 Anthony Hammond

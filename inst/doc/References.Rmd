@@ -1,0 +1,44 @@
+---
+title: "References"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{References}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+HAMMOND, A., 2019. Proposal of the ‘extreme rank plot’ for extreme value 
+analysis: with an emphasis on flood frequency studies. *Hydrology Research*, 
+50 (6), 1495–1507.
+
+HOSKING, J.R.M. AND WALLIS, J.R., 1997. 
+*Regional frequency analysis: an approach based on L-moments*. 
+Cambridge: Cambridge University Press.
+
+KJELDSEN, T.R., 2007. 
+*Flood Estimation Handbook. Supplementary report no.1: The revitalised FSR/FEH rainfall-runoff method*. 
+Wallingford: Centre for Ecology & Hydrology.
+
+KJELDSEN, T.R., JONES, D.A., BAYLISS, A.C., 2008. 
+*Improving the FEH statistical procedures for flood frequency estimation*. 
+Wallingford: Centre for Ecology & Hydrology. Report no. SC050050.
+
+SHERMAN, L. K., 1932. Streamflow from rainfall by unit-graph method. 
+*Engineering News Record*, 108:501-505.
+
+HAMMOND, A., 2022. Easy methods for quantifying the uncertainty of FEH pooling analysis. *Circulation - The Newsletter of the British Hydrological Society*, (152). 
+
+WALLINGFORD HYDROSOLUTIONS, (2019). *The Revitalised Flood Hydrograph Model. ReFH2.3: Technical Guide*. Available at: https://refhdocs.hydrosolutions.co.uk/The-ReFH2-Model/Introduction/ [Accessed 22 September 2025].
+
+FAULKNER, D.S., 1999. *Rainfall frequency estimation (Flood Estimation Handbook volume 2)*. Wallingford: Centre for Ecology and Hydrology. 
+
+ROBSON, A.J. and REED, D.W., 1999. *Statistical procedures for flood frequency estimation (Flood Estimation Handbook volume 3)*. Wallingford: Centre for Ecology and Hydrology. 
+
+HECHT, M. and ZITZMANN, S., 2025. *nonstat: Detecting Nonstationarity in Time Series*. R package version 0.0.6.

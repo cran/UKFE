@@ -13,11 +13,12 @@ GetQMED(x)
 the median annual maximum
 }
 \description{
-Provides QMED (median annual maximum flow) from a site suitable for QMED, using the site reference.
+Provides QMED (median annual maximum flow) from a site suitable for QMED, using the site reference. This provides the observed median of the annual maximum sample (excluding rejected observations) for the site of interest. It does not apply any adjustments or updates to account for non-stationarity.
 }
 \examples{
-#Get the observed QMED from sites 55002
+# Get the observed QMED from site 55002
 GetQMED(55002)
+
 }
 \author{
 Anthony Hammond

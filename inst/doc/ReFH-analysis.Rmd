@@ -1,0 +1,128 @@
+---
+title: "ReFH analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ReFH-analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## The `ReFH()` function
+This quick guide provides an overview of how to generate a design hydrograph using the ReFH method. It is assumed that the reader has knowledge of the theory of the ReFH method; this guide is intended to demonstrate how to use the UKFE package rather than to explain the method.
+
+The `ReFH()` function is designed for flexibility and each parameter of the model, along with the inputs and initial conditions, can be user-defined. By default, when catchment descriptors are provided, the ReFH function uses these descriptors to estimate the parameters of the ReFH model, and an estimate of the two-year rainfall for the critical duration. When catchment descriptors are applied, individual parameters and settings can still be adjusted by the user and these adjustments override the estimates from the catchment descriptors. Further details can be found in the function's help file. 
+
+This function applies the ReFH model as specified by Kjeldsen (2007). The ReFH model has since been updated to address some of the limitations. The updated version(s), known as ReFH2, was developed by Wallingford Hydro Solutions (2019) and is available for a licence fee. Henceforth, the original model is denoted ReFH1, and the term 'ReFH' is used when the comment applies to the original and updated versions.
+
+The ReFH outputs are commonly used only to derive a reasonable hydrograph shape. This shape is then scaled to match the peak flow estimate derived using other methods (usually FEH statistical methods). An example of doing this with the function is provided below. There is no automated way of doing so within the function but ReFH parameters can be calibrated using observed rainfall and data to replicate storm events. 
+
+Assumptions and limitations of the ReFH1 model are provided at the bottom after the example of how to derive a design hydrograph.
+
+
+## Derive a design hydrograph using the ReFH method
+
+In the following example, the ReFH() function is used to derive a design hydrograph, i.e., a hydrograph shape scaled to our design flood estimate (assuming the site to be ungauged). The default use of ReFH() with the catchment descriptors provides the rainfall-runoff outputs for an estimate of the two-year design rainfall event:
+
+```{r setup}
+library(UKFE)
+```
+
+```{r fig.alt="Runoff hydrograph showing rainfall inputs and resulting flow components. The x-axis shows time in hours. The left y-axis shows discharge, and the right y-axis shows rainfall in millimetres. Rainfall is shown as inverted filled blue bars along the top of the plot, and net rainfall as inverted green striped bars; rainfall is consistently greater than net rainfall, both rising and peaking around 15 hours. Flow is shown as lines: total flow in solid black, baseflow in short dashed green, and direct runoff in dashed red. Total flow and direct runoff peak later than rainfall, with sharp peaks at around 30 hours, while baseflow lags further and peaks more broadly at about 47 hours. The total flow reaches the highest magnitude, followed by direct runoff, with baseflow peaking at much lower levels in a flatter, wider shape."}
+# Obtain catchment descriptors for NRFA gauge 55002
+CDs.55002 <- GetCDs(55002)
+
+# Obtain outputs of the ReFH model from catchment descriptors for a default 2-year 
+# rainfall event
+ReFH(CDs.55002)
+```
+
+The output that is printed to the console is a list with two elements. The first element is a data frame of parameters, initial conditions and the catchment area. The second is a data frame with the following columns: Rain, NetRain, Runoff, Baseflow and TotalFlow. A runoff hydrograph plot is also produced.
+
+## Scaled ReFH hydrograph
+To scale the hydrograph to the design flow estimate, the results from the ungauged pooling can be used (assuming this is for the ungauged case). We can use the estimate from the FEH statistical analysis vignette:
+
+```{r}
+# Create an ungauged pooling group for site 55002 
+PoolUG.55002 <- Pool(CDs.55002, exclude = 55002)
+
+# Estimate QMED for site 55002 using catchment descriptors and two donor gauges
+CDsQmed.55002 <- QMED(CDs.55002, Don2 = c(55007, 55016))$QMEDs.adj
+
+# Estimate design flows using the above pooling group and QMED
+Results55002 <- PoolEst(PoolUG.55002, QMED = CDsQmed.55002)
+```
+
+The results are in the form of a list. The first element provides the return levels, and the 100-year flow estimate is in the seventh row in the second column. We'll make it an object and use it to scale the hydrograph:
+
+```{r fig.alt="Design hydrograph scaled to the estimated peak flow, illustrating the typical storm response. The x-axis shows time in hours and the y-axis shows discharge. The hydrograph follows the classic shape, rising steeply to a peak at about 32 hours, then receding more gradually with an elongated, tapering descent. This provides a standardised representation of flow behaviour during a peak event."}
+# Extract the 100-year flow estimate
+Q100.55002 <- Results55002[[1]][7, 2]
+
+# Obtain outputs of the ReFH model from catchment descriptors for a default 2-year 
+# rainfall, scaling to the 100-year peak flow estimate
+ReFH(CDs.55002, scaled = Q100.55002)
+```
+
+In this case, the second element of the output list in the console is a numeric vector containing the scaled hydrograph, instead of the results data frame. 
+
+## Exporting results
+For use outside of 'R', these outputs can be saved as objects and then written to CSV files:
+
+```{r, eval = FALSE}
+# Save the ReFH design hydrograph to an object called 'DesignHydro.55002.unscaled'
+DesignHydro.55002.unscaled <- ReFH(CDs.55002)
+
+# Write to csv
+write.csv(DesignHydro.55002.unscaled, "my/file/path/DesHydro55002_unscaled.csv", row.names = FALSE)
+
+# Save the ReFH design hydrograph to an object called 'DesignHydro.55002.scaled'
+DesignHydro.55002.scaled <- ReFH(CDs.55002, scaled = Q100.55002)
+
+# Write to csv
+write.csv(DesignHydro.55002.scaled, "my/file/path/DesHydro55002_scaled.csv", row.names = FALSE)
+```
+
+Note in these examples that `row.names = FALSE` in the `write.csv()` function: our data has no row names, so this prevents an index column being added to the CSV.
+
+## ReFH overview, assumptions and limitations
+
+The ReFH model has three components that conceptualise the catchment process.
+
+Model structure:
+
+1.	A loss model to account for hydrological processes such as evaporation, soil moisture storage, groundwater recharge and interception losses. 
+2.	A unit hydrograph-based routing model to distribute the net rainwater over time at the catchment outlet (runoff).
+3.	A baseflow model which determines the proportion of the runoff which becomes baseflow recharge and specifies the exponential decay of the river flow once the net rainfall has been routed through the catchment outlet.
+
+### Loss model
+The loss model quantifies, for each timestep of rainfall, the proportion of the rain that is effective (the rain that forms the runoff hydrograph). It does so by assuming a maximum catchment soil moisture capacity in mm (Cmax) and an initial catchment soil moisture content in mm (Cini). The original ReFH report (Kjeldsen, 2007) suggests that the Cini / Cmax (Cini divided by Cmax) can be conceptualised as the initial proportion of the catchment that is saturated, and the initial rainfall on this saturated area will form the storm hydrograph. It is assumed that the proportion of rain becoming effective is the same as this saturated proportion.
+
+As rainfall is added, catchment soil moisture increases and Cini / Cmax becomes Ct / Cmax, i.e. the soil moisture for the given timestep divided by the Cmax is the proportion of rain for each timestep which becomes effective.
+
+### Runoff routing model (unit hydrograph)
+The unit hydrograph (UH) model is a well-established method for routing effective rainfall to the catchment outlet (Sherman, 1932). There are a number of assumptions:
+
+1.	There is a direct proportional relationship between the effective rainfall and the surface runoff.
+2.	The property of superposition. That is, if two successive amounts of effective rainfall, then the surface runoff is the sum of the two associated unit hydrographs (the second one being ahead by one timestep).  
+3.	The UH does not change over time. 
+4.	The UH shape is the same for all catchments. Only the time to peak and the associated base of the UH changes between catchments.
+5.	The catchment rainfall is spatially homogeneous.
+6.	The rainfall in a given timestep has a constant intensity.
+
+### Baseflow model
+The baseflow model assumes that the saturated area of the catchment that produces surface runoff is the same area that also produces the baseflow recharge. The assumption is that the ratio of recharge to runoff is fixed (the BR parameter). A further parameter, baseflow lag (BL), ensures that the resulting baseflow hydrograph is lagged behind that of the runoff hydrograph (effectively providing a slow flow component). However, this baseflow model does not consider the volume of rainfall directly in the same way the unit hydrograph component does. The resulting baseflow hydrograph is in addition to the runoff hydrograph volume and is calculated as a proportion of it. This means that the volume of the total hydrograph minus initial baseflow is greater than the net/effective rainfall. For the most part, this is not a significant problem because it is assumed that some of the remaining volume of the rainfall makes up the difference. However, if the proportion of effective rainfall is closer to one, the volume of the hydrograph can be greater than the gross/total input of rainfall. This will almost certainly not happen unless the event duration is considerably longer than recommended and only in catchments with a high initial proportion of saturation (due to low BFIHOST and high PROPWET). Note that ReFH2 addresses this issue but is not available via UKFE. 
+
+## Use cases for the `ReFH()` function
+
+There are three primary use cases:
+
+1.	A flexible tool to model the catchment response to event rainfall. 
+2.	A tool for estimating the T-year flow as a function of the T-year rainfall.
+3.	To develop a plausible hydrograph shape for scaling to peak flow estimates (usually for the purposes of developing a model boundary).

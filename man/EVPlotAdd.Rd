@@ -23,7 +23,7 @@ EVPlotAdd(
 
 \item{Name}{character string. User chosen name for points or line added (for the legend)}
 
-\item{MED}{The two year return level. Necessary In the case where the EV plot is not scaled}
+\item{MED}{The two year return level. Necessary in the case where the EV plot is not scaled}
 
 \item{xyleg}{a numeric vector of length two. They are the x and y position of the symbol and text to be added to the legend.}
 
@@ -45,20 +45,29 @@ Functionality to add extra lines or points to an extreme value plot (derived fro
 A line can be added using the Lcv and Lskew based on one of four distributions (Generalised extreme value, Generalised logistic, Gumbel, Generalised Pareto). Points can be added as a numeric vector. If a single point is required, the base points() function can be used and the x axis will need to be log(RP-1).
 }
 \examples{
-#Get an AMAX sample and plot the growth curve with the GEV distribution
-AM.203018 <- GetAM(203018)
-EVPlot(AM.203018$Flow, dist = "GEV")
-#Now add a line (dotted & red) for the generalised logistic distribution
-#first get the Lcv and Lskew using the LMoments function
-pars <- as.numeric(LMoments(AM.203018[,2])[c(5,6)])
-EVPlotAdd(Pars = pars, dist = "GenLog", Name = "GenLog", xyleg = c(-5.2,2.65), lty = 3)
-#Now add a line for the gumbel distribution which is darkgreen and dashed.
-EVPlotAdd(Pars = pars[1], dist = "Gumbel", Name = "Gumbel",
-xyleg = c(-5.19,2.5), lty = 3, col = "darkgreen")
-#now plot afresh and get another AMAX and add the points
-EVPlot(AM.203018$Flow, dist = "GEV")
-AM.27090 <- GetAM(27090)
-EVPlotAdd(xyleg = c(-4.9,2.65), pts = AM.27090[,2], Name = "27090")
+# Get an AMAX sample and plot the growth curve with the GEV distribution
+am_203018 <- GetAM(203018)
+EVPlot(am_203018$Flow, dist = "GEV")
+
+# Now add a line (dotted and red) for the generalised logistic distribution
+# First get the Lcv and Lskew using the L-moments function
+pars <- as.numeric(LMoments(am_203018[, 2])[c(5, 6)])
+EVPlotAdd(
+  Pars = pars, dist = "GenLog", Name = "GenLog",
+  xyleg = c(-5.2, 2.65), lty = 3
+)
+
+# Now add a line for the Gumbel distribution which is dark green and dashed
+EVPlotAdd(
+  Pars = pars[1], dist = "Gumbel", Name = "Gumbel",
+  xyleg = c(-5.19, 2.5), lty = 3, col = "darkgreen"
+)
+
+# Now plot afresh and get another AMAX and add the points
+EVPlot(am_203018$Flow, dist = "GEV")
+am_27090 <- GetAM(27090)
+EVPlotAdd(xyleg = c(-4.9, 2.65), pts = am_27090[, 2], Name = "27090")
+
 }
 \author{
 Anthony Hammond

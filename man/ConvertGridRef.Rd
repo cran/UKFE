@@ -23,10 +23,12 @@ Function to convert between BNG easting & northing and Latitude & Longitude (or 
 To convert to Lat and Lon from BNG, ensure that the fromBNG argument is TRUE. To convert the other way, set fromBNG as FALSE. The same applies for converting between Irish grid and BNG. To convert Irish grid and BNG set the IGorLatLon argument to IG.
 }
 \examples{
-#Get Latitude and Longitude for a BNG numeric reference.
+# Convert a BNG numeric reference to latitude and longitude
 ConvertGridRef(c(462899, 187850))
-#Now we'll get easting and northing as a function of latitude and longitude
+
+# Convert latitude and longitude to easting and northing
 ConvertGridRef(c(51.6, -1), fromBNG = FALSE)
+
 }
 \author{
 Anthony Hammond

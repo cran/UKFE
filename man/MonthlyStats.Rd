@@ -43,11 +43,17 @@ The statistic of interest for each month is calculated for each calendar year in
 }
 \examples{
 # Get the mean flows for each month for the Thames at Kingston
-QMonThames <- MonthlyStats(ThamesPQ[,c(1,3)], Stat = mean,
-ylab = "Discharge (m3/s)", main = "Thames at Kingston monthly mean flow", Plot = TRUE)
+qm_on_thames <- MonthlyStats(ThamesPQ[, c(1, 3)],
+  Stat = mean,
+  ylab = "Discharge (m^3/s)", main = "Thames at Kingston monthly mean flow", Plot = TRUE
+)
+
 # Get the monthly sums of rainfall for the Thames at Kingston
-PMonThames <- MonthlyStats(ThamesPQ[,c(1,2)], Stat = sum,
-ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall", Plot = TRUE)
+pm_on_thames <- MonthlyStats(ThamesPQ[, c(1, 2)],
+  Stat = sum,
+  ylab = "Rainfall (mm)", main = "Thames as Kingston monthly rainfall", Plot = TRUE
+)
+
 }
 \author{
 Anthony Hammond

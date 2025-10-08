@@ -18,9 +18,9 @@ AnnualStat(
 \arguments{
 \item{x}{a data.frame with dates (or POSIXct) in the first column and variable in the second}
 
-\item{Stat}{A user chosen function to extract statistics, for example mean. The default it max. User supplied functions could also be used.}
+\item{Stat}{A user chosen function to extract statistics, for example mean. The default is max. User supplied functions could also be used.}
 
-\item{Truncate}{Logical argument with a default of TRUE. If TRUE, then x is truncated to be within the first and last occurrence of the chosen month and time. If FALSE tuncation is not done and results from partial years will be included.}
+\item{Truncate}{Logical argument with a default of TRUE. If TRUE, then x is truncated to be within the first and last occurrence of the chosen month and time. If FALSE truncation is not done and results from partial years will be included.}
 
 \item{Mon}{Choice of month as a numeric, from 1 to 12. The default is 10 which means the year starts October 1st.}
 
@@ -42,13 +42,16 @@ Extracts annual statistics (default maximums) from a data.frame which has dates 
 The statistics are extracted based on the UK hydrological year by default (start month = 10). Month can be changed using the Mon argument. A year is from Mon-Hr to Mon-(Hr-1). For example, the 2018 hydrological year with Hr = 9 would be from 2018-10-01 09:00:00 to 2019-10-01 08:00:00. If Hr = 0, then it would be from 2018-10-01 00:00:00 to 2019-09-30 23:00:00. Data before the first occurrence of the 'start month' and after and including the last occurrence of the 'start month' is not included in the calculation of the statistic.
 }
 \examples{
-#Extract the Thames AMAX daily mean flow and display the first six rows
-ThamesAM <- AnnualStat(ThamesPQ[,c(1,3)])
-head(ThamesAM)
-#Extract the annual rainfall totals.
-ThamesAnnualP <- AnnualStat(ThamesPQ[,1:2], Stat = sum)
-#Extract maximum five day rainfall totals from the Thames rain
-ThamesP5DayAM <- AnnualStat(ThamesPQ[,1:2], Stat = sum, Sliding = TRUE, N = 5)
+# Extract the Thames AMAX daily mean flow and display the first six rows
+thames_am <- AnnualStat(ThamesPQ[, c(1, 3)])
+head(thames_am)
+
+# Extract the annual rainfall totals
+thames_annual_p <- AnnualStat(ThamesPQ[, 1:2], Stat = sum)
+
+# Extract maximum five day rainfall totals from the Thames rainfall series
+thames_5day_am <- AnnualStat(ThamesPQ[, 1:2], Stat = sum, Sliding = TRUE, N = 5)
+
 }
 \author{
 Anthony Hammond

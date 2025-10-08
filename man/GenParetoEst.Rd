@@ -26,18 +26,24 @@ quantile as a function of RP or vice versa
 Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 }
 \details{
-If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is for the function to convert from the peaks over threshold (POT) scale to the annual scale. For example, if there are 3 peaks per year, the probability associated with the 100-yr return period estimate would be 0.01/3 (i.e. an RP of 300 on the POT scale) rather than 0.01.
+If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The average number of peaks per year argument (ppy) is necessary when ppy is not equal to 1.
+
+This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 }
 \examples{
-#Get a POT sample, estimate the parameters, and estimate 50-year RP
-ThamesPOT <- POTextract(ThamesPQ[,c(1,3)], thresh = 0.90)
-GenParetoPars(ThamesPOT$peak)
-#Store parameters in an object
-Pars <- as.numeric(GenParetoPars(ThamesPOT$peak))
-#get estimate of 50-yr flow
-GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, RP = 50)
-#Estimate the RP for a 600m3/s discharge
-GenParetoEst(Pars[1], Pars[2], Pars[3], ppy = 1.867, q = 600)
+# Get a POT sample, estimate the parameters, and estimate the 50-year RP
+thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
+GenParetoPars(thames_pot$peak)
+
+# Store the parameters in an object
+pars <- as.numeric(GenParetoPars(thames_pot$peak))
+
+# Get an estimate of 50-year flow
+GenParetoEst(pars[1], pars[2], pars[3], ppy = 1.867, RP = 50)
+
+# Estimate the RP for a 600 m^3/s discharge
+GenParetoEst(pars[1], pars[2], pars[3], ppy = 1.867, q = 600)
+
 }
 \author{
 Anthony Hammond

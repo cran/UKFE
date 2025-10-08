@@ -21,7 +21,7 @@ HydroPlot(
 
 \item{main}{a character string. The user chosen plot title. The default is "Concurrent Rainfall & Discharge"}
 
-\item{ylab}{User choice for the y label of the plot. THe default is "Discharge (m3/s)".}
+\item{ylab}{User choice for the y label of the plot. The default is "Discharge (m3/s)".}
 
 \item{From}{a starting time for the plot. In the form of a date or POSIXct object. The default is the first row of x}
 
@@ -36,18 +36,19 @@ HydroPlot(
 \item{Return}{a logical argument with a default of FALSE. If TRUE the data-frame of time, precipitation, and flow is returned}
 }
 \value{
-A plot of concurrent precipitation and discharge. With the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
+A plot of concurrent precipitation and discharge, with the former at the top and the latter at the bottom. If the Return argument equals true the associated data-frame is also returned.
 }
 \description{
-Plots concurrent precipitation and discharge with precipitation along the top and discharge along the bottom
+Plots concurrent precipitation and discharge, with precipitation along the top and discharge along the bottom
 }
 \details{
 The input of x is a dataframe with the first column being time. If the data is sub daily this should be class POSIXct with time as well as date.
 }
 \examples{
-#Plot the Thames precipitation and discharge for the 2013 hydrological year,
-#adjusting the y axis to 1.8.
+# Plot the Thames precipitation and discharge for the 2013 hydrological year,
+# adjusting the y axis to 1.8
 HydroPlot(ThamesPQ, From = "2013-10-01", To = "2014-09-30", adj.y = 1.8)
+
 }
 \author{
 Anthony Hammond

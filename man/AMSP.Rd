@@ -13,12 +13,12 @@ A data frame with 26539 rows and 3 columns
 }
 }
 \source{
-\url{https://nrfa.ceh.ac.uk/peak-flow-dataset}
+\url{https://nrfa.ceh.ac.uk/data/peak-flow-dataset}
 }
 \usage{
 AMSP
 }
 \description{
-A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version 13.0.2
+A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version (14?)
 }
 \keyword{datasets}

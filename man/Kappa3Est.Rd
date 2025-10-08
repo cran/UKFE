@@ -24,17 +24,23 @@ quantile as a function of RP or vice versa
 Estimated quantiles as function of return period (RP) and vice versa, from user input parameters
 }
 \details{
-If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142.
+If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. This is the Kappa3 distribution as defined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.' (Circulation - The Newsletter of the British Hydrological Society, no. 142).
+
+This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 }
 \examples{
-#Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-AM.27090 <- GetAM(27090)
-#Get parameters and Store as an object
-Pars <- as.numeric(Kappa3Pars(AM.27090$Flow))
-#get estimate of 50-yr flow
-Kappa3Est(Pars[1], Pars[2], Pars[3], RP = 50)
-#Estimate the RP for a 600m3/s discharge
-Kappa3Est(Pars[1], Pars[2], Pars[3], q = 600)
+# Get an annual maximum sample, estimate the parameters, and the 50-year RP flow
+am_27090 <- GetAM(27090)
+
+# Get the parameters and store in an object
+pars <- as.numeric(Kappa3Pars(am_27090$Flow))
+
+# Get an estimate of the 50-year flow
+Kappa3Est(pars[1], pars[2], pars[3], RP = 50)
+
+# Estimate the RP for a 600 m^3/s discharge
+Kappa3Est(pars[1], pars[2], pars[3], q = 600)
+
 }
 \author{
 Anthony Hammond

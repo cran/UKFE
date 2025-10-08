@@ -19,9 +19,10 @@ Calculates the LSkew from a sample of data
 LSkew calculated according to methods outlined by Hosking & Wallis (1997): Regional Frequency Analysis and approach based on LMoments. Also in the Flood Estimation Handbook (1999), volume 3.
 }
 \examples{
-#Get an AMAX sample and calculate the Lmoments
-AM.27051 <- GetAM(27051)
-LSkew(AM.27051$Flow)
+# Get an AMAX sample and calculate the L-moments
+am_27051 <- GetAM(27051)
+LSkew(am_27051$Flow)
+
 }
 \author{
 Anthony Hammond

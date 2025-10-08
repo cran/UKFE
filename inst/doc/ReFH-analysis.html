@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>ReFH analysis</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">ReFH analysis</h1>
+
+
+
+<div id="the-refh-function" class="section level2">
+<h2>The <code>ReFH()</code> function</h2>
+<p>This quick guide provides an overview of how to generate a design
+hydrograph using the ReFH method. It is assumed that the reader has
+knowledge of the theory of the ReFH method; this guide is intended to
+demonstrate how to use the UKFE package rather than to explain the
+method.</p>
+<p>The <code>ReFH()</code> function is designed for flexibility and each
+parameter of the model, along with the inputs and initial conditions,
+can be user-defined. By default, when catchment descriptors are
+provided, the ReFH function uses these descriptors to estimate the
+parameters of the ReFH model, and an estimate of the two-year rainfall
+for the critical duration. When catchment descriptors are applied,
+individual parameters and settings can still be adjusted by the user and
+these adjustments override the estimates from the catchment descriptors.
+Further details can be found in the function’s help file.</p>
+<p>This function applies the ReFH model as specified by Kjeldsen (2007).
+The ReFH model has since been updated to address some of the
+limitations. The updated version(s), known as ReFH2, was developed by
+Wallingford Hydro Solutions (2019) and is available for a licence fee.
+Henceforth, the original model is denoted ReFH1, and the term ‘ReFH’ is
+used when the comment applies to the original and updated versions.</p>
+<p>The ReFH outputs are commonly used only to derive a reasonable
+hydrograph shape. This shape is then scaled to match the peak flow
+estimate derived using other methods (usually FEH statistical methods).
+An example of doing this with the function is provided below. There is
+no automated way of doing so within the function but ReFH parameters can
+be calibrated using observed rainfall and data to replicate storm
+events.</p>
+<p>Assumptions and limitations of the ReFH1 model are provided at the
+bottom after the example of how to derive a design hydrograph.</p>
+</div>
+<div id="derive-a-design-hydrograph-using-the-refh-method" class="section level2">
+<h2>Derive a design hydrograph using the ReFH method</h2>
+<p>In the following example, the ReFH() function is used to derive a
+design hydrograph, i.e., a hydrograph shape scaled to our design flood
+estimate (assuming the site to be ungauged). The default use
+of ReFH() with the catchment descriptors provides the rainfall-runoff
+outputs for an estimate of the two-year design rainfall event:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(UKFE)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Obtain catchment descriptors for NRFA gauge 55002</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>CDs<span class="fl">.55002</span> <span class="ot">&lt;-</span> <span class="fu">GetCDs</span>(<span class="dv">55002</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co"># Obtain outputs of the ReFH model from catchment descriptors for a default 2-year </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co"># rainfall event</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">ReFH</span>(CDs<span class="fl">.55002</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Runoff hydrograph showing rainfall inputs and resulting flow components. The x-axis shows time in hours. The left y-axis shows discharge, and the right y-axis shows rainfall in millimetres. Rainfall is shown as inverted filled blue bars along the top of the plot, and net rainfall as inverted green striped bars; rainfall is consistently greater than net rainfall, both rising and peaking around 15 hours. Flow is shown as lines: total flow in solid black, baseflow in short dashed green, and direct runoff in dashed red. Total flow and direct runoff peak later than rainfall, with sharp peaks at around 30 hours, while baseflow lags further and peaks more broadly at about 47 hours. The total flow reaches the highest magnitude, followed by direct runoff, with baseflow peaking at much lower levels in a flatter, wider shape." src="data:image/png;base64,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" alt="Runoff hydrograph showing rainfall inputs and resulting flow components. The x-axis shows time in hours. The left y-axis shows discharge, and the right y-axis shows rainfall in millimetres. Rainfall is shown as inverted filled blue bars along the top of the plot, and net rainfall as inverted green striped bars; rainfall is consistently greater than net rainfall, both rising and peaking around 15 hours. Flow is shown as lines: total flow in solid black, baseflow in short dashed green, and direct runoff in dashed red. Total flow and direct runoff peak later than rainfall, with sharp peaks at around 30 hours, while baseflow lags further and peaks more broadly at about 47 hours. The total flow reaches the highest magnitude, followed by direct runoff, with baseflow peaking at much lower levels in a flatter, wider shape." /></p>
+<pre><code>#&gt; [[1]]
+#&gt;       AREA       TP        D      BR       BL     Cmax     Cini    BFini
+#&gt; 1 1894.257 12.90487 28.77787 1.14785 63.50554 309.7927 138.5238 150.4984
+#&gt; 
+#&gt; [[2]]
+#&gt;    Rain NetRain Runoff Baseflow TotalFlow
+#&gt; 1  0.28    0.13   0.00   150.50    150.50
+#&gt; 2  0.34    0.15   0.13   148.15    148.28
+#&gt; 3  0.41    0.19   0.55   145.84    146.39
+#&gt; 4  0.50    0.23   1.31   143.58    144.89
+#&gt; 5  0.61    0.28   2.50   141.37    143.87
+#&gt; 6  0.74    0.34   4.21   139.22    143.43
+#&gt; 7  0.90    0.41   6.55   137.14    143.69
+#&gt; 8  1.09    0.50   9.66   135.14    144.80
+#&gt; 9  1.32    0.61  13.71   133.24    146.96
+#&gt; 10 1.60    0.75  18.92   131.45    150.37
+#&gt; 11 1.93    0.92  25.52   129.80    155.32
+#&gt; 12 2.32    1.12  33.84   128.30    162.15
+#&gt; 13 2.78    1.36  44.26   127.00    171.26
+#&gt; 14 3.29    1.64  57.21   125.93    183.14
+#&gt; 15 3.61    1.84  73.01   125.13    198.13
+#&gt; 16 3.29    1.71  91.92   124.65    216.57
+#&gt; 17 2.78    1.48 113.92   124.55    238.47
+#&gt; 18 2.32    1.25 138.51   124.87    263.37
+#&gt; 19 1.93    1.06 165.05   125.64    290.69
+#&gt; 20 1.60    0.88 192.95   126.89    319.83
+#&gt; 21 1.32    0.74 221.58   128.62    350.21
+#&gt; 22 1.09    0.61 250.36   130.84    381.21
+#&gt; 23 0.90    0.51 278.67   133.54    412.21
+#&gt; 24 0.74    0.42 305.86   136.70    442.56
+#&gt; 25 0.61    0.35 331.23   140.28    471.51
+#&gt; 26 0.50    0.29 354.02   144.23    498.26
+#&gt; 27 0.41    0.24 373.36   148.50    521.86
+#&gt; 28 0.34    0.20 388.31   153.01    541.32
+#&gt; 29 0.28    0.16 398.07   157.67    555.74
+#&gt; 30   NA      NA 402.57   162.39    564.96
+#&gt; 31   NA      NA 402.26   167.07    569.33
+#&gt; 32   NA      NA 397.76   171.63    569.39
+#&gt; 33   NA      NA 389.79   176.01    565.80
+#&gt; 34   NA      NA 378.97   180.15    559.12
+#&gt; 35   NA      NA 365.88   184.02    549.90
+#&gt; 36   NA      NA 351.02   187.57    538.59
+#&gt; 37   NA      NA 334.84   190.79    525.63
+#&gt; 38   NA      NA 317.75   193.66    511.41
+#&gt; 39   NA      NA 300.13   196.17    496.31
+#&gt; 40   NA      NA 282.36   198.33    480.69
+#&gt; 41   NA      NA 264.79   200.14    464.93
+#&gt; 42   NA      NA 247.72   201.61    449.32
+#&gt; 43   NA      NA 231.24   202.75    433.99
+#&gt; 44   NA      NA 215.59   203.59    419.18
+#&gt; 45   NA      NA 200.83   204.14    404.97
+#&gt; 46   NA      NA 186.81   204.43    391.23
+#&gt; 47   NA      NA 173.41   204.46    377.87
+#&gt; 48   NA      NA 160.54   204.26    364.81
+#&gt; 49   NA      NA 148.18   203.84    352.02
+#&gt; 50   NA      NA 136.26   203.21    339.47
+#&gt; 51   NA      NA 124.75   202.37    327.12
+#&gt; 52   NA      NA 113.61   201.35    314.95
+#&gt; 53   NA      NA 102.82   200.14    302.96
+#&gt; 54   NA      NA  92.39   198.76    291.15
+#&gt; 55   NA      NA  82.32   197.23    279.54
+#&gt; 56   NA      NA  72.64   195.53    268.17
+#&gt; 57   NA      NA  63.33   193.70    257.03
+#&gt; 58   NA      NA  54.43   191.73    246.16
+#&gt; 59   NA      NA  46.03   189.63    235.66
+#&gt; 60   NA      NA  38.24   187.42    225.67
+#&gt; 61   NA      NA  31.19   185.12    216.31
+#&gt; 62   NA      NA  25.03   182.73    207.76
+#&gt; 63   NA      NA  19.85   180.28    200.13
+#&gt; 64   NA      NA  15.57   177.78    193.35
+#&gt; 65   NA      NA  12.06   175.25    187.31
+#&gt; 66   NA      NA   9.21   172.70    181.91
+#&gt; 67   NA      NA   6.91   170.15    177.06
+#&gt; 68   NA      NA   5.08   167.60    172.68
+#&gt; 69   NA      NA   3.63   165.06    168.69
+#&gt; 70   NA      NA   2.51   162.53    165.04
+#&gt; 71   NA      NA   1.65   160.03    161.68
+#&gt; 72   NA      NA   1.01   157.56    158.57
+#&gt; 73   NA      NA   0.56   155.11    155.67
+#&gt; 74   NA      NA   0.26   152.69    152.95
+#&gt; 75   NA      NA   0.08   150.31    150.39</code></pre>
+<p>The output that is printed to the console is a list with two
+elements. The first element is a data frame of parameters, initial
+conditions and the catchment area. The second is a data frame with the
+following columns: Rain, NetRain, Runoff, Baseflow and TotalFlow. A
+runoff hydrograph plot is also produced.</p>
+</div>
+<div id="scaled-refh-hydrograph" class="section level2">
+<h2>Scaled ReFH hydrograph</h2>
+<p>To scale the hydrograph to the design flow estimate, the results from
+the ungauged pooling can be used (assuming this is for the ungauged
+case). We can use the estimate from the FEH statistical analysis
+vignette:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Create an ungauged pooling group for site 55002 </span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>PoolUG<span class="fl">.55002</span> <span class="ot">&lt;-</span> <span class="fu">Pool</span>(CDs<span class="fl">.55002</span>, <span class="at">exclude =</span> <span class="dv">55002</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Estimate QMED for site 55002 using catchment descriptors and two donor gauges</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>CDsQmed<span class="fl">.55002</span> <span class="ot">&lt;-</span> <span class="fu">QMED</span>(CDs<span class="fl">.55002</span>, <span class="at">Don2 =</span> <span class="fu">c</span>(<span class="dv">55007</span>, <span class="dv">55016</span>))<span class="sc">$</span>QMEDs.adj</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># Estimate design flows using the above pooling group and QMED</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>Results55002 <span class="ot">&lt;-</span> <span class="fu">PoolEst</span>(PoolUG<span class="fl">.55002</span>, <span class="at">QMED =</span> CDsQmed<span class="fl">.55002</span>)</span></code></pre></div>
+<p>The results are in the form of a list. The first element provides the
+return levels, and the 100-year flow estimate is in the seventh row in
+the second column. We’ll make it an object and use it to scale the
+hydrograph:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Extract the 100-year flow estimate</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>Q100<span class="fl">.55002</span> <span class="ot">&lt;-</span> Results55002[[<span class="dv">1</span>]][<span class="dv">7</span>, <span class="dv">2</span>]</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Obtain outputs of the ReFH model from catchment descriptors for a default 2-year </span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co"># rainfall, scaling to the 100-year peak flow estimate</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">ReFH</span>(CDs<span class="fl">.55002</span>, <span class="at">scaled =</span> Q100<span class="fl">.55002</span>)</span></code></pre></div>
+<p><img role="img" aria-label="Design hydrograph scaled to the estimated peak flow, illustrating the typical storm response. The x-axis shows time in hours and the y-axis shows discharge. The hydrograph follows the classic shape, rising steeply to a peak at about 32 hours, then receding more gradually with an elongated, tapering descent. This provides a standardised representation of flow behaviour during a peak event." src="data:image/png;base64,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" alt="Design hydrograph scaled to the estimated peak flow, illustrating the typical storm response. The x-axis shows time in hours and the y-axis shows discharge. The hydrograph follows the classic shape, rising steeply to a peak at about 32 hours, then receding more gradually with an elongated, tapering descent. This provides a standardised representation of flow behaviour during a peak event." /></p>
+<pre><code>#&gt; [[1]]
+#&gt;       AREA       TP        D      BR       BL     Cmax     Cini    BFini
+#&gt; 1 1894.257 12.90487 28.77787 1.14785 63.50554 309.7927 138.5238 150.4984
+#&gt; 
+#&gt; [[2]]
+#&gt;  [1]  336.539  331.574  327.342  323.992  321.711  320.725  321.310  323.803
+#&gt;  [9]  328.616  336.253  347.327  362.590  382.955  409.522  443.056  484.283
+#&gt; [17]  533.253  588.944  650.036  715.201  783.115  852.437  921.772  989.630
+#&gt; [25] 1054.377 1114.180 1166.956 1210.475 1242.724 1263.332 1273.110 1273.253
+#&gt; [33] 1265.210 1250.287 1229.656 1204.369 1175.383 1143.587 1109.823 1074.910
+#&gt; [41] 1039.660 1004.759  970.482  937.362  905.577  874.862  844.986  815.768
+#&gt; [49]  787.178  759.111  731.495  704.286  677.469  651.061  625.105  599.674
+#&gt; [57]  574.751  550.444  526.978  504.625  483.710  464.596  447.520  432.355
+#&gt; [65]  418.854  406.784  395.938  386.134  377.219  369.060  361.546  354.585
+#&gt; [73]  348.096  342.015  336.287</code></pre>
+<p>In this case, the second element of the output list in the console is
+a numeric vector containing the scaled hydrograph, instead of the
+results data frame.</p>
+</div>
+<div id="exporting-results" class="section level2">
+<h2>Exporting results</h2>
+<p>For use outside of ‘R’, these outputs can be saved as objects and
+then written to CSV files:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Save the ReFH design hydrograph to an object called &#39;DesignHydro.55002.unscaled&#39;</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>DesignHydro.<span class="fl">55002.</span>unscaled <span class="ot">&lt;-</span> <span class="fu">ReFH</span>(CDs<span class="fl">.55002</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Write to csv</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">write.csv</span>(DesignHydro.<span class="fl">55002.</span>unscaled, <span class="st">&quot;my/file/path/DesHydro55002_unscaled.csv&quot;</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co"># Save the ReFH design hydrograph to an object called &#39;DesignHydro.55002.scaled&#39;</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>DesignHydro.<span class="fl">55002.</span>scaled <span class="ot">&lt;-</span> <span class="fu">ReFH</span>(CDs<span class="fl">.55002</span>, <span class="at">scaled =</span> Q100<span class="fl">.55002</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co"># Write to csv</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="fu">write.csv</span>(DesignHydro.<span class="fl">55002.</span>scaled, <span class="st">&quot;my/file/path/DesHydro55002_scaled.csv&quot;</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<p>Note in these examples that <code>row.names = FALSE</code> in the
+<code>write.csv()</code> function: our data has no row names, so this
+prevents an index column being added to the CSV.</p>
+</div>
+<div id="refh-overview-assumptions-and-limitations" class="section level2">
+<h2>ReFH overview, assumptions and limitations</h2>
+<p>The ReFH model has three components that conceptualise the catchment
+process.</p>
+<p>Model structure:</p>
+<ol style="list-style-type: decimal">
+<li>A loss model to account for hydrological processes such as
+evaporation, soil moisture storage, groundwater recharge and
+interception losses.</li>
+<li>A unit hydrograph-based routing model to distribute the net
+rainwater over time at the catchment outlet (runoff).</li>
+<li>A baseflow model which determines the proportion of the runoff which
+becomes baseflow recharge and specifies the exponential decay of the
+river flow once the net rainfall has been routed through the catchment
+outlet.</li>
+</ol>
+<div id="loss-model" class="section level3">
+<h3>Loss model</h3>
+<p>The loss model quantifies, for each timestep of rainfall, the
+proportion of the rain that is effective (the rain that forms the runoff
+hydrograph). It does so by assuming a maximum catchment soil moisture
+capacity in mm (Cmax) and an initial catchment soil moisture content in
+mm (Cini). The original ReFH report (Kjeldsen, 2007) suggests that the
+Cini / Cmax (Cini divided by Cmax) can be conceptualised as the initial
+proportion of the catchment that is saturated, and the initial rainfall
+on this saturated area will form the storm hydrograph. It is assumed
+that the proportion of rain becoming effective is the same as this
+saturated proportion.</p>
+<p>As rainfall is added, catchment soil moisture increases and Cini /
+Cmax becomes Ct / Cmax, i.e. the soil moisture for the given timestep
+divided by the Cmax is the proportion of rain for each timestep which
+becomes effective.</p>
+</div>
+<div id="runoff-routing-model-unit-hydrograph" class="section level3">
+<h3>Runoff routing model (unit hydrograph)</h3>
+<p>The unit hydrograph (UH) model is a well-established method for
+routing effective rainfall to the catchment outlet (Sherman, 1932).
+There are a number of assumptions:</p>
+<ol style="list-style-type: decimal">
+<li>There is a direct proportional relationship between the effective
+rainfall and the surface runoff.</li>
+<li>The property of superposition. That is, if two successive amounts of
+effective rainfall, then the surface runoff is the sum of the two
+associated unit hydrographs (the second one being ahead by one
+timestep).<br />
+</li>
+<li>The UH does not change over time.</li>
+<li>The UH shape is the same for all catchments. Only the time to peak
+and the associated base of the UH changes between catchments.</li>
+<li>The catchment rainfall is spatially homogeneous.</li>
+<li>The rainfall in a given timestep has a constant intensity.</li>
+</ol>
+</div>
+<div id="baseflow-model" class="section level3">
+<h3>Baseflow model</h3>
+<p>The baseflow model assumes that the saturated area of the catchment
+that produces surface runoff is the same area that also produces the
+baseflow recharge. The assumption is that the ratio of recharge to
+runoff is fixed (the BR parameter). A further parameter, baseflow lag
+(BL), ensures that the resulting baseflow hydrograph is lagged behind
+that of the runoff hydrograph (effectively providing a slow flow
+component). However, this baseflow model does not consider the volume of
+rainfall directly in the same way the unit hydrograph component does.
+The resulting baseflow hydrograph is in addition to the runoff
+hydrograph volume and is calculated as a proportion of it. This means
+that the volume of the total hydrograph minus initial baseflow is
+greater than the net/effective rainfall. For the most part, this is not
+a significant problem because it is assumed that some of the remaining
+volume of the rainfall makes up the difference. However, if the
+proportion of effective rainfall is closer to one, the volume of the
+hydrograph can be greater than the gross/total input of rainfall. This
+will almost certainly not happen unless the event duration is
+considerably longer than recommended and only in catchments with a high
+initial proportion of saturation (due to low BFIHOST and high PROPWET).
+Note that ReFH2 addresses this issue but is not available via UKFE.</p>
+</div>
+</div>
+<div id="use-cases-for-the-refh-function" class="section level2">
+<h2>Use cases for the <code>ReFH()</code> function</h2>
+<p>There are three primary use cases:</p>
+<ol style="list-style-type: decimal">
+<li>A flexible tool to model the catchment response to event
+rainfall.</li>
+<li>A tool for estimating the T-year flow as a function of the T-year
+rainfall.</li>
+<li>To develop a plausible hydrograph shape for scaling to peak flow
+estimates (usually for the purposes of developing a model
+boundary).</li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

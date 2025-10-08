@@ -25,17 +25,22 @@ Estimated quantiles as function of return period (RP) and vice versa, from user 
 }
 \details{
 If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP.
+This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 }
 \examples{
-#Get an annual maximum sample, estimate the parameters and estimate 50-year RP
-AM.27090 <- GetAM(27090)
-GenLogPars(AM.27090$Flow)
-#Store parameters in an object
-Pars <- as.numeric(GenLogPars(AM.27090$Flow))
-#get estimate of 50-yr flow
-GenLogEst(Pars[1], Pars[2], Pars[3], RP = 50)
-#Estimate the RP for a 600m3/s discharge
-GenLogEst(Pars[1], Pars[2], Pars[3], q = 600)
+# Get an annual maximum sample, estimate the parameters, and estimate 50-year RP
+am_27090 <- GetAM(27090)
+GenLogPars(am_27090$Flow)
+
+# Store the parameters in an object
+pars <- as.numeric(GenLogPars(am_27090$Flow))
+
+# Get an estimate of 50-year flow
+GenLogEst(pars[1], pars[2], pars[3], RP = 50)
+
+# Estimate the RP for a 600 m^3/s discharge
+GenLogEst(pars[1], pars[2], pars[3], q = 600)
+
 }
 \author{
 Anthony Hammond

@@ -17,7 +17,7 @@ ERPlot(x, dist = "GenLog", main = NULL, Pars = NULL, GF = NULL, ERType = 1)
 
 \item{GF}{a vector of length growth curve parameters, in the order of; Lcv, LSkew and Median (ignoring the LSkew if Gumbel).}
 
-\item{ERType}{Either 1, 2. If it is the defaul 1 then ranks are plotted on the x axis and percentage difference of modelled from observed is plotted on the y axis.}
+\item{ERType}{Either 1, 2. If it is the default 1 then ranks are plotted on the x axis and percentage difference of modelled from observed is plotted on the y axis.}
 }
 \value{
 The extreme rank plot as described in the details
@@ -27,16 +27,25 @@ A plot to inspect the distribution of ordered data
 }
 \details{
 By default this plot compares the percentage difference of simulated results with observed for each rank of the data. Another option (see ERType argument) compares the simulated flows for each rank of the sample with the observed of the same rank. For both plots 500 simulated samples are used. With the second option for each rank they are plotted and the mean of these is highlighted in red. There is a line of perfect fit so you can see how much this "cloud" of simulation differs from the observed.
-By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. This ERplot is an updated version of that described in Hammond, A. (2019). Proposal of the ‘extreme rank plot’ for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495–1507.
+By default the parameters of the distribution for comparison with the sample are estimated from the sample. However, the pars argument can be used to compare the distribution with parameters estimated separately. Similarly the growth factor (GF) parameters, linear coefficient of variation (Lcv) & linear skewness (LSkew) with the median can be entered. In this way the pooling estimated distribution can be compared to the sample. This ERplot is an updated version of that described in Hammond, A. (2019). Proposal of the 'extreme rank plot' for extreme value analysis: with an emphasis on flood frequency studies. Hydrology Research, 50 (6), 1495-1507.
 }
 \examples{
-#Get an AMAX sample and plot
-\donttest{AM.27083 <- GetAM(27083)}
-\donttest{ERPlot(AM.27083$Flow)}
-#Get a pooled estimate of Lcv & LSkew to use with the GF argument
-\donttest{QuickResults(GetCDs(27083), gauged = TRUE)}
-#Use the resulting Lcv, Lskew and RP2 for the GF argument and change the title
-\donttest{ERPlot(AM.27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))}
+# Get an AMAX sample and plot
+\dontrun{
+am_27083 <- GetAM(27083)
+ERPlot(am_27083$Flow)
+}
+
+# Get a pooled estimate of Lcv and LSkew to use with the GF argument
+\dontrun{
+QuickResults(GetCDs(27083), gauged = TRUE)
+}
+
+# Use the resulting Lcv, Lskew and QMED for the GF argument and change the title
+\dontrun{
+ERPlot(am_27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))
+}
+
 }
 \author{
 Anthony Hammond

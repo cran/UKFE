@@ -23,7 +23,7 @@ QMED(
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{Don1}{numeric site reference for the a single donor (for donor candidates see DonAdj function)}
+\item{Don1}{numeric site reference for a single donor (for donor candidates see DonAdj function)}
 
 \item{Don2}{vector of two site references for two donors (for donor candidates see DonAdj function)}
 
@@ -31,7 +31,7 @@ QMED(
 
 \item{uef}{logical argument with a default of FALSE. If true an urban expansion factor is applied to the URBEXT2000 value - using the current year.}
 
-\item{DonUrbAdj}{logical argument with a default of FALSE. If TRUE, an urban adjustement is applied to the donor/s QMEDcds estimate.}
+\item{DonUrbAdj}{logical argument with a default of FALSE. If TRUE, an urban adjustment is applied to the donor/s QMEDcds estimate.}
 
 \item{AREA}{catchment area in km2}
 
@@ -54,18 +54,22 @@ An estimate of QMED from catchment descriptors. If two donors are used the assoc
 Estimated median annual maximum flow from catchment descriptors and donor sites
 }
 \details{
-QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. Urban donors should be avoided, but in the case that an urban donor is considered appropriate the QMEDcd estimate of the donor (or donors) can be urban adjusted by setting the DonUrbAdj argument to TRUE. For flexibility there is the option to input the relevant catchment descriptors directly rather than a CDs object.
+QMED is estimated from catchment descriptors: QMED = 8.3062*AREA^0.8510 0.1536^(1000/SAAR) FARL^3.4451 0.0460^(BFIHOST^2) as derived in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The single donor method is from the same paper. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'.  This QMED model is a multiple linear regression with transformed predictor variables and is trained on log transformed observed QMED values. The following assumptions are therefore applied: the relationship between the transformed independent variables (predictors) and the logarithmically transformed dependent variable (QMED) is linear, observations (observed QMEDs used in calibration) are independent of each other, model and sampling errors are independent of each other, model and sampling errors are normally distributed and have a mean of zero, predictor variables are independent, the cross-correlation of model errors can be described by distance between catchment centroids and the form of the associated correlation matrix is known prior to and for the calibration process. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'.  The use of the urban adjustment factor (UrbAdj) assumes that QMED is impacted by urbanisation and this impact can be determined by the URBEXT2000 catchment descriptor. Urban donors should be avoided, but in the case that an urban donor is considered appropriate the QMEDcd estimate of the donor (or donors) should be urban adjusted by setting the DonUrbAdj argument to TRUE. Use of the uef option applies a nationally averaged urban expansion factor to the URBEXT2000 value, tending to overall underestimated urbanisation in more urban catchments and overestimated urbanisation in more rural catchments. Note that the distance-dependent moderation term (alpha) in the one-donor adjustment is not always appropriate, for example in some situations where the subject site is on the same watercourse as the donor. Similarly the two-donor distance-weighting method can give unsuitable results in some situations, for example where a subject site is in between the two donors on the same watercourse.  Finally, for flexibility there is the option to input the relevant catchment descriptors directly rather than using a CDs object.
+
+To derive an appropriate estimate when the donor catchment is urban ensure that DonUrbAdj is TRUE.
 }
 \examples{
-#Get some catchment descriptors and calculate QMED as if it was ungauged, with
-#no donors, one donor, and two donors
-CDs.55004 <- GetCDs(55004)
-QMED(CDs.55004)
-QMED(CDs.55004, Don1 = 55012)
-QMED(CDs.55004, Don2 = c(55012, 60007))
-#Get CDs for urban gauge and calculate QMED with urban adjustment
-CDs.27083 <- GetCDs(27083)
-QMED(CDs.27083, UrbAdj = TRUE)
+# Get some catchment descriptors and calculate QMED as if it was ungauged, with
+# no donors, with one donor, and with two donors
+cds_55004 <- GetCDs(55004)
+QMED(cds_55004)
+QMED(cds_55004, Don1 = 55012)
+QMED(cds_55004, Don2 = c(55012, 60007))
+
+# Get CDs for urban gauge and calculate QMED with urban adjustment
+cds_27083 <- GetCDs(27083)
+QMED(cds_27083, UrbAdj = TRUE)
+
 }
 \author{
 Anthony Hammond

@@ -20,14 +20,18 @@ quantile as a function of RP or vice versa.
 Estimated quantiles as a function of return period (RP) and vice versa, directly from the data
 }
 \details{
-If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-moments. Cambridge University Press, New York'.
+If the argument q is used, it overrides RP and provides RP as a function of q (magnitude of variable) as opposed to q as a function of RP. The parameters are estimated by the method of L-moments, as detailed in 'Hosking J. and Wallis J. 1997 Regional Frequency Analysis: An Approach Based on L-Moments. Cambridge University Press, New York'.
+
+This function applies a probability distribution model which assumes that the sample data is independent and identical, i.e. the assumption is that all observations in the sample would not impact or depend on any other. Furthermore, all observations are from the same underlying process which has not changed over the period of record (stationarity).
 }
 \examples{
-#Get an annual maximum sample and estimate the 50-year RP
-AM.27090 <- GetAM(27090)
-GumbelAM(AM.27090$Flow, RP = 50)
-#Estimate the RP for a 600m3/s discharge
-GumbelAM(AM.27090$Flow, q = 600)
+# Get an annual maximum sample and estimate the 50-year RP
+am_27090 <- GetAM(27090)
+GumbelAM(am_27090$Flow, RP = 50)
+
+# Estimate the RP for a 600 m^3/s discharge
+GumbelAM(am_27090$Flow, q = 600)
+
 }
 \author{
 Anthony Hammond

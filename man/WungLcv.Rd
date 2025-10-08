@@ -19,10 +19,11 @@ Calculates the ungauged weighted Lcv from a pooling group
 Weighting method as according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation
 }
 \examples{
-#Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
-CDs.27051 <- GetCDs(27051)
-Pool.27051 <- Pool(CDs.27051, exclude = 27051)
-WungLcv(Pool.27051)
+# Get some CDs, form an ungauged pooling group, and estimate ungauged Lcv
+cds_27051 <- GetCDs(27051)
+pool_27051 <- Pool(cds_27051, exclude = 27051)
+WungLcv(pool_27051)
+
 }
 \author{
 Anthony Hammond

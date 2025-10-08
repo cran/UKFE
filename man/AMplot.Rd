@@ -25,8 +25,9 @@ Provides a barplot for an annual maximum sample
 When used with a GetAM object or any data.frame with dates/POSIXct in the first column, the date-times are daily or sub-daily. Therefore, although it's an annual maximum (AM) sequence, some bars may be closer together depending on the number of days between them.
 }
 \examples{
-#Get an AMAX sample and plot
+# Get an AMAX sample and plot
 AMplot(GetAM(58002))
+
 }
 \author{
 Anthony Hammond

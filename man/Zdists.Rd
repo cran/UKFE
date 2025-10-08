@@ -16,15 +16,16 @@ A list with the first element a data.frame of four Z-Scores related to the colum
 Calculates the goodness of fit score for pooling groups.
 }
 \details{
-The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 – mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
+The goodness of fit measure provides a Z-Score which quantifies the number of standard deviations from the mean of a normal distribution. To determine goodness of fit for a given distribution (assume GEV for this example), 500 pooling groups are formed which match the number of sites and samples sizes of the pooling group of interest. These are formed by simulation with the GEV distribution having LCV and LSKEW which are the weighted mean LCV and LSKEW of the pooling group (weighted by sample size) and a median of 1. The weighted mean L-Kurtosis of the observed pooling group (tR4) is compared to the mean and standard deviation (sd) of L-Kurtosis from the simulated pooling groups (tR4_Dist) by calculating the associated Z-score: (tR4 - mean(tR4_Dist)) / sd(tR4_Dist). The fit of the distribution can be considered acceptable if the absolute Z-Score is less than 1.645 (essentially a hypothesis test with alpha level equal to 0.1). This is done for all candidate distributions and the lowest absolute score is considered the best fit.
 
- NOTE: This is slightly different from the zdist function described in the science report 'Improving the FEH statistical procedures for flood frequency estimation, Environment Agency (2008)'. That function assumes a theoretical LKurtosis as a function of the pooled LSKEW to compare with a distribution of LKurtosis from simulated pooling groups. This means that the Gumbel distribution cannot be compared (hence the change).
+ NOTE: This is slightly different from the zdist function described in the science report 'Improving the FEH statistical procedures for flood frequency estimation, Environment Agency (2008)'. That function assumes a theoretical LKurtosis as a function of the pooled LSKEW to compare with a distribution of LKurtosis from simulated pooling groups. This means that the Gumbel distribution cannot be compared (hence the change which is a recommendation in 'Regional Frequency Analysis' by Hosking & Wallis (1997)), i.e. the Gumbel distribution is now included whereas it previously could not be.
 }
 \examples{
-#Get CDs, form a pooling group and calculate the Zdist
-CDs.203018 <- GetCDs(203018)
-Pool.203018 <- Pool(CDs.203018)
-Zdists(Pool.203018)
+# Get CDs, form a pooling group, and calculate the Z-dists
+cds_203018 <- GetCDs(203018)
+pool_203018 <- Pool(cds_203018)
+Zdists(pool_203018)
+
 }
 \author{
 Anthony Hammond

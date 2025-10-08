@@ -19,12 +19,17 @@ a data.frame with columns UAF and PRUAF
 \description{
 UAF and PRUAF from catchment descriptors for QMED estimation in ungauged urban catchments
 }
+\details{
+The urban adjustment factor is to adjust the rural QMED estimates (as estimated using the QMED function) to urban estimates. This is necessary because the QMED equation is calibrated on rural catchments. The assumption is that the magnitude of QMED is impacted by urbanisation and that this impact can be modelled as a function of the catchment descriptors URBEXT and BFIHOST. This UAF function is based on URBEXT2000 and BFIHOST19.
+}
 \examples{
-#Get some catchment descriptors for an urban catchment calculate the UAF & PRUAF
-CDs.53006 <- GetCDs(53006)
-UAF(CDs.53006)
-#Calculate UAF and PRUAF using a user input URBEXT2000 and BFIHOST
+# Get some catchment descriptors for an urban catchment and calculate the UAF & PRUAF
+cds_53006 <- GetCDs(53006)
+UAF(cds_53006)
+
+# Calculate UAF and PRUAF using a user input URBEXT2000 and BFIHOST
 UAF(URBEXT2000 = 0.1138, BFIHOST = 0.3620)
+
 }
 \author{
 Anthony Hammond

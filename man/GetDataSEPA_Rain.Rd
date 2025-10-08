@@ -36,14 +36,25 @@ Extract hourly rainfall data from SEPA's API.
 You can download data using the gauge name and you can find gauges within a given range using the latitude and longitude. If the 'From' date is left as null, the earliest date of available data will be used. If the 'To' date is left as null, the most recent date of available data will be used.
 }
 \examples{
-#Get the list of available stations
-\dontrun{ GetDataSEPA_Rain(StationName = "AnythingButAStationName") }
-#Now we'll get rain from the Bannockburn station
-\dontrun{ Bannockburn <- GetDataSEPA_Rain(StationName = "Bannockburn",
-From = "1998-10-01", To = "1998-10-31") }
-#Now we'll have a look at the top of the data and plot it
-\dontrun{ head(Bannockburn) }
-\dontrun{ plot(Bannockburn, type = "h", ylab = "Rainfall (mm)") }
+# Get the list of available stations
+\dontrun{
+GetDataSEPA_Rain(StationName = "AnythingButAStationName")
+}
+
+# Get rain from the Bannockburn station
+\dontrun{
+bannockburn <- GetDataSEPA_Rain(
+  StationName = "Bannockburn",
+  From = "1998-10-01", To = "1998-10-31"
+)
+}
+
+# Inspect the first few rows and plot the data
+\dontrun{
+head(bannockburn)
+plot(bannockburn, type = "h", ylab = "Rainfall (mm)")
+}
+
 }
 \author{
 Anthony Hammond

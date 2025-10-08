@@ -19,13 +19,13 @@ QMEDDonEq(
 )
 }
 \arguments{
-\item{AREA}{catchment area in km2}
+\item{AREA}{catchment area in km2 for the site of interest}
 
-\item{SAAR}{standardised average annual rainfall in mm}
+\item{SAAR}{standardised average annual rainfall in mm for the site of interest}
 
-\item{FARL}{flood attenuation from reservoirs and lakes}
+\item{FARL}{flood attenuation from reservoirs and lakes for the site of interest}
 
-\item{BFIHOST}{the baseflow index as a function of soil type}
+\item{BFIHOST}{the baseflow index as a function of soil type for the site of interest}
 
 \item{QMEDgObs}{the observed QMED at the donor site}
 
@@ -45,19 +45,28 @@ QMEDDonEq(
 Applies a donor adjustment to the median annual maximum flow (QMED) estimate
 }
 \details{
-Although a single donor adjustment can be applied with the DonAdj() function and the QMED(), this is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008).
+Although a single donor adjustment can be applied with the DonAdj() function and the QMED() function, this additional function is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008). The x and y grid reference inputs assume that the grid references for subject and donor site are using the same grid referencing system.
 }
 \examples{
-#Get observed QMED for site 15006
-Qob <- median(GetAM(15006)[,2])
-#Get QMED equation estimated QMED for the donor site
-QCD <- QMED(CDs = GetCDs(15006))
-#display CDs for site 27051 & note the easting and northing
+# Get observed QMED for site 15006
+q_ob <- median(GetAM(15006)[, 2])
+
+# Get QMED equation estimated QMED for the donor site
+q_cd <- QMED(CDs = GetCDs(15006))
+
+# Display CDs for site 27051 & note the easting and northing
 GetCDs(27051)
-#display CDs for site 15006 & note the easting and northing
+
+# Display CDs for site 15006 & note the easting and northing
 GetCDs(15006)
-#Apply the QMEDDonEq function with the information gained
-QMEDDonEq(194, 1096, 0.955, 0.297, Qob, QCD, xSI = 289289,ySI = 947523,xDon = 280908,yDon = 953653)
+
+# Apply the QMEDDonEq function with the information gained
+QMEDDonEq(
+  194, 1096, 0.955, 0.297, q_ob, q_cd,
+  xSI = 289289, ySI = 947523,
+  xDon = 280908, yDon = 953653
+)
+
 }
 \author{
 Anthony Hammond
