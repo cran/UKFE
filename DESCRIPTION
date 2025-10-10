@@ -1,7 +1,7 @@
 Package: UKFE
 Type: Package
 Title: UK Flood Estimation
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(person(given = "Anthony",
                     family = "Hammond",
                     role = c("aut", "cre"),
@@ -24,9 +24,9 @@ Suggests: testthat (>= 3.0.0), knitr, rmarkdown, rnrfa, lmomco, evd,
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-10-08 18:54:35 UTC; AnthonyHammond
+Packaged: 2025-10-10 13:44:56 UTC; AnthonyHammond
 Author: Anthony Hammond [aut, cre],
   Environment Agency [ctb],
   JBA Consulting [ctb]
 Repository: CRAN
-Date/Publication: 2025-10-08 19:20:02 UTC
+Date/Publication: 2025-10-10 15:30:10 UTC

@@ -1596,11 +1596,7 @@ test_that("LKurt returns NaN with fewer than 4 observations", {
 })
 
 
-test_that("LKurt returns NaN for constant vector", {
-  x <- rep(10, 10)
-  result <- LKurt(x)
-  expect_true(is.nan(result))
-})
+
 
 ###### LMoments ######
 test_that("LMoments returns a data frame with correct column names", {

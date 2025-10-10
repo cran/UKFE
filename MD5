@@ -1,4 +1,4 @@
-7f11264554590abd30f67b145112e062 *DESCRIPTION
+d714450d9557c08fa670c277f6c9d3c4 *DESCRIPTION
 37257d3965ca6ff85420818875c0b071 *NAMESPACE
 d622d04b41b5a7839e43d2ba633b7ae2 *NEWS.md
 c5c4de4b4bf258c4ca00953295ce6358 *R/AMSP.R
@@ -146,7 +146,7 @@ e23844591fd5cd659da048753e0bd403 *man/WungLSkew.Rd
 2c3034c37ccb5d51e3f87b9143c511a7 *man/Zdists.Rd
 7bb07c8d70ffe8f802f1631b808ea8d0 *tests/testthat.R
 428756c85d19d3493e5cd30efd0e967a *tests/testthat/test-AMSP.R
-92ccd2abfc631cf2afad72918ab4b39d *tests/testthat/test-All.R
+b46d5f9f435d40bafc3fea8afe8f1735 *tests/testthat/test-All.R
 703648bcdc70afa89db55d1184b13ce5 *tests/testthat/test-NRFAData.R
 77b97002afd50983ff3d9f4eb56f5fea *tests/testthat/test-QMEDData.R
 f120ddba59e642db6643659fa17bed98 *tests/testthat/testdata/028115-maun-at-mansfield-the-dykes.xml
