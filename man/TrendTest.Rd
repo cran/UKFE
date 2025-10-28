@@ -4,10 +4,12 @@
 \alias{TrendTest}
 \title{Trend hypothesis test}
 \usage{
-TrendTest(x, method = "mk", alternative = "two.sided")
+TrendTest(x, Variance = FALSE, method = "mk", alternative = "two.sided")
 }
 \arguments{
 \item{x}{a numeric vector or a data.frame with dates in the first column and chronologically ordered variable in the second.}
+
+\item{Variance}{Logical with a default of FALSE. If TRUE, the test is for a trend in variance rather than central tendency.}
 
 \item{method}{a choice of test method. Choices are "mk" (Mann Kendall - the default), "pearson", and "spearman".}
 

@@ -60,7 +60,7 @@ GetDataEA_QH(Lat = 50.6, Lon = -3.9, Range = 10)
 # Get all available daily maximum flow data from the Bellever gauge on the
 # East Dart River
 \dontrun{
-bellever_max <- GetDataEA_QH(WISKI_ID = "SX67F051")
+bellever_max <- GetDataEA_QH(WISKI_ID = "SX67F051", Period = "DailyMax")
 }
 
 # Get 15-minute data from the Bellever for the November 2024 event

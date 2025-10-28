@@ -23,7 +23,7 @@ Given a dataframe with return periods (RPs) in the first column and associated e
 \examples{
 # Get some catchment descriptors and some quick results
 # Then estimate the GenLog parameters
-results <- QuickResults(GetCDs(27051), plot = FALSE)[[1]]
+results <- QuickResults(GetCDs(27051))[[1]]
 OptimPars(results[, 1:2])
 
 }

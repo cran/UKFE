@@ -2,7 +2,7 @@
 % Please edit documentation in R/All.R
 \name{AMImport}
 \alias{AMImport}
-\title{Import an annual maximum (AMAX) sample from NRFA peak flow .AM files}
+\title{Import an annual maximum (AMAX) sample from NRFA peak flow .am files}
 \usage{
 AMImport(x)
 }
@@ -13,15 +13,12 @@ AMImport(x)
 A data.frame with columns; Date and Flow
 }
 \description{
-Imports the peak flows and dates from from NRFA peak flow .AM files, excluding the rejected years
-}
-\details{
-File paths for importing data require forward slashes. On some operating systems, such as windows, the copy and pasted file paths will have backward slashes and would need to be changed accordingly.
+Imports the peak flows and dates from from NRFA peak flow .am files, excluding the rejected years
 }
 \examples{
 # Import an AMAX sample and display the first six rows in the console
 \dontrun{
-am_4003 <- AMImport("C:/Data/NRFAPeakFlow_v11/Suitable for QMED/4003.AM")
+am_4003 <- AMImport(r"{C:\Data\NRFAPeakFlow_v11\Suitable for QMED\4003.AM}")
 }
 \dontrun{
 head(am_4003)

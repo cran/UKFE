@@ -22,9 +22,9 @@ The goodness of fit measure provides a Z-Score which quantifies the number of st
 }
 \examples{
 # Get CDs, form a pooling group, and calculate the Z-dists
-cds_203018 <- GetCDs(203018)
-pool_203018 <- Pool(cds_203018)
-Zdists(pool_203018)
+cds_39001 <- GetCDs(39001)
+pool_39001 <- Pool(cds_39001, N = 500)
+Zdists(pool_39001)
 
 }
 \author{

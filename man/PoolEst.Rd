@@ -6,58 +6,52 @@
 \usage{
 PoolEst(
   x,
-  gauged = FALSE,
-  QMED,
   dist = "GenLog",
-  RP = c(2, 5, 10, 20, 50, 75, 100, 200, 500, 1000),
-  UrbAdj = FALSE,
-  CDs = NULL,
+  CDs,
+  QMEDEstimate,
+  UrbAdj = TRUE,
   URBEXT = NULL,
-  fseQMED = 1.46
+  Gauged = FALSE,
+  fseQMED = 1.5,
+  Uncertainty = TRUE
 )
 }
 \arguments{
 \item{x}{pooling group derived from the Pool function}
 
-\item{gauged}{logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged}
-
-\item{QMED}{estimate of the median annual maximum flow}
-
 \item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel"; the generalised logistic, generalised extreme value, Kappa3, and Gumbel distribution, respectively. The default is "GenLog"}
 
-\item{RP}{return period of interest. By default the following RPs are provided: 2, 5, 10, 20, 50, 75, 100, 200, 500, 1000}
+\item{CDs}{catchment descriptors for the subject site. They can be derived from either GetCDs or CDsXML}
 
-\item{UrbAdj}{logical argument with a default of FALSE. When TRUE, an urban adjustment is applied to the pooled Lcv and LSkew}
+\item{QMEDEstimate}{estimate of the median annual maximum flow}
 
-\item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
+\item{UrbAdj}{Logical with a default of TRUE. If TRUE, the final LCV estimate is urban adjusted.}
 
-\item{URBEXT}{the catchment URBEXT2000, to be supplied if UrbAdj is TRUE and if CDs have not been}
+\item{URBEXT}{the catchment URBEXT (at the time of writing the current URBEXT is URBEXT2015), to be supplied if UrbAdj is TRUE and if the CDs argument is NULL.}
 
-\item{fseQMED}{factorial standard error of the median annual maximum (QMED) estimate, used for quantifying ungauged uncertainty. Default is 1.46}
+\item{Gauged}{Logical argument with a default of FALSE. This only impacts the uncertainty calculations. If it is set to TRUE, the top site of the group is considered the subject gauged site.}
+
+\item{fseQMED}{The factorial standard error for the QMED estimate. If Gauged = TRUE, the fse is estimated from the observed, otherwise the default is 1.5.}
+
+\item{Uncertainty}{Logical with a default of TRUE. If TRUE, an extra column of factorial standard errors is returned in the results dataframe.}
 }
 \value{
-If RP is default then a list of length 4. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), lower and upper intervals of uncertainty (68 percent intervals for ungauged and 95 percent for gauged). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the growth curve. The fourth provides distribution parameters for the frequency curve. If RP is not the default only the first two elements are returned.
+A list of length 3. Element one is a data frame with columns; return period (a range from 2 - 1000), peak flow estimates (Q), growth factor estimates (GF), and factorial standard error (if Uncertainty = TRUE). The second element is the estimated Lcv and Lskew. The third provides distribution parameters for the frequency curve.
 }
 \description{
-Provides pooled results from a pooling group - gauged, ungauged and with urban adjustment if necessary.
+Provides pooled results from a pooling group.
 }
 \details{
-PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. The UrbAdj argument can be set to TRUE to provide urbanised results. If this is done, either URBEXT(urban & suburban extent) or CDs (the catchment descriptors derived from CDsXML or GetCDs) need to be provided. When UrbAdj = TRUE, urban adjustment is applied to the QMED estimate according to the method outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'. The gauged argument can be set to TRUE to form the growth curve with the gauged weighting procedure (often known as enhanced single site).  Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. It is important to check that this is the case because if the site is urban it may not be included by default. The methods for estimating pooled growth curves are according to Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The methods for quantifying uncertainty are detailed in Hammond, A. (2022). Easy methods for quantifying the uncertainty of FEH pooling analysis. Circulation - The Newsletter of the British Hydrological Society (152). The estimation procedure assumes that the pooled AMAX samples are from the same underlying distribution (aside from the QMED scaling factor), that the distribution is correctly specified, that the individual samples are all independent and identically distributed, and that the samples are independent of each other.  The urban adjustment assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The confidence intervals are different between the gauged and ungauged pooling. This is because the intervals for the ungauged site are uncomfortably large, and therefore 68% intervals are applied. Whereas 95% intervals are applied for the gauged case.
+PoolEst is a function to provide results from a pooling group derived using the Pool function. QMED (median annual maximum flow) needs to be supplied and can be derived from the QMED function for ungauged estimates or the annual maximum sample for gauged estimates. The method applied is based on FEH2025. The methods for estimating the L-moments and growth factors are outlined in the Flood Estimation Handbook (1999), volume 3. The estimation procedure assumes that the pooled AMAX samples are from the same underlying distribution (aside from the QMED scaling factor), that the distribution is correctly specified, that the individual samples are all independent and identically distributed, and that the samples are independent of each other.  The urban adjustment (which is applied as default) assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT.
+A quantification of uncertainty is provided if Uncertainty is set to TRUE (the default). For more information see the Uncertainty function.
 }
 \examples{
-# Get some catchment descriptors and form a pooling group. It's urban and
-# therefore the site of interest is not included
+# Get some catchment descriptors and form a pooling group.
 cds_27083 <- GetCDs(27083)
 pool_27083 <- Pool(cds_27083)
 
-# Get results for the ungauged case, with urban adjustment
-PoolEst(pool_27083, QMED = 12, UrbAdj = TRUE, CDs = cds_27083)
-
-# Form the group again with the urban gauge included & undertake a gauged estimate
-# with urban adjustment. QMED in this example is estimated as the median of the annual
-# maximum series for site 27083.
-pool_g_27083 <- Pool(cds_27083, iug = TRUE, DeUrb = TRUE)
-PoolEst(pool_g_27083, QMED = 12.5, UrbAdj = TRUE, CDs = cds_27083)
+#Get results assuming a GEV distribution
+PoolEst(pool_27083, CDs = cds_27083, dist = "GEV", QMEDEstimate = 12, Uncertainty = FALSE)
 
 }
 \author{

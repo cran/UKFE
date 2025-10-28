@@ -4,7 +4,7 @@
 \alias{GetDataNRFA}
 \title{Get National River Flow Archive data using gauge ID.}
 \usage{
-GetDataNRFA(ID, Type = "Q")
+GetDataNRFA(ID = NULL, Type = "Q")
 }
 \arguments{
 \item{ID}{ID number of the gauge of interest.}
@@ -20,17 +20,17 @@ When Type = "AMAX" or "POT" and there are rejected years a list is returned, whe
 Extracts NRFA data using the API.
 }
 \details{
-The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that some sites have rejected peak flow years. In which case, if Type = AMAX or POT, the function returns a list, the first element of which is the rejected years, the second is the full AMAX or POT. Lastly if Type = "Catalogue" it will return a dataframe of all the NRFA gauges, associated details, comments, and descriptors.
+The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that some sites have rejected peak flow years. In which case, if Type = AMAX or POT, the function returns a list, the first element of which is the rejected years, the second is the full AMAX or POT. Lastly if Type = "Catalogue" and ID  is NULL, it will return a dataframe of all the NRFA gauges, associated details, comments, and descriptors. If Type equals "Catalogue" and a valid ID is used, then all these gauge details are provided for that gauge.
 }
 \examples{
 # Get the concurrent rainfall (P) and mean flow (Q) series for the Tay at Ballathie (site 15006)
 \dontrun{
-ballathie_pq <- GetDataNRFA(15006, "PQ")
+ballathie_pq <- GetDataNRFA(15006, Type = "PQ")
 }
 
 # Get the gaugings
 \dontrun{
-ballathie_gaugings <- GetDataNRFA(15006, "Gaugings")
+ballathie_gaugings <- GetDataNRFA(15006, Type = "Gaugings")
 }
 
 }

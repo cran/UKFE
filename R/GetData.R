@@ -1,25 +1,28 @@
-# GetDataSEPA_Rain ---------------------------------------------------
+# GetDataSEPA---------------------------------------------------
 
-#' Get Scottish Environment Protection Agency (SEPA) hourly rainfall data.
+#' Get Scottish Environment Protection Agency (SEPA) Flow, Level, or Rainfall data.
 #'
-#' @description Extract hourly rainfall data from SEPA's API.
-#' @details You can download data using the gauge name and you can find gauges within a given range using the latitude and longitude. If the 'From' date is left as null, the earliest date of available data will be used. If the 'To' date is left as null, the most recent date of available data will be used.
-#' @param Lat Latitude of the point of interest. Provided when the user wants information about available local rain gauges
-#' @param Lon Longitude of the point of interest. Provided when the user wants information about available local rain gauges
-#' @param Range The radius (km) from the point of interest (Lat, Lon) for which the user wants a list of rain gauges (default is 30).
-#' @param StationName The name of the station for which you want rainfall. If you type something other than one of the available stations, the list of stations will be returned.
+#' @description Extract hydrometric data from SEPA's API.
+#' @details You can download data using the gauge station ID and you can find gauges within a given range using the latitude and longitude, or a river name. If the 'From' date is left as null, the earliest date of available data will be used. If the 'To' date is left as null, the most recent date of available data will be used.
+#' @param Lat Latitude of the point of interest. Provided when the user wants information about available local gauges (by specified 'Type')
+#' @param Lon Longitude of the point of interest. Provided when the user wants information about available local gauges (by Specified 'Type')
+#' @param Range The radius (km) from the point of interest (Lat, Lon) for which the user wants a list of gauges by specified 'Type' (default is 20).
+#' @param RiverName A river name for searching gauges by river catchment. Starting with a capital letter.
+#' @param Type The type of hydrometric data required. Either "Flow", "Level", or "Rain".
+#' @param StationID The ID name of the station for which you want data.
 #' @param From A start date for the data in the form of "YYYY-MM-DD". Default of NULL means the earliest available date is used
 #' @param To An end date for the data in the form of "YYYY-MM-DD". The default is the most recent date available.
+#' @param Period This argument specifies the required timestep of the data. Either "15Mins", "Hourly", or "Daily".
 #' @examples
-#' # Get the list of available stations
+#' # search Rain gauges by Lat and Lon
 #' \dontrun{
-#' GetDataSEPA_Rain(StationName = "AnythingButAStationName")
+#' GetDataSEPA(Lat = 56, Lon = -4, Type = "Rain")
 #' }
 #'
-#' # Get rain from the Bannockburn station
+#' # Get daily rain from the Bannockburn station between two dates
 #' \dontrun{
-#' bannockburn <- GetDataSEPA_Rain(
-#'   StationName = "Bannockburn",
+#' bannockburn <- GetDataSEPA(
+#'   StationID = "36494",
 #'   From = "1998-10-01", To = "1998-10-31"
 #' )
 #' }
@@ -33,92 +36,136 @@
 #' @return A data.frame with POSIXct in the first column, and rainfall in the second column. Unless the StationName provided is not in the available list, then the available list is returned.
 #' @author Anthony Hammond
 
-GetDataSEPA_Rain <- function(Lat = NULL, Lon = NULL, Range = 30, StationName, From = NULL, To = NULL) {
-  Stations <- read.csv("https://www2.sepa.org.uk/rainfall/api/Stations?csv=true")
-  if (is.null(Lat) == FALSE & is.null(Lon) == FALSE) {
-    LatLonDist <- function(lat1, lon1, lat2, lon2) {
-      acos(sin(lat1 * pi / 180) * sin(lat2 * pi / 180) + cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * cos(lon2 * pi / 180 - lon1 * pi / 180)) * 6371000
-    }
-    Distance <- NULL
-    for (i in 1:nrow(Stations)) {
-      Distance[i] <- LatLonDist(lat1 = Lat, lon1 = Lon, lat2 = Stations$station_latitude[i], lon2 = Stations$station_longitude[i])
-    }
-    Distance <- signif(Distance / 1000, 4)
-    StationsDist <- data.frame(ID = Stations$station_id, Name = Stations$station_name, Distance, Lat = Stations$station_latitude, Lon = Stations$station_longitude)
-    StationsDist <- StationsDist[order(Distance), ]
-    rownames(StationsDist) <- seq(1, nrow(StationsDist))
-    if (min(StationsDist$Distance) > Range) stop("No gauges within range. Try increasing your range")
-    StationsDist <- subset(StationsDist, Distance <= Range)
-    return(StationsDist)
+GetDataSEPA <- function(Lat = NULL, Lon = NULL, RiverName = NULL, Type = "Flow", StationID = NULL, Range = 20, From = NULL, To = NULL, Period = "Daily") {
+  stationparameter_name <- NULL
+  Types <- c("Flow", "Rain", "Level")
+  #Types <- c("Flow", "Level")
+  TypeCheck <- match(Type, Types)
+  if(is.na(TypeCheck)) stop("Type must be Flow, Level, or Rain")
+  if(is.null(RiverName) == FALSE) {
+    Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
+    #Stations <- subset(Stations, stationparameter_name == Type)
+    LonList <- strsplit(Stations$station_longitude, split = "'")
+    station_longitude <- NULL
+    for(i in 1:length(LonList)) {station_longitude[i] <- as.numeric(LonList[[i]])[2]}
+    Stations$station_longitude <- station_longitude
+    #Stations <- subset(Stations, stationparameter_name == Type)
+    Stations <- Stations[Stations$stationparameter_name == Type, ]
+    #  DatesPath <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", type, "&returnfields=coverage&dateformat=yyyy-MM-dd", "&format=csv", sep = "")
+    Match <- grep(RiverName, Stations$catchment_name)
+    if(length(Match) < 1) stop("The river name is not recognised")
+    Result <- Stations[Match,1:6]
+    rownames(Result) <- seq(1, nrow(Result))
+    return(Result)
   }
-  Ind <- which(Stations$station_name == as.character(StationName))
-  if (length(Ind) < 1) {
-    Names <- read.csv("https://www2.sepa.org.uk/rainfall/api/Stations?csv=true")[, 1]
-    print(Names)
-  }
-  if (length(Ind) < 1) stop("Station name not found, have a look to see if your chosen station is in the available list which should now be in your console")
 
-  StationID <- Stations$station_id[which(Stations$station_name == StationName)]
-  PathDates <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=Rain&returnfields=coverage&dateformat=yyyy-MM-dd", "&format=csv", sep = "")
-  StationDates <- suppressWarnings(read.csv(PathDates, sep = ";"))
-  if (is.null(From)) {
-    From <- min(StationDates$from)
-  } else {
-    From <- From
+  if(is.null(Lat) == FALSE & is.null(Lon) == FALSE & is.null(RiverName) == TRUE) {
+    if(Lat > 61.3 | Lat < 54.4) stop("Latitude is not in Scotland")
+    if(Lon > 0 | Lon < -8) stop("Longitude is not in Scotland")
+    Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
+    Stations <- subset(Stations, stationparameter_name == Type)
+    #  Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General,coverage&dateformat=yyyy-MM-dd&format=csv", sep = ";")
+    LonList <- strsplit(Stations$station_longitude, split = "'")
+    station_longitude <- NULL
+    for(i in 1:length(LonList)) {station_longitude[i] <- as.numeric(LonList[[i]])[2]}
+    Stations$station_longitude <- as.numeric(station_longitude)
+    Stations$station_latitude <- as.numeric(Stations$station_latitude)
+    LatLonDist <- function(lat1, lon1, lat2, lon2) {acos( sin(lat1*pi/180)*sin(lat2*pi/180) + cos(lat1*pi/180)*cos(lat2*pi/180)*cos(lon2*pi/180-lon1*pi/180) ) * 6371000}
+    Dists <- NULL
+    for(i in 1:nrow(Stations)) {Dists[i] <- LatLonDist(lat1 = Lat, lon1 = Lon, lat2 = Stations$station_latitude[i], lon2 = Stations$station_longitude[i])}
+    DF <- data.frame(Stations, Distance = Dists/1000)
+    #DF <- DF[DF$stationparameter_name == Type, ]
+    DF <- DF[DF$Distance <= Range, ]
+    #DF <- subset(DF, Distance <= Range)
+    if(nrow(DF) == 0) stop("No gauges within range. Try increasing range")
+    DF <- subset(DF, stationparameter_name == Type)
+    DF <- DF[order(DF$Distance),]
+    rownames(DF) <- seq(1, nrow(DF))
+    DF <- DF[,-which(colnames(DF) == "stationparameter_no")]
+    return(DF)
   }
-  if (is.null(To)) {
-    EndDate <- Sys.Date()
-  } else {
-    EndDate <- as.Date(To)
+
+
+  if(is.null(StationID) == FALSE) {
+    Periods <- c("15Mins", "Hourly", "Daily")
+    TestPeriod <- match(Period, Periods)
+    if(is.na(TestPeriod)) stop("Period must equal 15Mins, Hourly, or Daily")
+
+    if(Type == "Flow" | Type == "Level" | Type == "Rain") {
+      Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
+      Stations <- subset(Stations, stationparameter_name == Type)
+      Index <- which(Stations$station_id == StationID)
+      if(length(Index) < 1) stop("Station ID does not appear to be in the available list of gauges. Make sure you have the correct 'Type' of gauge specified and that there is no mistake in the ID")
+      #StationName <- gsub(" ", "", StationName)
+      Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", Type, "&format=csv", sep = "")
+      PathDates <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", Type, "&returnfields=coverage&dateformat=yyyy-MM-dd", "&format=csv", sep = "")
+      StationDetails <- suppressWarnings(read.csv(Path, sep = ";"))
+      StationDates <- suppressWarnings(read.csv(PathDates, sep = ";"))
+      StationDetails <- cbind(StationDetails, StationDates)
+      if(Period == "15Mins" | Period == "Hourly"){
+        if(is.null(To)) {To <- StationDetails$to[grep("15minute", StationDetails$ts_name)]}
+        if(is.null(From)) {From <- StationDetails$from[grep("15minute", StationDetails$ts_name)]}
+        ts_id <- StationDetails$ts_id[grep("15minute", StationDetails$ts_name)]}
+      if(Period == "Daily"){
+        if(is.null(To)) {To <- StationDetails$to[grep("Day", StationDetails$ts_name)]}
+        if(is.null(From)) {From <- StationDetails$from[grep("Day", StationDetails$ts_name)]}
+        ts_id <- StationDetails$ts_id[grep("Day",StationDetails$ts_name)]}
+
+
+      if(Period == "Daily") {
+
+        Days <- as.numeric(as.Date(To) - as.Date(From))
+        Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From,"T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
+        Result <- read.csv(Path, skip = 2, sep = ";")
+        DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
+        Result <- data.frame(DateTime, Q = Result$Value)
+      }
+
+      #lots of data--------
+      if(Period == "15Mins" | Period == "Hourly") {
+        Days <- as.numeric(as.Date(To) - as.Date(From))
+        if(Days > 1825) {
+          GetDataFunc <- function(From, Days, ts_id) {
+            Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From,"T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
+            Result <- read.csv(Path, skip = 2, sep = ";")
+            DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
+            Result <- data.frame(DateTime, Q = Result$Value)
+            return(Result)
+          }
+          Froms <- seq(as.Date(From), as.Date(To), by = "year")
+          Froms[length(Froms)] <- Sys.Date()
+          Days2 <- NULL
+          for(i in 2:length(Froms)) {Days2[i] <- as.numeric(Froms[i] - Froms[i - 1])}
+          Days2 <- Days2[-1]
+          print("This may take a few minutes, please be patient")
+          TestList <- list()
+          for(i in 1:length(Days2)) {TestList[[i]] <- GetDataFunc(From = Froms[i], Days = Days2[i], ts_id = ts_id) }
+          Result <- do.call(rbind, TestList)
+
+        }
+        #lots of data------
+        if(Days <= 1825) {
+          Days <- as.numeric(as.Date(To) - as.Date(From))
+          Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From,"T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
+          Result <- read.csv(Path, skip = 2, sep = ";")
+          DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
+          Result <- data.frame(DateTime, Q = Result$Value)
+
+        }
+
+
+        if(Period == "Hourly"){
+          if(Type == "Rain") {Result <- AggDayHour(Result, func = sum, "Hour")} else {
+            Result <- AggDayHour(Result, func = mean, "Hour")}
+        }
+      }
+      if(Type == "Level") {colnames(Result)[2] <- "Stage"}
+      if(Type == "Rain") {colnames(Result)[2] <- "P"}
+      return(Result)
+    }
+
+
   }
-  LengthOut <- EndDate - as.Date(From)
-  if (LengthOut < 1) print(paste("available data ends", as.character(EndDate), sep = " "))
-  if (LengthOut < 1) stop("The 'To' date is before the 'From' date. If you used the default To, it means the 'From' date is after the end of the available data")
-  tsID <- Stations$ts_id[Ind]
-  Path1 <- "https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id="
-  Path3 <- "&from="
-  Path5 <- "T09:00:00&Period=P"
-  Path6 <- "D&returnfields=Timestamp,%20Value,%20Quality%20Code"
-  FullPath <- paste(Path1, tsID, Path3, From, Path5, LengthOut, Path6, sep = "")
-  TEXT <- suppressWarnings(readLines(FullPath))
-  Body <- TEXT[6]
-  SplitTxt <- strsplit(Body, ">")[[1]]
-  LenText <- length(SplitTxt)
-  if (LenText == 32) stop("There is no data available for the period selected")
-  ValEnd <- LenText - 6
-  Values <- SplitTxt[seq(34, ValEnd, by = 8)]
-  DateTime <- SplitTxt[seq(32, ValEnd - 2, by = 8)]
-  Split1 <- strsplit(DateTime[1], split = "T")[[1]][1]
-  # if(Split1 != From) warning("There is data within the time period chosen but it starts after your chosen 'from' date")
-  ValSplit <- strsplit(Values, "<")
-  LVal <- (length(ValSplit) * 2) - 1
-  Vals <- as.numeric(unlist(ValSplit)[seq(1, LVal, by = 2)])
-  Vals <- diff(Vals)
-  Vals[Vals < 0] <- 0
-  SplitT <- strsplit(DateTime, split = "T")
-  SplitZ <- NULL
-  for (i in 1:length(SplitT)) {
-    SplitZ[i] <- strsplit(SplitT[[i]][2], split = ":")
-  }
-  Date <- NULL
-  for (i in 1:length(SplitT)) {
-    Date[i] <- SplitT[[i]][1]
-  }
-  Hour <- NULL
-  for (i in 1:length(SplitZ)) {
-    Hour[i] <- SplitZ[[i]][1]
-  }
-  Minute <- NULL
-  for (i in 1:length(SplitZ)) {
-    Minute[i] <- SplitZ[[i]][2]
-  }
-  Seconds <- rep("00", length(SplitZ))
-  DateTimeDF <- data.frame(Date, Hour, Minute, Seconds)
-  Time <- paste(DateTimeDF[, 2], DateTimeDF[, 3], DateTimeDF[, 4], sep = ":")
-  DateTime <- paste(Date, Time, sep = " ")
-  DateTime <- as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S")
-  Result <- data.frame(DateTime = DateTime[-1], P = Vals)
-  return(Result)
 }
 
 
@@ -170,7 +217,6 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
   if (as.Date(To) > Sys.Date()) stop("To is in the future. This tool is for extracting observed data, not predicting it :)")
   if (as.Date(From) > as.Date(To)) stop("The From date is after the To date")
   if (is.null(WISKI_ID)) {
-    WISKI_ID <- as.character(WISKI_ID)
     if (Range > 20) warning("You have put a range greater than 20km. Not sure why at the moment but it seems to be capped at just over 20km. Hopefully this will be fixed soon.")
     range <- as.character(Range)
     RainStations <- read.csv(paste("https://environment.data.gov.uk/hydrology/id/stations.csv?lat=", Lat, "&long=", Lon, "&dist=", range, sep = ""))
@@ -201,6 +247,7 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
     return(Stations)
   }
   if (is.null(WISKI_ID) == FALSE) {
+    WISKI_ID <- as.character(WISKI_ID)
     PeriodOptions <- c("Daily", "15Mins", "Hourly")
     PeriodCheck <- match(Period, PeriodOptions)
     if (is.na(PeriodCheck)) stop("Period must be one of Daily, 15Mins, or Hourly")
@@ -215,20 +262,27 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
       if (is.na(match(Period, Periods))) stop("Period must be one of Daily, 15Mins, or Hourly")
 
       WID <- as.character(WISKI_ID)
-      Path <- paste("https://environment.data.gov.uk/hydrology/id/measures.csv?station.wiskiID=", WID, "&observedProperty=rainfall", sep = "")
-      StationInfo <- read.csv(Path)
-      Periods <- StationInfo$periodName
-      if (Period == "Daily") {
-        PeriodIndex <- which(Periods == "daily")
-      }
-      if (Period == "15Mins" | Period == "Hourly") {
-        PeriodIndex <- which(Periods == "15min")
+      Path <- paste("https://environment.data.gov.uk/hydrology/id/stations.csv?wiskiID=", WID, "&observedProperty=rainfall", sep = "")
+
+      StationInfo <- try(suppressWarnings(suppressMessages(read.csv(Path))), silent = TRUE)
+
+      if (inherits(StationInfo, "try-error")) {
+        WID = paste("0", WID, sep = "")
+        Path <- paste("https://environment.data.gov.uk/hydrology/id/stations.csv?wiskiID=", WID, "&observedProperty=rainfall", sep = "")
+        StationInfo <- read.csv(Path)
       }
 
-      IDPath <- StationInfo$X.id
-      # Data <- read.csv(paste(IDPath[PeriodIndex], "/readings.csv?mineq-date=", From, "&max-date=", To, sep = ""))
-      Data <- read.csv(paste(IDPath[PeriodIndex], "/readings.csv?", "_limit=2000000&", "mineq-date=", From, "&max-date=", To, sep = ""))
-      DateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S")
+
+      if (Period == "Daily") {
+        PeriodPath <- "86400"
+      }
+      if (Period == "15Mins" | Period == "Hourly") {
+        PeriodPath <- "900"
+      }
+
+      IDPath <- StationInfo$stationGuid
+      Data <- read.csv(paste("https://environment.data.gov.uk/hydrology/id/measures/", IDPath, "-rainfall-t-", PeriodPath, "-mm-qualified/readings.csv?_limit=2000000&mineq-date=", From, "&maxeq-date=", To, sep = ""))
+      DateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
       Result <- data.frame(DateTime, P = Data$value)
       return(Result)
     }
@@ -331,18 +385,18 @@ GetDataMetOffice <- function(Variable, Region) {
 #' Get National River Flow Archive data using gauge ID.
 #'
 #' @description Extracts NRFA data using the API.
-#' @details The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that some sites have rejected peak flow years. In which case, if Type = AMAX or POT, the function returns a list, the first element of which is the rejected years, the second is the full AMAX or POT. Lastly if Type = "Catalogue" it will return a dataframe of all the NRFA gauges, associated details, comments, and descriptors.
+#' @details The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that some sites have rejected peak flow years. In which case, if Type = AMAX or POT, the function returns a list, the first element of which is the rejected years, the second is the full AMAX or POT. Lastly if Type = "Catalogue" and ID  is NULL, it will return a dataframe of all the NRFA gauges, associated details, comments, and descriptors. If Type equals "Catalogue" and a valid ID is used, then all these gauge details are provided for that gauge.
 #' @param ID ID number of the gauge of interest.
 #' @param Type Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", or "Catalogue".
 #' @examples
 #' # Get the concurrent rainfall (P) and mean flow (Q) series for the Tay at Ballathie (site 15006)
 #' \dontrun{
-#' ballathie_pq <- GetDataNRFA(15006, "PQ")
+#' ballathie_pq <- GetDataNRFA(15006, Type = "PQ")
 #' }
 #'
 #' # Get the gaugings
 #' \dontrun{
-#' ballathie_gaugings <- GetDataNRFA(15006, "Gaugings")
+#' ballathie_gaugings <- GetDataNRFA(15006, Type = "Gaugings")
 #' }
 #'
 #' @return A data.frame with date in the first columns and variable/s of interest in the remaining column/s.
@@ -350,7 +404,7 @@ GetDataMetOffice <- function(Variable, Region) {
 #' When Type = "AMAX" or "POT" and there are rejected years a list is returned, where the first element is the dataframe of data and the second is rejected year/s (character string).
 #' @author Anthony Hammond
 
-GetDataNRFA <- function(ID, Type = "Q") {
+GetDataNRFA <- function(ID = NULL, Type = "Q") {
   Types <- c("Q", "P", "PQ", "Gaugings", "AMAX", "POT", "Catalogue")
   MatchType <- match(Type, Types)
   if (is.na(MatchType)) stop("Type must be one of Q, P, PQ, Gaugings, AMAX, POT, or Catalogue")
@@ -480,7 +534,11 @@ GetDataNRFA <- function(ID, Type = "Q") {
   }
   if (Type == "Catalogue") {
     Result <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
-  }
+  if(is.null(ID) == FALSE) {
+    Result <- Result[Result$id == ID,]
+    row.names(Result) <- 1
+    }
+    }
   if (Type == "AMAX") {
     Result <- AMAXfunc(ID)
   }
@@ -521,7 +579,7 @@ GetDataNRFA <- function(ID, Type = "Q") {
 #' # Get all available daily maximum flow data from the Bellever gauge on the
 #' # East Dart River
 #' \dontrun{
-#' bellever_max <- GetDataEA_QH(WISKI_ID = "SX67F051")
+#' bellever_max <- GetDataEA_QH(WISKI_ID = "SX67F051", Period = "DailyMax")
 #' }
 #'
 #' # Get 15-minute data from the Bellever for the November 2024 event
@@ -629,7 +687,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
 
   if (is.null(WISKI_ID) == FALSE) {
     # Here is a separate Get q or H function. Then we need a loop one for all the 15 minute data
-
+    if(Type == "level" & Period == "DailyMean") warning("DailyMean is not generally available for the level data.")
     GetQH <- function(WISKI_ID, From = NULL, To = NULL, Period = "DailyMax", Type = "flow") {
       WISKI_ID <- as.character(WISKI_ID)
       Periods <- c("DailyMax", "DailyMean", "15Mins", "Hourly")
@@ -662,7 +720,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
       }
       if (PeriodPath == "i-900") {
         Data <- Data[, c(2, 4)]
-        Data$dateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S")
+        Data$dateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
         if (Period == "Hourly") {
           Data <- AggDayHour(Data, func = mean, Freq = "Hour")
           colnames(Data) <- c("dateTime", "value")
@@ -702,197 +760,9 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
     if (Period == "DailyMax" | Period == "DailyMean") {
       Result <- GetQH(WISKI_ID = WISKI_ID, From = From, To = To, Period = Period, Type = Type)
     }
+    if (Period == "Hourly") {
+      Result <- AggDayHour(Result, func = mean, Freq = "Hour")
+    }
     return(Result)
-  }
-}
-
-
-
-
-# GetDataSEPA_QH ---------------------------------------------------
-
-#' Get flow or level data from the Scottish Environmental Protection Agency.
-#'
-#' @description Function to extract flow or level data from SEPA.
-#' @details To find gauges you can input either a river name or a latitude and longitude. You can convert BNG to Lat and Lon using the ConvertGridRef function. The lat and lon option will provide all flow or level gauges within a specified range (default of 50km). This provides gauged details including the StationID. You can get data from specific gauges using the StationID. Note that flow gauges also have level data available. You can get data from a date range using the From and To arguments. If the From and To arguments are left as NULL the full range of available data are returned.
-#' @param Lat Latitude (as a decimal) for the centre of the search for gauges. You can convert BNG to Lat and Lon using the GridRefConvert function.
-#' @param Lon Longitude (as a decimal) for the centre of the search for gauges. You can convert BNG to Lat and Lon using the GridRefConvert function.
-#' @param Range Radius of search when using latitude and longitude inputs (km).
-#' @param RiverName Name of the river along which you want to search for gauges. Character string.
-#' @param StationID The ID for the gauge from which you want to obtain data (character string)
-#' @param From Date for start of data extraction in the format of "2015-12-02". If NULL the first date of the available data is used.
-#' @param To Date for the end of data extraction in the format of "2015-12-02". If NULL the present date is used (and most recent available data is returned).
-#' @param Type The variable to extract, either "flow" or "level"
-#' @param Period The sampling rate of the data you want. Either "Daily", "Hourly", or "15Mins".
-#' @examples
-#' # Find gauges on the River Spey
-#' \dontrun{
-#' GetDataSEPA_QH(RiverName = "Spey")
-#' }
-#'
-#' # Find gauges within 20km of a latitude/longitude coordinate somewhere near the centre of Scotland
-#' # This example causes a fatal session error in this version of the UKFE package
-#' \dontrun{
-#' GetDataSEPA_QH(lat = 56, lon = -4, Range = 20)
-#' }
-#'
-#' # Get all available daily mean flow data from the Boat o Brig gauge on the Spey
-#' \dontrun{
-#' spey_daily <- GetDataSEPA_QH(StationID = "37174")
-#' }
-#'
-#' # Get 15-minute data from the Boat o Brig for the highest recorded peak
-#' \dontrun{
-#' boatobrig_aug_1970 <- GetDataSEPA_QH(
-#'   StationID = "37174",
-#'   From = "1970-08-16", To = "1970-08-19", Period = "15Mins"
-#' )
-#' }
-#'
-#' @return If searching for gauge details with lat and lon or river name, then a dataframe is returned with necessary information to obtain flow or level data.
-#' When extracting flow or level data with a station ID then a dataframe with two columns is returned. The first being a Date or POSIXct column/vector and the second is the timeseries of interest.
-#' @author Anthony Hammond
-
-GetDataSEPA_QH <- function(Lat = NULL, Lon = NULL, RiverName = NULL, Type = "Flow", StationID = NULL, Range = 20, From = NULL, To = NULL, Period = "Daily") {
-  # Types <- c("Flow", "Rain", "Level")
-  Types <- c("Flow", "Level")
-  TypeCheck <- match(Type, Types)
-  if (is.na(TypeCheck)) stop("Type must be Flow or Level")
-  if (is.null(RiverName) == FALSE) {
-    Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
-    LonList <- strsplit(Stations$station_longitude, split = "'")
-    station_longitude <- NULL
-    for (i in 1:length(LonList)) {
-      station_longitude[i] <- as.numeric(LonList[[i]])[2]
-    }
-    Stations$station_longitude <- station_longitude
-    # Stations <- subset(Stations, stationparameter_name == Type)
-    Stations <- Stations[Stations$stationparameter_name == Type, ]
-    #  DatesPath <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", type, "&returnfields=coverage&dateformat=yyyy-MM-dd", "&format=csv", sep = "")
-    Match <- grep(RiverName, Stations$catchment_name)
-    if (length(Match) < 1) stop("The river name is not recognised")
-    Result <- Stations[Match, 1:6]
-    rownames(Result) <- seq(1, nrow(Result))
-    return(Result)
-  }
-
-  if (is.null(Lat) == FALSE & is.null(Lon) == FALSE & is.null(RiverName) == TRUE) {
-    if (Lat > 61.3 | Lat < 54.4) stop("Latitude is not in Scotland")
-    if (Lon > 0 | Lon < -8) stop("Longitude is not in Scotland")
-    Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
-    #  Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General,coverage&dateformat=yyyy-MM-dd&format=csv", sep = ";")
-    LonList <- strsplit(Stations$station_longitude, split = "'")
-    station_longitude <- NULL
-    for (i in 1:length(LonList)) {
-      station_longitude[i] <- as.numeric(LonList[[i]])[2]
-    }
-    Stations$station_longitude <- station_longitude
-    LatLonDist <- function(lat1, lon1, lat2, lon2) {
-      acos(sin(lat1 * pi / 180) * sin(lat2 * pi / 180) + cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * cos(lon2 * pi / 180 - lon1 * pi / 180)) * 6371000
-    }
-    Dists <- NULL
-    for (i in 1:nrow(Stations)) {
-      Dists[i] <- LatLonDist(lat1 = Lat, lon1 = Lon, lat2 = Stations$station_latitude[i], lon2 = Stations$station_longitude[i])
-    }
-    DF <- data.frame(Stations, Distance = Dists / 1000)
-    DF <- DF[DF$stationparameter_name == Type, ]
-    DF <- DF[DF$Distance <= Range, ]
-    # DF <- subset(DF, Distance <= Range)
-    if (nrow(DF) == 0) stop("No gauges within range. Try increasing range")
-    # DF <- subset(DF, stationparameter_name == Type)
-    DF <- DF[order(DF$Distance), ]
-    rownames(DF) <- seq(1, nrow(DF))
-    DF <- DF[, -which(colnames(DF) == "stationparameter_no")]
-    return(DF)
-  }
-
-
-  if (is.null(StationID) == FALSE) {
-    Periods <- c("15Mins", "Hourly", "Daily")
-    TestPeriod <- match(Period, Periods)
-    if (is.na(TestPeriod)) stop("Period must equal 15Mins, Hourly, or Daily")
-
-    if (Type == "Flow" | Type == "Level") {
-      Stations <- read.csv("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getStationList&returnfields=station_id,%20station_name,catchment_name,station_latitude,station_longitude,stationparameter_name,%20stationparameter_no&object_type=General&format=csv", sep = ";")
-      Index <- which(Stations$station_id == StationID)
-      if (length(Index) < 1) stop("Station ID does not appear to be in the available list of river gauges")
-      # StationName <- gsub(" ", "", StationName)
-      Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", Type, "&format=csv", sep = "")
-      PathDates <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesList&station_id=", StationID, "&stationparameter_name=", Type, "&returnfields=coverage&dateformat=yyyy-MM-dd", "&format=csv", sep = "")
-      StationDetails <- suppressWarnings(read.csv(Path, sep = ";"))
-      StationDates <- suppressWarnings(read.csv(PathDates, sep = ";"))
-      StationDetails <- cbind(StationDetails, StationDates)
-      if (Period == "15Mins" | Period == "Hourly") {
-        if (is.null(To)) {
-          To <- StationDetails$to[which(StationDetails$ts_name == "15minute")]
-        }
-        if (is.null(From)) {
-          From <- StationDetails$from[which(StationDetails$ts_name == "15minute")]
-        }
-        ts_id <- StationDetails$ts_id[which(StationDetails$ts_name == "15minute")]
-      }
-      if (Period == "Daily") {
-        if (is.null(To)) {
-          To <- StationDetails$to[which(StationDetails$ts_name == "Day.Mean")]
-        }
-        if (is.null(From)) {
-          From <- StationDetails$from[which(StationDetails$ts_name == "Day.Mean")]
-        }
-        ts_id <- StationDetails$ts_id[which(StationDetails$ts_name == "Day.Mean")]
-      }
-
-
-      if (Period == "Daily") {
-        Days <- as.numeric(as.Date(To) - as.Date(From))
-        Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From, "T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
-        Result <- read.csv(Path, skip = 2, sep = ";")
-        DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S")
-        Result <- data.frame(DateTime, Q = Result$Value)
-      }
-
-      # lots of data--------
-      if (Period == "15Mins" | Period == "Hourly") {
-        Days <- as.numeric(as.Date(To) - as.Date(From))
-        if (Days > 1825) {
-          GetDataFunc <- function(From, Days, ts_id) {
-            Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From, "T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
-            Result <- read.csv(Path, skip = 2, sep = ";")
-            DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S")
-            Result <- data.frame(DateTime, Q = Result$Value)
-            return(Result)
-          }
-          Froms <- seq(as.Date(From), as.Date(To), by = "year")
-          Froms[length(Froms)] <- Sys.Date()
-          Days2 <- NULL
-          for (i in 2:length(Froms)) {
-            Days2[i] <- as.numeric(Froms[i] - Froms[i - 1])
-          }
-          Days2 <- Days2[-1]
-          print("This may take a few minutes, please be patient")
-          TestList <- list()
-          for (i in 1:length(Days2)) {
-            TestList[[i]] <- GetDataFunc(From = Froms[i], Days = Days2[i], ts_id = ts_id)
-          }
-          Result <- do.call(rbind, TestList)
-        }
-        # lots of data------
-        if (Days <= 1825) {
-          Days <- as.numeric(as.Date(To) - as.Date(From))
-          Path <- paste("https://timeseries.sepa.org.uk/KiWIS/KiWIS?service=kisters&type=queryServices&datasource=0&request=getTimeseriesValues&ts_id=", ts_id, "&from=", From, "T09:00:00&period=", "P", Days, "D", "&returnfields=Timestamp,Value&format=csv", sep = "")
-          Result <- read.csv(Path, skip = 2, sep = ";")
-          DateTime <- as.POSIXct(Result$X.Timestamp, format = "%Y-%m-%dT%H:%M:%S")
-          Result <- data.frame(DateTime, Q = Result$Value)
-        }
-
-
-        if (Period == "Hourly") {
-          Result <- AggDayHour(Result, func = mean, "Hour")
-        }
-      }
-      if (Type == "Level") {
-        colnames(Result)[2] <- "Stage"
-      }
-      return(Result)
-    }
   }
 }

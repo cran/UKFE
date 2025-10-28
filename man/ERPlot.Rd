@@ -36,12 +36,8 @@ am_27083 <- GetAM(27083)
 ERPlot(am_27083$Flow)
 }
 
-# Get a pooled estimate of Lcv and LSkew to use with the GF argument
-\dontrun{
-QuickResults(GetCDs(27083), gauged = TRUE)
-}
-
-# Use the resulting Lcv, Lskew and QMED for the GF argument and change the title
+# Assume pooled estimates of Lcv and LSkew of 0.23, 0.17, and a QMED of 12.
+# Use these inputs for the GF argument and change the title
 \dontrun{
 ERPlot(am_27083$Flow, main = "Site 27083 pooled comparison", GF = c(0.23, 0.17, 12))
 }

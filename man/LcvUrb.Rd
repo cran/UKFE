@@ -4,12 +4,12 @@
 \alias{LcvUrb}
 \title{Urban adjustment for the linear coefficient of variation (Lcv)}
 \usage{
-LcvUrb(lcv, URBEXT2000, DeUrb = FALSE)
+LcvUrb(LCV, URBEXT, DeUrb = FALSE)
 }
 \arguments{
-\item{lcv}{the Lcv (numeric)}
+\item{LCV}{the Lcv (numeric)}
 
-\item{URBEXT2000}{quantification of urban and suburbanisation for the subject catchment}
+\item{URBEXT}{quantification of urban and suburbanisation for the subject catchment (URBEXT2015)}
 
 \item{DeUrb}{logical argument with a default of FALSE. If set to TRUE, de-urbanisation adjustment is performed, if FALSE, urbanisation adjustment is performed}
 }
@@ -17,21 +17,13 @@ LcvUrb(lcv, URBEXT2000, DeUrb = FALSE)
 The urban adjust Lcv or the de-urbanised Lcv
 }
 \description{
-Urbanises or de-urbanises the Lcv using the methods outlined in the guidance by Wallingford HydroSolutions: 'WINFAP 4 Urban Adjustment Procedures'
-}
-\details{
-The method for de-urbanisation isn't explicitly provided in 'WINFAP 4 Urban Adjustment Procedures', but the procedure is a re-arrangement of the urbanisation equation, solving for Lcv rather than Lcv-urban. The functionality assumes that the variance of an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of URBEXT2000.
+Urbanises or de-urbanises the Lcv using the FEH2025 methods
 }
 \examples{
-# Choose an urban site (site 53006) from the NRFA data then apply a de-urban
-# adjustment using the Lcv and URBEXT2000 displayed
-NRFAData[which(rownames(NRFAData) == 53006), ]
+# Apply a de-urbanisation with an LCV of 0.21 and an URBEXT of 0.1138
 LcvUrb(0.21, 0.1138, DeUrb = TRUE)
 
-# Get the pooled L-moment ratios results for catchment 53006 and apply the
-# urban adjustment using the pooled Lcv and the URBEXT2000 for site 53006
-cds_53006 <- GetCDs(53006)
-QuickResults(cds_53006)[[2]]
+# Apply and urban adjustment using LCV 0.196 and URBEXT of 0.1138
 LcvUrb(0.196, 0.1138)
 
 }

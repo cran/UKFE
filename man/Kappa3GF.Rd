@@ -23,11 +23,9 @@ Estimated growth factors as a function of return period, with inputs of Lcv & LS
 Growth factors are calculated by the method outlined in Kjeldsen, T (2019), 'The 3-parameter Kappa distribution as an alternative for use with FEH pooling groups.'Circulation - The Newsletter of the British Hydrological Society, no. 142
 }
 \examples{
-# Get an ungauged pooled Lcv and LSkew for catchment 15006
-pooled_res <- as.numeric(QuickResults(GetCDs(15006), plot = FALSE)[[2]])
-
 # Calculate Kappa growth factor for the 100-year flood
-Kappa3GF(pooled_res[1], pooled_res[2], RP = 100)
+#assuming LCV and LSKEW of 0.165 and 0.17
+Kappa3GF(0.165, 0.17, RP = 100)
 
 }
 \author{

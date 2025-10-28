@@ -43,12 +43,6 @@ q_split <- FlowSplit(thames_q$Q)
 # Now do it with an upper baseflow level of 100 m^3/s
 q_split <- FlowSplit(thames_q$Q, BaseQUpper = 100)
 
-# First we'll use the DesHydro function to pick out a reasonable looking event from the Thames flow
-q <- DesHydro(ThamesPQ[, c(1, 3)], Plot = FALSE, EventSep = 15)
-q <- q$AllScaledHydrographs$hydro7
-
-# Then we'll use our flow split function
-FlowSplit(q)
 
 # Next we will get a single peaked "idealised" hydrograph using the ReFH function
 q_refh <- ReFH(GetCDs(15006))

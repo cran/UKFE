@@ -26,7 +26,7 @@ For more details of the method for individual sites see the details section of t
 }
 \examples{
 # Set up a pooling group for site 44013, then apply the function
-pool_44013 <- Pool(GetCDs(44013))
+pool_44013 <- Pool(GetCDs(44013), N = 500)
 pool_nf <- NonFloodAdjPool(pool_44013)
 
 # Return the non-flood stats for the pooling group

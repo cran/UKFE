@@ -13,14 +13,14 @@ UEF(Year)
 A numeric urban expansion factor.
 }
 \description{
-This function provides a coefficient to multiply by URBEXT2000 to adjust it to a given year
+This function provides a coefficient to multiply by URBEXT2015 to adjust it to a given year
 }
 \details{
-The urban expansion factor is detailed in Bayliss, A. Black, K. Fava-Verde, A. Kjeldsen, T. (2006). URBEXT2000 - A new FEH catchment descriptor: Calculation, dissemination and application. R&D Technical Report FD1919/TR, DEFRA, CEH Wallingford. The urban expansion model assumes a national average expansion as a function of year. This means that on some catchments the value will be overestimated (primarily on rural ones) and on others the value will be underestimated (primarily on urban ones).
+The urban expansion factor is that of the FEH2025 method. The urban expansion model assumes a national average expansion as a function of year. This means that on some catchments the value will be overestimated (primarily on rural ones) and on others the value will be underestimated (primarily on urban ones).
 }
 \examples{
-# Get an expansion factor for the year 2023
-UEF(2023)
+# Get an expansion factor for the year 2025
+UEF(2025)
 
 }
 \author{

@@ -5,12 +5,10 @@
 \title{QMED donor adjustment}
 \usage{
 QMEDDonEq(
-  AREA,
-  SAAR,
-  FARL,
-  BFIHOST,
+  QMED.scd,
   QMEDgObs,
   QMEDgCds,
+  Distance = NULL,
   xSI,
   ySI,
   xDon,
@@ -19,25 +17,21 @@ QMEDDonEq(
 )
 }
 \arguments{
-\item{AREA}{catchment area in km2 for the site of interest}
-
-\item{SAAR}{standardised average annual rainfall in mm for the site of interest}
-
-\item{FARL}{flood attenuation from reservoirs and lakes for the site of interest}
-
-\item{BFIHOST}{the baseflow index as a function of soil type for the site of interest}
+\item{QMED.scd}{Ungauged QMED estimate for the site of interest}
 
 \item{QMEDgObs}{the observed QMED at the donor site}
 
 \item{QMEDgCds}{the QMED equation derived QMED at the donor site}
 
-\item{xSI}{the catchment centroid easting for the site of interest}
+\item{Distance}{The distance in km between the catchment centroids of the site of interest and donor site.}
 
-\item{ySI}{the catchment centroid northing for the site of interest}
+\item{xSI}{For when distance is not known - the catchment centroid easting for the site of interest.}
 
-\item{xDon}{the catchment centroid easting for the donor site}
+\item{ySI}{For when distance is not known - the catchment centroid northing for the site of interest}
 
-\item{yDon}{the catchment centroid northing for the donor site}
+\item{xDon}{For when distance is not known - the catchment centroid easting for the donor site}
+
+\item{yDon}{For when distance is not known - the catchment centroid northing for the donor site}
 
 \item{alpha}{a logical argument with a default of TRUE. When FALSE the exponent in the donor equation is set to one. Otherwise it is determined by the distance between the donor and the subject site}
 }
@@ -45,26 +39,22 @@ QMEDDonEq(
 Applies a donor adjustment to the median annual maximum flow (QMED) estimate
 }
 \details{
-Although a single donor adjustment can be applied with the DonAdj() function and the QMED() function, this additional function is provided for flexibility. The method is that of Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation (2008). The x and y grid reference inputs assume that the grid references for subject and donor site are using the same grid referencing system.
+Although a single donor adjustment can be applied with the QMED function, this additional function is provided for flexibility. The method is that of FEH2025.
 }
 \examples{
 # Get observed QMED for site 15006
-q_ob <- median(GetAM(15006)[, 2])
+q_ob <- GetQMED(15006)
 
 # Get QMED equation estimated QMED for the donor site
 q_cd <- QMED(CDs = GetCDs(15006))
 
-# Display CDs for site 27051 & note the easting and northing
-GetCDs(27051)
 
-# Display CDs for site 15006 & note the easting and northing
-GetCDs(15006)
 
-# Apply the QMEDDonEq function with the information gained
+# Apply the QMEDDonEq function with the information gained, assuming
+# a distance of 30km and subject site QMED estimate of 3.9
 QMEDDonEq(
-  194, 1096, 0.955, 0.297, q_ob, q_cd,
-  xSI = 289289, ySI = 947523,
-  xDon = 280908, yDon = 953653
+  QMED.scd = 3.9, QMEDgObs = q_ob, QMEDgCds = q_cd,
+  Distance = 30
 )
 
 }

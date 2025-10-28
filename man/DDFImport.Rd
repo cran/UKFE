@@ -4,12 +4,12 @@
 \alias{DDFImport}
 \title{DDF13 or DDF22 results from .xml files}
 \usage{
-DDFImport(x, ARF = FALSE, Plot = TRUE, DDFVersion = 22)
+DDFImport(x, ARF = TRUE, Plot = TRUE, DDFVersion = 22)
 }
 \arguments{
 \item{x}{the xml file path}
 
-\item{ARF}{logical argument with a default of FALSE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied}
+\item{ARF}{logical argument with a default of TRUE. If TRUE, the areal reduction factor is applied to the results. If FALSE, no area reduction factor is applied. This is not relevant for a point estimate.}
 
 \item{Plot}{logical argument with a default of TRUE. If TRUE the DDF curve is plotted for a few return periods}
 

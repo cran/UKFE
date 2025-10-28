@@ -6,52 +6,45 @@
 \usage{
 QuickResults(
   CDs,
-  gauged = FALSE,
-  dons = 2,
+  no.Donors = 8,
+  dist = "GenLog",
   Qmed = NULL,
-  FUngauged = FALSE,
-  plot = TRUE,
-  dist = "GenLog"
+  UrbMax = 0.03,
+  Include = NULL
 )
 }
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{gauged}{logical argument with a default of FALSE. TRUE for gauged results and FALSE for ungauged}
+\item{no.Donors}{number of donors required. The default is 8.}
 
-\item{dons}{number of donors required with a choice of 0, 1, or 2}
+\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"}
 
 \item{Qmed}{user supplied QMED which overrides the default QMED estimate}
 
-\item{FUngauged}{logical argument with a default of FALSE. TRUE provides a fake ungauged estimate (an ungauged estimate whilst excluding the gauged site (the site with the most similar CDs))}
+\item{UrbMax}{A maximum value for URBEXT2015 permitted in the pooling group. The default is 0.03.}
 
-\item{plot}{logical argument with a default of TRUE. TRUE provides an extreme value plot. FALSE prevents the plot}
-
-\item{dist}{a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"}
+\item{Include}{A site reference for any site you want to ensure is in the pooling group if it is not chosen automatically. For example, a site which has URBEXT2015 above UrbMax.}
 }
 \value{
-A list of length two. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). Two additional columns quantify the uncertainty. The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). By default an extreme value plot is also returned
+A list of length three. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). The third element is a dataframe with the distribution parameters.
 }
 \description{
-Provides pooled gauged, ungauged, or fake ungauged results, directly from the catchment descriptors
+Provides pooled results, directly from the catchment descriptors
 }
 \details{
-The quick results function provides results with a default pooling group. If gauged = FALSE the median annual maximum flood (QMED) is estimated from catchment descriptors using the QMED equation adjusted with the 2 closest non-urban gauged sites as donors (though 0 or 1 donors can instead be used if specified) and the growth curve is formed from the ungauged pooling group. If the ungauged site is urban (URBEXT > 0.03), an urban adjustment is made to the QMED and to the pooled growth curve. If gauged = TRUE QMED is the median of the gauged annual maxima and the growth curve is formed with the gauged weighting procedure (often known as enhanced single site). Note that if Gauged = TRUE, the functionality assumes that the top site in the pooling group (i.e. the first row) is the subject "gauged" catchment. If the gauged catchment is urban (URBEXT > 0.03), it's included in the pooling group and deurbanised before an urban adjustment is made to the final growth curve. However, the urban expansion (UEF) is not applied. Note that gauged = TRUE should only be applied where the site is suitable for pooling. If FUngauged = TRUE, the top site in the pooling group is excluded and the QMED and growth curve estimates are performed henceforth in the manner of gauged = FALSE. Note that FUngauged = TRUE should only be applied where the site is suitable for pooling and in conjunction with the argument gauged = FALSE.
-
-This function applies the index flood procedure in a quick way and therefore encompasses all the associated assumptions. Note that it is recommended that the default results should only be used for broad-scale and/or initial assessments.
+The quick results function provides results with a default pooling group. Sites are chosen from those with URBEXT2015 below or equal to UrbMax (the default is 0.03).The LCVs in the pooling group are 'de-urbanised'. The final LCV estimate is then urban adjusted. QMED is estimated using the QMED function with eight donors, all of which have a de-urbanised observed QMED for the donor process. Then the QMED estimate has an urban adjustment applied. If the CDs are for a site suitable for pooling/QMED, this QMED estimate converges to the observed.
 }
 \examples{
 # Get some catchment descriptors
 cds_73005 <- GetCDs(73005)
 
-# Get default ungauged results
+# Get results
 QuickResults(cds_73005)
 
-# Get gauged results with a GEV distribution
-QuickResults(cds_73005, gauged = TRUE, dist = "GEV")
+# Get results with a GEV distribution
+QuickResults(cds_73005, dist = "GEV")
 
-# Get fake ungauged results with one donor
-QuickResults(cds_73005, FUngauged = TRUE, dons = 1)
 
 }
 \author{

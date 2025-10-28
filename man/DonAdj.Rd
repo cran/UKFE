@@ -2,44 +2,32 @@
 % Please edit documentation in R/All.R
 \name{DonAdj}
 \alias{DonAdj}
-\title{Donor adjustment candidates & results}
+\title{Donor adjustment candidates}
 \usage{
-DonAdj(CDs = NULL, x, y, QMEDscd = NULL, alpha = TRUE, rows = 10, d2 = NULL)
+DonAdj(CDs, N = 10, UrbMax = 1)
 }
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML for the site of interest}
 
-\item{x}{catchment centroid easting (for when CDs isn't used)}
+\item{N}{number of sites provided; default is 10}
 
-\item{y}{catchment centroid northing (for when CDs isn't used)}
-
-\item{QMEDscd}{QMED estimate for the catchment of interest (for when CDs isn't used)}
-
-\item{alpha}{logical argument with a default of TRUE. If FALSE the exponent of the donor adjustment equation is set to one}
-
-\item{rows}{number of sites provided; default is 10}
-
-\item{d2}{a numeric vector of length two; the two site references for the donor catchments chosen for the two donor case}
+\item{UrbMax}{a maximum value for URBEXT (the default is 0.03). Any sites with UBEXT2015 above UrbMax will not be included in the results.}
 }
 \value{
-A data.frame with rownames of site references and columns of catchment descriptors, distance from subect site, and associated results. When two donors are used, only the resulting adjusted QMED is returned
+A data.frame with rownames of site references and columns of catchment descriptors and distance from subject site.
 }
 \description{
-Provides donor adjustment candidates, descriptors, and results in order of the proximity to the centroid of the subject catchment.
+Provides donor adjustment candidates, with associated descriptors, in order of the proximity to the centroid of the subject catchment.
 }
 \details{
-The donor adjustment method is as outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The method for two donors is outlined in 'Kjeldsen, T. (2019). Adjustment of QMED in ungauged catchments using two donor sites. Circulation - The Newsletter of the British Hydrological Society, 4'. When d2 is NULL this function returns a list of possible donors and associated details - including a default adjusted QMED estimate for the site of interest.  The results for single donor adjustment are in the final column headed 'QMED.adj'. If alpha is set to FALSE, the results in the final column are from the same donor equation but with an exponent of 1. The QMEDfse column provides the gauged factorial standard error for the median of the annual maximum sample. It is worth considering this when choosing a donor site (a high value indicates a poor donor). When choosing between two donors, the site with a lower QMEDfse would be an appropriate choice (all else being equal). The QMEDfse is calculated with the QMEDfseSS() function. When d2 is populated (when two donors are used), only the resulting adjusted QMED and alpha values are returned, rather than donor candidate information. Note that the estimates for the single donor and two donor adjustment do not consider urbanisation in the catchment of interest or the donor catchments. Such things can be considered more specifically using the QMED() function.
+This function provides the closest N catchments for consideration for QMED donor adjustment.
 }
 \examples{
 # Get some CDs and output candidate donor sites
 cds_54022 <- GetCDs(54022)
 DonAdj(cds_54022)
 
-# Get results with inputs of x,y, and QMEDscd
-DonAdj(x = 283261, y = 288067, QMEDscd = 17.931)
 
-# Get a result with two donors
-DonAdj(cds_54022, d2 = c(54092, 54091))
 
 }
 \author{

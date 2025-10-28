@@ -4,18 +4,20 @@
 \alias{DiagPlots}
 \title{Diagnostic plots for pooling groups}
 \usage{
-DiagPlots(x, gauged = FALSE)
+DiagPlots(x, gauged = FALSE, UrbMax = 0.03)
 }
 \arguments{
 \item{x}{pooling group derived from the Pool() function}
 
 \item{gauged}{logical argument with a default of FALSE. TRUE adds the top site in the pooling group to the plots in a different colour}
+
+\item{UrbMax}{This is for the plotting of the URBEXT comparison. Ideally it should be the same as the UrbMax used for deriving the input pooling group}
 }
 \value{
-ten diagnostic plots for pooling groups
+Eleven diagnostic plots for pooling groups
 }
 \description{
-Provides 10 plots to compare the sites in the pooling group
+Provides 11 plots to compare the sites in the pooling group
 }
 \examples{
 # Form a gauged pooling group and plot the diagnostics

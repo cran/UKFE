@@ -13,7 +13,10 @@ GetCDs(x)
 A data.frame with columns; Descriptor and Value.
 }
 \description{
-Extracts the catchment descriptors for a site of interest from the National River Flow Archive. If the site is considered suitable for QMED and pooling the CDs are extracted from the QMEDData data.frame. Otherwise they are extracted using the NRFA API.
+Extracts the catchment descriptors for a site of interest from the National River Flow Archive.
+}
+\details{
+If the site is considered suitable for QMED and pooling the CDs are extracted from the PeakFlowData data.frame. Otherwise they are extracted using the NRFA website. Note that if they are from the NRFA website then the 'easting' and 'northing' are not for the catchment centroid, they're for the gauge location. Also, where the gauge has NRFA peak flows available, but is not considered suitable for pooling or QMED, it will be derived from the NRFA webpage, and some descriptors differ a little between the data sets (NRFA website and NRFA peak flows), notably the Area.
 }
 \examples{
 # Get CDs and display in the console

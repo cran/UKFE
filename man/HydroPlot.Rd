@@ -11,6 +11,7 @@ HydroPlot(
   From = NULL,
   To = NULL,
   adj.y = 1.5,
+  RainAxisMax = NULL,
   plw = 1,
   qlw = 1.8,
   Return = FALSE
@@ -28,6 +29,8 @@ HydroPlot(
 \item{To}{an end time for the plot. In the form of a date or POSIXct object. The default is the last row of x}
 
 \item{adj.y}{a numeric value to adjust the closeness of the preciptation and discharge in the plot. Default is 1.5. A lower value brings them closer and a larger value further apart}
+
+\item{RainAxisMax}{A numeric value for to set the maximum value of the rainfall axis. This is useful for comparing multiple plots so that they have the same scale on the rainfall axis}
 
 \item{plw}{a numeric value to adjust the width of the precipitation lines. Default is one. A larger value thickens them and vice versa}
 

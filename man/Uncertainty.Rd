@@ -6,62 +6,40 @@
 \usage{
 Uncertainty(
   x,
+  dist = "GenLog",
   Gauged = FALSE,
-  qmed = NULL,
-  Dist = "GenLog",
-  Conf = 0.95,
-  fseQMED = 1.55,
-  UrbAdj = FALSE,
-  URBEXT = NULL,
-  Plot = TRUE,
-  IncAMest = TRUE,
-  Parametric = TRUE
+  QMEDEstimate = NULL,
+  fseQMED = 1.5
 )
 }
 \arguments{
-\item{x}{the pooled group derived from the Pool() or PoolSmall() function.}
+\item{x}{the pooled group derived from the Pool() function.}
 
-\item{Gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty intervals are calculated for the ungauged case. If TRUE they are calculated for the gauged case.}
+\item{dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog", "Gumbel", or "Kappa3". The default is "GenLog".}
 
-\item{qmed}{the QMED estimate for the ungauged case. It is derived from the observed AMAX if Gauged equals TRUE.}
+\item{Gauged}{a logical argument with a default of FALSE. If FALSE the uncertainty is quantified for the ungauged case. If TRUE it is quantified for the gauged case.}
 
-\item{Dist}{a choice of distribution to use for the estimates. Choices are "GEV", "GenLog", "Gumbel", or "Kappa3". The default is "GenLog".}
+\item{QMEDEstimate}{the QMED estimate for the ungauged case.}
 
-\item{Conf}{the confidence level of the uncertainty intervals. Default is 0.95. Must be between 0 and 1.}
-
-\item{fseQMED}{the factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.55.}
-
-\item{UrbAdj}{applies an urban adjustment to the growth curves.}
-
-\item{URBEXT}{URBEXT value for the site of interest. This is necessary if UrbAdj equals TRUE.}
-
-\item{Plot}{logical argument with a default of TRUE. If TRUE a return level plot with results and margin of error is plotted. If FALSE, it is not.}
-
-\item{IncAMest}{logical argument with a default of TRUE. Sometimes when doing gauged (enhanced single site analysis), the central estimate of the single site estimate is outside the intervals of the ESS estimate. When this argument is true the confidence interval is expanded to include the central estimate for the single site. If FALSE, it is not.}
-
-\item{Parametric}{logical argument with a default of TRUE. If TRUE, the bootstrapping is done by simulation with the distribution of choice. If FALSE the bootstrapping is done by resampling with replacement.}
+\item{fseQMED}{the factorial standard error of the QMED estimate for an ungauged assessment. The default is 1.45.}
 }
 \value{
-A dataframe with 10 rows and four columns. Return period in the first column, central estimate in the second, lower in the third, and upper in the fourth. If Plot = TRUE, a return level plot is also returned.
+A dataframe with 11 rows and two columns. Return period in the first column and factorial standard error in the second.
 }
 \description{
-Quantification of aleatoric uncertainty for pooling results for the gauged and ungauged case
-}
-\details{
-Uncertainty for both the gauged (enhanced single site) and ungauged case are quantified according to the bootstrapping procedures, which account for weights in the pooling group, detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6). Note that this function only quantifies sampling (aleatoric) uncertainty. It does not quantify uncertainty associated with models, model choices applied or hydrometric data. Lastly, the method assumes that AMAX samples within the pooling group are independent of each other and serially independent and identically distributed.
+Uncertainty for both the gauged and ungauged case are quantified specifically (bespoke) for the pooling group according to methods detailed in Hammond, A. (2021). Sampling uncertainty of UK design flood estimation. Hydrology Research. 1357-1371. 52 (6). Note that this function only quantifies sampling (aleatoric) uncertainty. It does not quantify uncertainty associated with models, model choices applied, or hydrometric data. The method assumes that AMAX samples within the pooling group are independent of each other and serially independent and identically distributed.
+The default ungauged QMED fse is 1.5. This is the FSE for the QMED 2025 regression model for all catchments suitable for QMED estimation.
+If Gauged = TRUE, the assumption is that the top site in the pooling group is the gauged subject site.
+In the Gauged case the pooling group is bootstrapped (parametrically) 200 times to create 200 pooling groups. Then the PoolEst function is applied to each of the 200 resampled pooling groups along with 200 resampled QMED from the gauged subject site. The FSE is calculated from the range of 200 estimates for each return period.
+In the ungauged case, each gauge is bootstrapped (parametrically) w x 200 times, where w is the weighting of the gauge. The growth factors for the associated 200 LMoment ratios are calculated and multiplied by a sampled QMED based on the fseQMED value. i.e SampledQMED = exp(rnorm(1, log(QMEDEstimate), log(fseQMED)). Then the FSEs are calculated across the 200 results for each return period.
 }
 \examples{
-# Get an ungauged pooling group
-pool_203018 <- Pool(GetCDs(203018), exclude = 203018)
-
-# Quantify the central estimate and uncertainty
-Uncertainty(pool_203018, qmed = QMED(GetCDs(203018)))
-
-# Get a pooling group with subject site included
+# Derive a pooling group
 pool_203018 <- Pool(GetCDs(203018))
 
-# Quantify the central estimate and uncertainty
-Uncertainty(pool_203018, Gauged = TRUE)
+# Calculate the factorial standard errors as if it it were ungauged.
+Uncertainty(pool_203018, QMEDEstimate = QMED(GetCDs(203018)))
+
 
 }
 \author{

@@ -33,69 +33,70 @@
 #' @author Anthony Hammond
 
 FlowDurationCurve <- function(x = NULL, main = "Flow duration curve", CompareCurves = NULL, LegNames = NULL, Cols = NULL, AddQs = NULL, ReturnData = FALSE) {
-  if (is.null(CompareCurves) == FALSE) {
-    if (class(CompareCurves) != class(list(c(1, 2, 3, 4), c(2, 4, 6, 8)))) stop("CompareCurves must be a list object")
-    if (length(CompareCurves) < 2) stop("CompareCurves must be a list with at least two elements")
+  Log10Func <- function(x) {
+    Result <- log10(x)
+    InfTest <- which(is.infinite(Result) == TRUE)
+    if(length(InfTest) > 0 ) {Result[InfTest] <- -3}
+    return(Result)
+  }
+  if(is.null(CompareCurves) == FALSE){
+    if(class(CompareCurves) != class(list(c(1,2,3,4), c(2,4,6,8)))) stop("CompareCurves must be a list object")
+    if(length(CompareCurves) < 2) stop("CompareCurves must be a list with at least two elements")
     CombineQs <- unlist(CompareCurves)
-    ProbsInd <- c(0.999, 0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01, 0.001)
+    ZeroCheck <- min(CombineQs,na.rm = TRUE)
+    if(ZeroCheck <= 0) warning("The discharge drops to zero, suggesting this is an ephemeral stream")
+    ProbsInd <- c(0.999,0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01, 0.001)
     QNorm <- qnorm(ProbsInd)
-    Min <- log10(quantile(CombineQs, 0.0003, na.rm = TRUE))
-    Max <- log10(quantile(CombineQs, 0.9997, na.rm = TRUE))
-    plot(qnorm(ProbsInd), xaxt = "n", yaxt = "n", log10(quantile(CombineQs, sort(ProbsInd), na.rm = TRUE)), type = "l", xlim = c(-3.5, 3.5), ylim = c(Min, Max), xlab = "Percentage of time flow exceeded", ylab = "Discharge (m3/s)", lwd = 2, col = "transparent", main = main)
+    Min <- Log10Func(quantile(CombineQs, 0.0003, na.rm = TRUE))
+    if(is.infinite(Min)) {Min <- -3}
+    Max <- Log10Func(quantile(CombineQs, 0.9997, na.rm = TRUE))
+    plot(qnorm(ProbsInd), xaxt = "n", yaxt = "n", Log10Func(quantile(CombineQs, sort(ProbsInd), na.rm = TRUE)), type = "l", xlim = c(-3.5, 3.5), ylim = c(Min, Max), xlab = "Percentage of time flow exceeded", ylab = "Discharge (m3/s)", lwd = 2, col = "transparent", main = main)
     axis(side = 1, at = qnorm(ProbsInd), tick = TRUE, col = "transparent", labels = c(99.9, 99, 95, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5, 1, 0.1))
     abline(v = qnorm(ProbsInd), lty = 3)
     QOrdinate <- c(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100, 500, 1000, 5000)
-    # QOrdinate <- as.numeric(quantile(c(Summer[,2], Winter[,2]), c(1, 0.999,0.99, 0.9, 0.8, 0.5, 0.2, 0.1, 0.01, 0.001, 0)))
-    QOrdinatePos <- log10(QOrdinate)
+    #QOrdinate <- as.numeric(quantile(c(Summer[,2], Winter[,2]), c(1, 0.999,0.99, 0.9, 0.8, 0.5, 0.2, 0.1, 0.01, 0.001, 0)))
+    QOrdinatePos <- Log10Func(QOrdinate)
     axis(side = 2, at = QOrdinatePos, labels = as.character(signif(QOrdinate, 2)), tick = FALSE)
     abline(h = QOrdinatePos, lty = 3)
 
-    if (is.null(Cols)) {
-      Cols <- hcl.colors(length(CompareCurves), palette = "Zissou 1")
-    } else {
-      Cols <- Cols
-    }
-    for (i in 1:length(CompareCurves)) {
-      points(qnorm(ProbsInd), log10(quantile(CompareCurves[[i]], sort(ProbsInd), na.rm = TRUE)), type = "l", col = Cols[i], lwd = 2)
+    if(is.null(Cols)) {
+      Cols <- hcl.colors(length(CompareCurves), palette = "Zissou 1")} else {Cols <- Cols}
+    for(i in 1:length(CompareCurves)) {
+      points(qnorm(ProbsInd), Log10Func(quantile(CompareCurves[[i]], sort(ProbsInd), na.rm = TRUE)), type = "l", col = Cols[i], lwd = 2)
     }
 
-    if (is.null(LegNames)) {
-      LegNames <- paste("Curve", seq(1, length(CompareCurves)), sep = "")
-    }
-    if (is.null(AddQs) == FALSE) {
-      axis(2, at = log10(AddQs), labels = AddQs)
-      abline(h = log10(AddQs), lty = 3)
+    if(is.null(LegNames)) {LegNames <- paste("Curve", seq(1,length(CompareCurves)), sep = "")}
+    if(is.null(AddQs) == FALSE) {
+      axis(2, at = Log10Func(AddQs), labels = AddQs)
+      abline(h = Log10Func(AddQs), lty = 3)
     }
     legend("bottomleft", legend = LegNames, lwd = 2, col = Cols)
-    if (ReturnData == TRUE) {
-      ResDF <- data.frame(
-        PercentExceeded = (1 - ProbsInd) * 100, quantile(CompareCurves[[1]], ProbsInd, na.rm = TRUE),
-        quantile(CompareCurves[[i]], ProbsInd, na.rm = TRUE)
-      )
-      if (length(CompareCurves) > 2) {
-        for (i in 3:length(CompareCurves)) {
-          ResDF <- cbind(ResDF, quantile(CompareCurves[[i]], ProbsInd, na.rm = TRUE))
-        }
-      }
-      ResDF[, 2:ncol(ResDF)] <- signif(ResDF[, 2:ncol(ResDF)], 3)
+    if(ReturnData == TRUE) {
+      ResDF <- data.frame(PercentExceeded = (1-ProbsInd)*100, quantile(CompareCurves[[1]], ProbsInd, na.rm = TRUE),
+                          quantile(CompareCurves[[2]], ProbsInd, na.rm = TRUE))
+      if(length(CompareCurves) > 2)
+        for(i in 3:length(CompareCurves)) {ResDF <- cbind(ResDF, quantile(CompareCurves[[i]], ProbsInd, na.rm = TRUE))}
+      ResDF[,2:ncol(ResDF)] <- signif(ResDF[,2:ncol(ResDF)], 3)
       colnames(ResDF)[1] <- "PercentExceeded"
-      colnames(ResDF)[2:ncol(ResDF)] <- paste("v", seq(1, (ncol(ResDF) - 1)), sep = "")
+      colnames(ResDF) [2:ncol(ResDF)] <- paste("v", seq(1, (ncol(ResDF)-1)), sep = "")
       rownames(ResDF) <- seq(1, nrow(ResDF))
       return(ResDF)
     }
+
+
   }
 
-  if (is.null(x) == FALSE) {
-    if (class(x) != class(data.frame(c(1, 2, 3)))) stop("x must be a dataframe with two columns, Date or POSIXct in the first and numeric in the second.")
-    if (ncol(x) != 2) stop("x must be a dataframe with two columns, date or POSIXct in the first and numeric in the second.")
-    if (class(x[, 1])[1] != class(as.POSIXct("1981-10-15"))[1] & class(x[, 1])[1] != class(as.Date("1981-10-15"))[1]) stop("x must be a dataframe with two columns, POSIXct or Date in the first and numeric in the second.")
-    if (class(x[, 2])[1] != class(runif(10))[1]) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
+  if(is.null(x) == FALSE) {
+    if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a dataframe with two columns, Date or POSIXct in the first and numeric in the second.")
+    if(ncol(x) != 2) stop("x must be a dataframe with two columns, date or POSIXct in the first and numeric in the second.")
+    if(class(x[,1])[1] != class(as.POSIXct("1981-10-15"))[1] & class(x[,1])[1] != class(as.Date("1981-10-15"))[1]) stop("x must be a dataframe with two columns, POSIXct or Date in the first and numeric in the second.")
+    if(class(x[,2])[1] != class(runif(10))[1]) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
 
     LegNames <- c("Annual", "Winter", "Summer")
     x <- x[complete.cases(x), ]
     SeasonInd <- function(x) {
       POSlt <- as.POSIXlt(x)
-      Mons <- (POSlt$mon) + 1
+      Mons <- (POSlt$mon)+1
       WinInd <- which(Mons == 12 | Mons == 1 | Mons == 2)
       SpriInd <- which(Mons == 3 | Mons == 4 | Mons == 5)
       SummInd <- which(Mons == 6 | Mons == 7 | Mons == 8)
@@ -104,44 +105,46 @@ FlowDurationCurve <- function(x = NULL, main = "Flow duration curve", CompareCur
       names(SeasInd) <- c("Winter", "Spring", "Summer", "Autumn")
       return(SeasInd)
     }
-    GetInds <- SeasonInd(x[, 1])
-    Summer <- x[GetInds$Summer, ]
-    Winter <- x[GetInds$Winter, ]
+    GetInds <- SeasonInd(x[,1])
+    Summer <- x[GetInds$Summer,]
+    Winter <- x[GetInds$Winter,]
     Seasons <- list(x, Winter, Summer)
 
-    All <- x[, 2]
-    ProbsInd <- c(0.999, 0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01, 0.001)
+    All <- x[,2]
+    ZeroCheck <- min(All, na.rm = TRUE)
+    if(ZeroCheck <= 0) warning("The discharge drops to zero, suggesting this is an ephemeral stream")
+    ProbsInd <- c(0.999,0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.01, 0.001)
     QNorm <- qnorm(ProbsInd)
-    Min <- min(log10(quantile(Summer[, 2], 0.001)), log10(quantile(Winter[, 2], 0.001)))
-    Max <- max(log10(quantile(Winter[, 2], 0.999)), log10(quantile(Summer[, 2], 0.999)))
-    plot(qnorm(ProbsInd), xaxt = "n", yaxt = "n", log10(quantile(All, sort(ProbsInd))), type = "l", xlim = c(-3.5, 3.5), ylim = c(Min, Max), xlab = "Percentage of time flow exceeded", ylab = "Discharge (m3/s)", lwd = 2)
+    Min <- min(Log10Func(quantile(Summer[,2], 0.001)),  Log10Func(quantile(Winter[,2], 0.001)) )
+    if(is.infinite(Min)) {Min <- -3}
+    Max <- max(Log10Func(quantile(Winter[,2], 0.999)),  Log10Func(quantile(Summer[,2], 0.999)) )
+    plot(qnorm(ProbsInd), xaxt = "n", yaxt = "n", Log10Func(quantile(All, sort(ProbsInd))), type = "l", xlim = c(-3.5, 3.5), ylim = c(Min, Max), xlab = "Percentage of time flow exceeded", ylab = "Discharge (m3/s)", lwd = 2, main = main)
     axis(side = 1, at = qnorm(ProbsInd), tick = TRUE, col = "transparent", labels = c(99.9, 99, 95, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5, 1, 0.1))
     abline(v = qnorm(ProbsInd), lty = 3)
     QOrdinate <- c(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100, 500, 1000, 5000)
-    # QOrdinate <- as.numeric(quantile(c(Summer[,2], Winter[,2]), c(1, 0.999,0.99, 0.9, 0.8, 0.5, 0.2, 0.1, 0.01, 0.001, 0)))
-    QOrdinatePos <- log10(QOrdinate)
+    #QOrdinate <- as.numeric(quantile(c(Summer[,2], Winter[,2]), c(1, 0.999,0.99, 0.9, 0.8, 0.5, 0.2, 0.1, 0.01, 0.001, 0)))
+    QOrdinatePos <- Log10Func(QOrdinate)
     axis(side = 2, at = QOrdinatePos, labels = as.character(signif(QOrdinate, 2)), tick = FALSE)
     abline(h = QOrdinatePos, lty = 3)
 
-    points(qnorm(ProbsInd), log10(quantile(Winter[, 2], sort(ProbsInd))), type = "l", col = rgb(0, 0.3, 0.7), lwd = 2)
-    points(qnorm(ProbsInd), log10(quantile(Summer[, 2], sort(ProbsInd))), type = "l", col = rgb(0, 0.7, 0.2), lwd = 2)
-    if (is.null(AddQs) == FALSE) {
-      axis(2, at = log10(AddQs), labels = AddQs)
-      abline(h = log10(AddQs), lty = 3)
+    points(qnorm(ProbsInd), Log10Func(quantile(Winter[,2], sort(ProbsInd))), type = "l", col = rgb(0,0.3,0.7), lwd = 2)
+    points(qnorm(ProbsInd), Log10Func(quantile(Summer[,2], sort(ProbsInd))), type = "l", col = rgb(0,0.7,0.2), lwd = 2)
+    if(is.null(AddQs) == FALSE) {
+      axis(2, at = Log10Func(AddQs), labels = AddQs)
+      abline(h = Log10Func(AddQs), lty = 3)
     }
 
-    legend("bottomleft", legend = LegNames, lwd = 2, col = c("black", rgb(0, 0.3, 0.7), rgb(0, 0.7, 0.3)))
-    if (ReturnData == TRUE) {
-      ResDF <- data.frame(
-        PercentExceeded = ProbsInd * 100, Annual = signif(quantile(All, sort(ProbsInd)), 2), Winter = signif(quantile(Winter[, 2], sort(ProbsInd)), 3),
-        Summer = signif(quantile(Summer[, 2], sort(ProbsInd)), 3)
-      )
+    legend("bottomleft", legend = LegNames, lwd = 2, col = c("black", rgb(0,0.3,0.7), rgb(0,0.7,0.3)))
+    if(ReturnData == TRUE) {
+      ResDF <- data.frame(PercentExceeded = ProbsInd*100, Annual = signif(quantile(All, sort(ProbsInd)),2), Winter = signif(quantile(Winter[,2], sort(ProbsInd)),3),
+                          Summer = signif(quantile(Summer[,2], sort(ProbsInd)), 3))
       ResDF <- ResDF[order(ResDF$PercentExceeded), ]
       rownames(ResDF) <- seq(1, nrow(ResDF))
       return(ResDF)
+
     }
   }
-}
+  }
 
 
 
@@ -169,12 +172,6 @@ FlowDurationCurve <- function(x = NULL, main = "Flow duration curve", CompareCur
 #' # Now do it with an upper baseflow level of 100 m^3/s
 #' q_split <- FlowSplit(thames_q$Q, BaseQUpper = 100)
 #'
-#' # First we'll use the DesHydro function to pick out a reasonable looking event from the Thames flow
-#' q <- DesHydro(ThamesPQ[, c(1, 3)], Plot = FALSE, EventSep = 15)
-#' q <- q$AllScaledHydrographs$hydro7
-#'
-#' # Then we'll use our flow split function
-#' FlowSplit(q)
 #'
 #' # Next we will get a single peaked "idealised" hydrograph using the ReFH function
 #' q_refh <- ReFH(GetCDs(15006))

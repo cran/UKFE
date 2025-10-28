@@ -21,10 +21,8 @@ Extracts results from a data frame imported using the DDFImport function
 }
 \details{
 The .xml files only provide a set number of durations and return periods for DDF13 and DDF22.
-This function optimises the GEV distribution on the results in order to interpolate
-across return periods. A linear interpolation is used between durations.
-The interpolation method may provide results that differ from the FEH webservice in the region of 0.1mm.
-The result is then rounded to an integer.
+This is an interpolator function to derive depths for intervening durations and return periods.
+The result is rounded to an integer.
 }
 \examples{
 # Import DDF13 results from an NRFA Peak Flows XML file

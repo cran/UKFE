@@ -47,7 +47,7 @@ If the x argument is a numeric vector, the peaks will be extracted with no time 
  but not if flow hasn't returned to the mean at any time between the peaks. Mean flow may not always be appropriate, in which case the 'div' argument can be applied (and is a percentile).
  The TimeDiv argument can also be applied to ensure the peaks are separated by a number of time-steps either side of the peaks.
  For extracting POT rainfall a div of zero could be used and TimeDiv can be used for further separation - which would be necessary for sub-daily time-series.
- In which case, with hourly data for example, TimeDiv could be set to 120 to ensure each peak is separated by five days either side as well as at least one hour with 0 rainfall.
+ Alternatively the POTt function can be applied (see associated details).
  When plotted, the blue line is the threshold, and the green line is the independence line (div).
 }
 \examples{

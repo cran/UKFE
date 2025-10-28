@@ -4,39 +4,20 @@
 \alias{Pool}
 \title{Create pooling group}
 \usage{
-Pool(
-  CDs = NULL,
-  AREA,
-  SAAR,
-  FARL,
-  FPEXT,
-  N = 500,
-  exclude = NULL,
-  iug = FALSE,
-  UrbMax = 0.03,
-  DeUrb = FALSE
-)
+Pool(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, include = NULL)
 }
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{AREA}{catchment area in km2}
-
-\item{SAAR}{catchment standard average annual rainfall (1961-1990) in mm}
-
-\item{FARL}{catchment flood attenuation from reservoirs & lakes}
-
-\item{FPEXT}{catchment floodplain extent. The proportion of the catchment that is estimated to be inundated by a 100-year flood}
-
 \item{N}{minimum Number of total gauged record years for the pooling group}
 
-\item{exclude}{sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric)}
+\item{UrbMax}{Maximum URBEXT2015 level with a default of 0.03. Any catchment with URBEXT2015 above this level will be excluded from the pooling group}
 
-\item{iug}{iug stands for 'include urban gauge' - which refers to a gauged subject site with URBEXT2000 >= UrbMax. It's a logical argument with default of FALSE. TRUE will over-ride the default and add the closest site in catchment descriptor space (should be the gauge of interest) to the pooling group if it has URBEXT2000 >= UrbMax}
+\item{DeUrb}{logical argument with a default of TRUE. If TRUE, the LCVs of all sites in the pooling group are "De-Urbanised".}
 
-\item{UrbMax}{Maximum URBEXT2000 level with a default of 0.03. Any catchment with URBEXT2000 above this level will be excluded from the pooling group}
+\item{exclude}{sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric). If this is used the next site with the lowest SDM is included such that the total sample of AMAX is at least N.}
 
-\item{DeUrb}{logical argument with a default of FALSE. If true, the Lcv and LSkew of any site in the pooling group with URBEXT2000 > 0.03 will be de-urbanised}
+\item{include}{sites to include that otherwise would not be included by default. For example if it is a subject site that has URBEXT2015 above UrbMax. Or one that has not been selected automatically using the similarity distance measure.}
 }
 \value{
 A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.
@@ -45,30 +26,19 @@ A data.frame of the pooling group with site reference row names and 24 columns, 
 Function to develop a pooling group based on catchment descriptors
 }
 \details{
-A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Sites with URBEXT2000 (urban extent) > 0.03 are excluded from the pooling group by default.  This threshold can be adjusted with UrbMax. If a gauged assessment is required and URBEXT2000 at the site of interest is > UrbMax, the site should be included by setting iug = TRUE. The Lcv and Lskew (L-moment ratios) for sites in the pooling group with URBEXT2000 > 0.03 can be de-urbanised by setting DeUrb = TRUE. If the user has more data available for a particular site within the pooling group, the Lcv and Lskew for the site can be updated after the group has been finalised. An example of doing so is provided below.
+A pooling group is created from a CDs object, derived from GetCDs or CDsXML, or specifically with the catchment descriptors (see arguments). To change the default pooling group, one or more sites can be excluded using the 'exclude' option, which requires either a site reference or multiple site references in a vector. If this is done, the site with the next lowest similarity distance measure is added to the group (until the total number of years is at least N). Similarly a site can be included specifically by using the include argument. Sites with URBEXT2015 (urban extent) > 0.03 are excluded from the pooling group by default. This threshold can be adjusted with UrbMax. If DeUrb is set as TRUE (the default), the LCV values for sites in the pooling group are de-urbanised. If the user has more data available for a particular site within the pooling group, the LCV and LSKEW for the site can be updated after the group has been finalised using the LRatioChange function.
 
-The pooling method is outlined in Science Report: SC050050 - Improving the FEH statistical procedures for flood frequency estimation. The de-urbanisation functionality assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT2000. The method for pooling the catchments together is based on the similarity of AREA, SAAR, FARL, and FPEXT. These were seen to have the most significant impact on the LCV and LSKEW - and ultimately to provide the lowest 'Pooling Uncertainty Measure' (a statistic for assessing the similarity between pooled and single site gauged estimates).
+The pooling method is as specified by FEH2025. The de-urbanisation functionality assumes that the growth curve associated with an annual maximum flow sample is impacted by urbanisation and that this impact can be modelled as a function of the catchment URBEXT. The method for pooling the catchments together is based on the similarity of AREA, SAAR, FARL, FPEXT, and BFIHOST. These were seen to have the most significant impact on the LCV and LSKEW - and ultimately to provide the lowest 'Pooling Uncertainty Measure' (a statistic for assessing the similarity between pooled and single site gauged estimates).
 }
 \examples{
 # Get some catchment descriptors
 cds_73005 <- GetCDs(73005)
 
-# Set up a pooling group object called pool_73005 excluding sites 79005 & 71011
+# Set up a pooling group object called pool_73005 excluding sites 79005 & 46003
 # Then print the group to the console
-pool_73005 <- Pool(cds_73005, exclude = c(79005, 71011))
+pool_73005 <- Pool(cds_73005, exclude = c(79005, 46003))
 pool_73005
 
-# Form a pooling group, called pool_group, with the catchment descriptors specifically
-pool_group <- Pool(AREA = 1000, SAAR = 800, FARL = 1, FPEXT = 0.01)
-
-# Form a pooling group using an urban catchment which is intended for enhanced
-# single site estimation - by including it in the group.
-cds_39001 <- GetCDs(39001)
-pool_39001 <- Pool(cds_39001, iug = TRUE, DeUrb = TRUE)
-
-# Change the Lcv and LSkew of the top site in the pooling group to 0.19 & 0.18,
-# respectively.
-pool_update <- LRatioChange(pool_39001, SiteID = 39001, 0.19, 0.18)
 
 }
 \author{
