@@ -9,7 +9,7 @@ GetDataNRFA(ID = NULL, Type = "Q")
 \arguments{
 \item{ID}{ID number of the gauge of interest.}
 
-\item{Type}{Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", or "Catalogue".}
+\item{Type}{Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", "CDs", or "Catalogue".}
 }
 \value{
 A data.frame with date in the first columns and variable/s of interest in the remaining column/s.

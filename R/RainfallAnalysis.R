@@ -33,7 +33,7 @@ DDFExtract <- function(x, Plot = TRUE, main = NULL, Truncate = TRUE) {
   if (class(x[, 2])[1] != class(runif(10))[1]) stop("x must be a dataframe with two columns, POSIXct in the first and numeric in the second.")
   if (diff(x[1:2, 1]) > as.POSIXct("2021-10-01 09:15:00") - as.POSIXct("2021-10-01 08:15:00")) stop("the first column must be of class POSIXct and must have an hourly resolution or less")
 
-  x <- suppressWarnings(AggDayHour(x, func = sum, Freq = "Hour"))
+  x <- suppressWarnings(AggMonDayHour(x, func = sum, Freq = "Hourly"))
 
   PowerCurve <- function(x, Hrs) {
     colnames(x) <- c("Hrs", "RMED")

@@ -11,7 +11,8 @@ DesHydro(
   N = 10,
   Exclude = NULL,
   Plot = TRUE,
-  main = "Design Hydrograph"
+  main = "Design Hydrograph",
+  ylab = "Scaled Discharge"
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ DesHydro(
 \item{Plot}{logical argument with a default of TRUE. If TRUE, all the hydrographs from which the mean is derived are plotted along with the mean hydrograph.}
 
 \item{main}{Title for the plot}
+
+\item{ylab}{Y label}
 }
 \value{
 a list of length three. The first element is a dataframe of the peaks of the hydrographs and the associated dates. The second element is a dataframe with all the scaled hydrographs, each column being a hydrograph. The third element is the averaged hydrograph

@@ -2,20 +2,20 @@
 #' Revitalised Flood Hydrograph Model (ReFH)
 #'
 #' @description
-#' Provides outputs for the ReFH model from catchment descriptors or user defined inputs.
+#' By default this function provides outputs for the ReFH model from catchment descriptors or user defined inputs. It can also be used as a generalised design rainflal runoff modelling tool.
 #'
 #' @details
-#' As default this function is the ReFH model as described in the Flood Estimation Handbook Supplementary Report No.1 (2007). However, optional extras have been added such as an urban loss model and an option to ensure a water balance if it has been violated. The urban loss model is applied with default urban parameters (IF = 0.7, DS = 0.5, IRF = 0.4) and is described in the Wallingford Hydrosolutions report "ReFH2 Science Report Closing a Water Balance" (2019). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. This has been slightly adjusted so that even profiles are possible. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and an approximate two-year rainfall for the critical duration. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. This ReFH function is recommended for analysing the plausible catchment response to an input of rainfall. For this reason, and as noted, multiple additional features are available. The user can change components such as the unit hydrograph and the loss. The WaterBalance option can be applied to ensure it is not violated. Also, the baseflow component can be set as a constant (as opposed to a function of the runoff) by setting BR to zero. The rainfall can also be changed by choosing a range of different randomised profiles.
+#' As default this function is the ReFH model as described in the Flood Estimation Handbook Supplementary Report No.1 (2007). However, optional extras have been added such as an urban loss model and an option to ensure a water balance if it has been violated. The urban loss model is applied with default urban parameters (IF = 0.7, DS = 0.5, IRF = 0.4) and is described in the Wallingford Hydrosolutions report "ReFH2 Science Report Closing a Water Balance" (2019). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and an approximate two-year rainfall for the critical duration. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. This ReFH function is recommended for analysing the plausible catchment response to an input of rainfall. For this reason, and as noted, multiple additional features are available. The user can change components such as the unit hydrograph and the loss. The WaterBalance option can be applied to ensure it is not violated. Also, the baseflow component can be set as a constant (as opposed to a function of the runoff) by setting BR to zero. The rainfall can also be changed by choosing a randomised profiles. These are derived by using the shape of the FSR profile as a probability mass function.
 #'
 #' @param CDs catchment descriptors derived from either GetCDs or ImportCD
 #' @param Depth a numeric value. The depth of rainfall used as input in the estimation of a design hydrograph. The default, when Depth = NULL, is a two year rainfall.
 #' @param Duration a numeric value. A duration (hrs) for the design rainfall
 #' @param Timestep a numeric value. A user defined data interval. The default changes depending on the estimated time to peak to formulate a sensible looking result. This will need updating if the Rain argument is used.
-#' @param RainProfile This is a choice of the temporal rainfall pattern. The default is the FSR profile. However, you can also choose a randomly generated profile with a different loading. The choices are: "Centre", "Back", "Front", "Uniform", or "Random". The latter randomly chooses between the former four.
+#' @param RainProfile This is a choice of the temporal rainfall pattern. The default is the FSR profile. However, you can also choose a randomly generated profile with a different loading. The choices are: "Centre", "Back", "Front", or "Random". The latter randomly chooses between the former three
 #' @param PlotTitle a character string. A user defined title for the ReFH plot
 #' @param RPa return period for alpha adjustment. This is only for the purposes of the alpha adjustment, it doesn't change the rainfall input
 #' @param alpha a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RPa. If FALSE, no alpha adjustment is made
-#' @param WaterBalance A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not voilated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.
+#' @param WaterBalance A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.
 #' @param Season a choice of "summer" or "winter". The default is "summer" in urban catchments (URBEXT2015 > 0.03) and "winter" in rural catchments
 #' @param AREA numeric. Catchment area in km2.
 #' @param TP numeric. Time to peak parameter (hours)
@@ -52,80 +52,6 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
   CDsTest <- GetCDs(rownames(PeakFlowData)[1])
   if(!identical(colnames(CDs), colnames(CDsTest))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
 
-
-  RainEventSim <- function(Duration, Timestep = 1, Depth, FSE = NULL, Rainprofile = "Random", season = "winter") {
-
-    if(Rainprofile != "FSR") {
-      Types <- c("Random", "Centre", "Back", "Front", "Uniform")
-      if(Rainprofile != "Random" & Rainprofile != "Centre" & Rainprofile != "Back" & Rainprofile != "Front") stop("RainProfile must be one of, FSR, Random, Centre, Back, Front, or Uniform")
-      Duration <- Duration / Timestep
-      RainSeq <- seq(1, Duration)
-      Props <- 1/(round(Duration/2))
-      CumProps <- cumsum(rep(Props, round(Duration/2)))
-      Props <- c(sort(CumProps, decreasing = TRUE), CumProps)
-      if(length(Props) < Duration) {Props <- c(sort(CumProps, decreasing = TRUE), CumProps[1]/2, CumProps)}
-      if(length(Props) > Duration) {Props <- c(sort(CumProps, decreasing = TRUE), CumProps[-1])}
-      Props <- Props/sum(Props)
-      if(Rainprofile == "Random") {Rainprofile <- sample(c(rep("Centre", 10), rep("Front", 10), rep("Back", 10), rep("Uniform", 10)), 1)}
-      if(Rainprofile  == "Centre") {Props <- Props}
-      if(Rainprofile == "Back") {Props <- sort(Props)}
-      if(Rainprofile == "Front") {Props <- sort(Props, decreasing = TRUE)}
-      P <- NULL
-      for(i in 1:length(Props)) {P[i] <- rexp(1,Props[i])}
-      #This next line tempers the difference between the highest pulses and the rest. Useful especially for longer durations when we can get absurd individual pulses in the middle.
-      if(max(P) > (1.5 * sort(P, decreasing = TRUE)[2])) {P[which.max(P)] <- sort(P, decreasing = TRUE)[2] * 1.5}
-      if(Rainprofile == "Uniform") {P <- qexp(c(runif(Duration, 0.35, 0.65)))}
-      if(is.null(FSE)) {Depth <- Depth}
-      if(is.null(FSE) == FALSE) {
-        Depth <- exp(rnorm(1, log(Depth), log(FSE)))}
-
-      P <- (P/sum(P)) * Depth
-      P[P < 0.1] <- 0
-      if(P[1] == 0) {P[1] <- 0.1}
-      if(P[length(P)] == 0) {P[length(P)] <- 0.1}
-      P <- (P/sum(P)) * Depth
-      return(P)}
-
-    if(Rainprofile == "FSR") {
-      PProfile <- function(d, season = "winter", timestep = 1){
-        dhrs <- d
-        d <- d * (1 / timestep)
-        d_rounded <- round(d)
-        d_odd <- ifelse(d_rounded %% 2 == 0,
-                        d_rounded + ifelse(d_rounded < d, 1, -1),
-                        d_rounded)
-        vec <- seq(1, d_odd, 2) / d_odd
-        if(season == "winter") {a <- 0.060}
-        if(season == "winter") {b <- 1.026}
-        if(season == "summer") {a <- 0.1}
-        if(season == "summer") {b <- 0.815}
-        z <- vec^b
-        y <- (1-a^z)/(1-a)
-        peak <- y[1]
-        props <- NULL
-        for (i in length(vec):2) {props[i] <- (y[i]-y[i-1])/2}
-        RainVec <- c(sort(props, decreasing = FALSE), peak, sort(props, decreasing = TRUE))
-        LCheck <- length(RainVec)*timestep
-        if(LCheck != dhrs) {
-          MaxInd <- which.max(RainVec)
-          Rain.5<- RainVec[1:MaxInd]
-          Rain.1 <- sort(Rain.5, decreasing = TRUE)
-          RainVecTemp <- c(Rain.5, Rain.1)
-          CloserInd <- which.min(abs(c(length(RainVecTemp), length(RainVec)) - dhrs))
-          if(CloserInd == 2) {RainVec <- RainVec/sum(RainVec)}
-          if(CloserInd == 1) {RainVec <- RainVecTemp/sum(RainVecTemp)}
-        }
-        return(RainVec)
-      }
-      P <- PProfile(d = Duration, season = season, timestep = Timestep)
-      P <- P*Depth
-      P <- (P / sum(P)) * Depth
-      return(P)
-    }
-
-  }
-
-
   if(is.null(CDs) == FALSE) {
     PROPWET <- CDs[which(CDs$Descriptor == "PROPWET"), 2]
     DPLBAR <- CDs[which(CDs$Descriptor == "DPLBAR"), 2]
@@ -136,7 +62,66 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
 
   }
 
+  get_odd <- function(x) {
+    x + (1 - x %% 2)
+  }
 
+  RainEventSim <- function(Duration, season, timestep = NULL, Depth, Randomise = FALSE, Loading = "Centre") {
+    PProfile <- function(d, season = "winter", timestep = NULL, Randomise = TRUE, Loading = "Centre"){
+
+      DurationTS <- function(Duration) {
+        if(Duration <= 5) {Steps <- 5}
+        if(Duration > 5) {Steps <- get_odd(Duration)}
+        TimeStep <- Duration / Steps
+        return(data.frame(Steps, TimeStep))
+      }
+
+      if(is.null(timestep)) {
+        StepsTSRes <- DurationTS(Duration = d)
+        Timestep <- StepsTSRes$TimeStep
+        Steps <- StepsTSRes$Steps
+      }
+      if(is.null(timestep) == FALSE) {
+        Timestep <- timestep
+        Steps <- get_odd(round(d/timestep))
+      }
+
+      vec <- seq(1, Steps, 2) / Steps
+      if(season == "winter") {a <- 0.060}
+      if(season == "winter") {b <- 1.026}
+      if(season == "summer") {a <- 0.1}
+      if(season == "summer") {b <- 0.815}
+      z <- vec^b
+      y <- (1-a^z)/(1-a)
+      peak <- y[1]
+      props <- NULL
+      for (i in length(vec):2) {props[i] <- (y[i]-y[i-1])/2}
+      RainVec <- c(sort(props, decreasing = FALSE), peak, sort(props, decreasing = TRUE))
+      if(Randomise == TRUE) {
+        RainVec <- RainVec/max(RainVec)
+        if(Loading == "Centre") {RainVec <- RainVec}
+        if(Loading == "Back") {RainVec <- sort(RainVec)}
+        if(Loading == "Front") {RainVec <- sort(RainVec, decreasing = TRUE)}
+        RainVec <- (runif(length(RainVec), min = 0.05, max = 0.95) * RainVec)
+        RainVec <- RainVec/sum(RainVec)
+      }
+      RainDF <- data.frame(Time_hrs = cumsum(rep(Timestep, Steps)),P = RainVec)
+      if(max(cumsum(rep(Timestep, Steps))) != d) warning("Due to the choice of timestep, duration, and the need for a profile with an odd number of steps, the final duration differs from the user input by a timestep. If you leave timestep as null, a timestep will be automatically chosen to fit the duration.")
+      return(RainDF)
+    }
+    P <- PProfile(d = Duration, season = season, timestep = timestep, Randomise = Randomise, Loading = Loading)
+    P$P <- P$P*Depth
+    return(P)
+  }
+
+
+
+  if(RainProfile !="FSR") {
+    Randomise <- TRUE
+    if(RainProfile == "Centre") {Loading <- "Centre"}
+    if(RainProfile == "Back") {Loading <- "Back"}
+    if(RainProfile == "Front") {Loading <- "Front"}
+  } else {Randomise <- FALSE}
 
   Params <- function(x) {
     PROPWET <- x[which(x$Descriptor == "PROPWET"), 2]
@@ -245,19 +230,15 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
 
   if(is.null(Depth) & is.null(Rain) == FALSE) {Depth <- sum(Rain)}
 
+  DurationTS <- function(Duration) {
+    if(Duration <= 5) {Steps <- 5}
+    if(Duration > 5) {Steps <- get_odd(Duration)}
+    TimeStep <- Duration / Steps
+    return(data.frame(Steps, TimeStep))
+  }
+
   if (is.null(Timestep) & is.null(Rain)) {
-    if (Pars$TP <= 1) {
-      Timestep <- 0.1
-    }
-    if (Pars$TP > 1 & Pars$TP < 3) {
-      Timestep <- 0.25
-    }
-    if (Pars$TP >= 3 & Pars$TP < 5) {
-      Timestep <- 0.5
-    }
-    if (Pars$TP >= 5) {
-      Timestep <- 1
-    }
+    Timestep <- DurationTS(Pars$Duration)[1,2]
   } else {
     Timestep <- Timestep
   }
@@ -268,7 +249,9 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
   if(is.null(Rain) == FALSE) {Pars$Duration <- length(Rain) * Timestep}
 
   if(is.null(Depth)) stop("A depth argument is needed or input CDs")
-  if(is.null(Rain)) {Rain <- RainEventSim(Duration = Pars$Duration, Rainprofile = RainProfile, Depth = Depth, season = Pars$Season, Timestep = Timestep)}
+  if(is.null(Rain)) {Rain <- RainEventSim(Duration = Pars$Duration, Randomise = Randomise, Loading = Loading, Depth = Depth, season = Pars$Season, timestep = Timestep)[,2]}
+  if(is.null(Timestep)) {Timestep <- RainEventSim(Duration = Pars$Duration, Randomise = Randomise, Loading = Loading, Depth = Depth, season = Pars$Season, Timestep = Timestep)[1,1]}
+
 
   if(is.null(Pars$Duration)) {Pars$Duration <- length(Rain) * Timestep}
 
@@ -646,7 +629,7 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
   if(Pars$BR == 0) {Pars$BL <- NA}
   Pars <- data.frame(Pars, Depth = signif(Depth,3))
   Pars <- data.frame(Pars, Timestep)
-  DurationFinal <- length(EffRain) * Timestep
+  DurationFinal <- signif(length(EffRain) * Timestep, 3)
   Pars <- data.frame(Pars, DurationFinal, PeakFlow = max(Results$TotalFlow))
   Time <- seq(0, length.out = nrow(Results), by = Timestep)
   Results <- data.frame(Time_hrs = Time, Results)

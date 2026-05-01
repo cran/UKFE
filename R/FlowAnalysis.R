@@ -186,6 +186,7 @@ FlowDurationCurve <- function(x = NULL, main = "Flow duration curve", CompareCur
 
 FlowSplit <- function(x, BaseQUpper = NULL, AdjUp = NULL, ylab = "Value", xlab = "Time index") {
   if (class(x) != class(runif(10))) stop("x must be a numeric vector")
+  if(is.na(x[1]) | is.na(x[length(x)])) stop("The first or last value of x is na, make they are both a number")
   Low.Func <- function(TS) {
     L <- length(TS) - 2
     L1 <- length(TS) - 1
@@ -194,6 +195,9 @@ FlowSplit <- function(x, BaseQUpper = NULL, AdjUp = NULL, ylab = "Value", xlab =
     Vec2 <- TS[2:L1]
     Vec3 <- TS[3:L2]
     P1 <- ifelse(Vec2 <= Vec1 & Vec2 <= Vec3 & Vec1 != Vec2, Vec2, NA)
+    #x1 <- TS[1]
+    #xEnd <- TS[length(TS)]
+    #P1 <- c(x1, P1, xEnd)
     return(P1)
   }
   QOff <- BaseQUpper
@@ -253,6 +257,7 @@ FlowSplit <- function(x, BaseQUpper = NULL, AdjUp = NULL, ylab = "Value", xlab =
 #' @param Exclude An index (single integer or vector of integers up to N) for which hydrographs to exclude if you so wish. This may require some trial and error. You may want to increase N for every excluded hydrograph.
 #' @param Plot logical argument with a default of TRUE. If TRUE, all the hydrographs from which the mean is derived are plotted along with the mean hydrograph.
 #' @param main Title for the plot
+#' @param ylab Y label
 #' @examples
 #' # Extract a design hydrograph from the Thames daily mean flow and print the resulting hydrograph
 #' thames_des_hydro <- DesHydro(ThamesPQ[, c(1, 3)], EventSep = 10, N = 10)
@@ -260,7 +265,7 @@ FlowSplit <- function(x, BaseQUpper = NULL, AdjUp = NULL, ylab = "Value", xlab =
 #' @return a list of length three. The first element is a dataframe of the peaks of the hydrographs and the associated dates. The second element is a dataframe with all the scaled hydrographs, each column being a hydrograph. The third element is the averaged hydrograph
 #' @author Anthony Hammond
 
-DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plot = TRUE, main = "Design Hydrograph") {
+DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plot = TRUE, main = "Design Hydrograph", ylab = "Scaled Discharge") {
   if (class(x) != class(data.frame(seq(1, 3)))) stop("x must be a datafrane with Date or POSIXct in the first column and numeric in the second")
   if (class(x[1, 1])[1] != class(as.Date("1990-01-01"))[1] & class(x[1, 1])[1] != class(as.POSIXct("1990-01-01 09:00:00"))[1]) stop("The first column of x must be Date or POSIXct")
   POTx <- suppressWarnings(POTt(x, Plot = FALSE, div = EventSep * 3, threshold = Threshold))
@@ -300,10 +305,113 @@ DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plo
   colnames(ScaleHydrosDF) <- paste("hydro", seq(1, ncol(ScaleHydrosDF)), sep = "")
   Average <- as.numeric(apply(ScaleHydrosDF, 1, mean, na.rm = TRUE))
   if (Plot == TRUE) {
-    matplot(ScaleHydrosDF, type = "l", col = hcl.colors(ncol(ScaleHydrosDF)), ylab = "Scaled discharge", xlab = "Time index")
+    matplot(ScaleHydrosDF, type = "l", col = hcl.colors(ncol(ScaleHydrosDF)), ylab = ylab, xlab = "Time index", main = main)
     points(Average, lwd = 2, col = "black", type = "l")
   }
   Results <- list(Average, POTx, ScaleHydrosDF)
   names(Results) <- c("DesignHydrograph", "Peaks", "AllScaledHydrographs")
+  rownames(Results$Peaks) <- seq(1, nrow(Results$Peaks))
   return(Results)
+}
+
+
+
+#' Low Flows
+#'
+#' A function to estimate lower flow quantiles in ungauged catchments.
+#'
+#' This function provides estimates of the mean flow, Q95, Q70, Q50, Q10, and Q5.
+#' The function works by finding the 30 catchments in the NRFA data set with the most similar SAAR9120 to the subject site.
+#' The observed flows for those catchments are scaled by the catchment area. Then a weighted average is taken and multiplied by the subject site catchment area for the final estimate.
+#' The weighting is done by Euclidean distance based on SAAR9120 and BFIHOST19scaled. These are weighted based on the "Spearman's Rho" correlation coefficient of these descriptors to the scaled mean flows.
+#' @param CDs Catchment descriptors derived from the GetCDs or CDsXML function.
+#' @param AREA Catchment area (km2) - for when CDs is not applied
+#' @param SAAR Average annual rainfall (mm) - for when CDs is not applied
+#' @param BFIHOST An estimate of baseflow index - for when CDs is not applied
+#' @param Exclude A site reference. This is to exclude sites that you do not want used in the estimate. For example, if you're seeing how the function performs on a gauged site, you may want to exclude it from the analysis.
+#' @param FARLRange A vector of length 2. For example c(0.9,1). This determines a FARL range for the catchments you wish to be included in the analysis. Primarily this is to exclude sites which have significant reservoir or lake influence when the site of interest does not. If it is NULL (default) all NRFA sites are included.
+#' @examples
+#' # Get some catchment descriptors, then estimate the flows
+#' \dontrun{
+#' CDs_27083 <- GetCDs(27083)
+#' LowFlows(CDs_27083)
+#' }
+#' # Now estimate again but remove gauge 27083 from the analysis
+#' \dontrun{
+#' LowFlows(CDs_27083, Exclude = 27083)
+#' }
+#' @return A list. The first element of which is a data.frame with one column of flow estimates. The row names denote the name of each estimate. The second element is the dataframe of catchments used in the analysis, with the relevant descriptors and weighting.
+#' @author Anthony Hammond
+
+LowFlows <- function(CDs = NULL, AREA = NULL, SAAR = NULL, BFIHOST = NULL, Exclude = NULL, FARLRange = NULL) {
+
+  if(is.null(CDs) == FALSE) {
+
+    if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
+    CDsTest <- GetCDs(rownames(PeakFlowData)[1])
+    if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
+
+
+    Area <- CDs[grep("AREA", CDs$Descriptor)[1] ,2]
+    SAAR <- CDs[grep("SAAR", CDs$Descriptor)[1] ,2]
+    BFIHOST <- CDs[grep("BFIHOST", CDs$Descriptor)[1],2]
+  }
+  NRFAAllData <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
+  if(is.null(Exclude) == FALSE) {
+    IndExc <- match(Exclude, NRFAAllData$id)
+    NRFAAllData <- NRFAAllData[-IndExc,]
+  }
+  if(is.null(FARLRange)) {NRFAAllData <- NRFAAllData}
+  if(is.null(FARLRange) == FALSE) {
+    if(length(FARLRange) != 2) stop("FARLRange must be NULL or a vector of length 2")
+    if(FARLRange[1] >= FARLRange[2]) stop("The first FARLRange must be lower than the second")
+
+    KeepIndex <- which(NRFAAllData$farl.2015 >= FARLRange[1] & NRFAAllData$farl.2015 <= FARLRange[2])
+    if(length(KeepIndex) < 5) stop("Your FARLRange has resulted in less than five available sites")
+    NRFAAllData <- NRFAAllData[KeepIndex,]
+  }
+
+  if(is.null(CDs)) {
+    Area <- AREA
+    SAAR <- SAAR
+    BFIHOST <- BFIHOST
+  }
+
+  QNames <- c("gdf.mean.flow", "gdf.q95.flow",  "gdf.q70.flow",  "gdf.q50.flow", "gdf.q10.flow",  "gdf.q05.flow")
+  ColnamesNRFA <- colnames(NRFAAllData)
+  MatchCols <- match(QNames, ColnamesNRFA)
+  QScale <- NRFAAllData[,MatchCols] / NRFAAllData$catchment.area
+  xData <- data.frame(SAAR = NRFAAllData$saar.1991.2020,
+                      BFIHOST = NRFAAllData$bfihost19.scaled, QScale, id = NRFAAllData$id)
+  xData <- xData[complete.cases(xData),]
+  EuclidDist <- function(x, y) {
+    SDx <- sd(xData$SAAR)
+    SDy <- sd(xData$BFIHOST)
+    Res <- sqrt( 0.85*((x[1]-x[2])/SDx)^2 + 0.15*((y[1]-y[2])/SDy)^2  )
+    return(Res)
+  }
+  DiffSAAR <- abs(SAAR - xData$SAAR)
+  xData <- xData[order(DiffSAAR),]
+  xData <- xData[1:30,]
+  Dists <- NULL
+  for(i in 1:nrow(xData)) {Dists[i] <- EuclidDist(c(SAAR, xData$SAAR[i]), c(BFIHOST, xData$BFIHOST[i]))}
+  if(any(Dists == 0)) {
+    Dists <- Dists+0.000001
+    warning("One of the NRFA sites has exactly the same SAAR and BFIHOST as the user input. Is the site already gauged? If you are testing a gauged site as if ungauged, use the Exclude argument")
+  }
+  DistsRecip <- 1/Dists
+  Weights <- DistsRecip / sum(DistsRecip)
+  QScaleWeighted <- xData[,3:8] * Weights
+  QScaleArea <- QScaleWeighted * Area
+  Result <- apply(QScaleArea, 2, sum)
+  Result <- data.frame(Q = signif(Result, 3), row.names = c("mean", "Q95", "Q70", "Q50", "Q10", "Q05"))
+  QNames <- c("id", "name", "saar.1991.2020", "bfihost19.scaled",  "catchment.area", "farl.2015")
+  Sites <- NRFAAllData[match(xData$id, NRFAAllData$id),QNames]
+  Sites <- data.frame(Sites, Weight = Weights)
+  Sites <- Sites[order(Sites$Weight, decreasing = TRUE), ]
+  rownames(Sites) <- seq(1, nrow(Sites))
+
+
+  ResultList <- list(Result, Sites)
+  return(ResultList)
 }

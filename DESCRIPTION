@@ -1,7 +1,7 @@
 Package: UKFE
 Type: Package
 Title: UK Flood Estimation
-Version: 2.0.0
+Version: 2.0.1
 Authors@R: person(given = "Anthony",
                     family = "Hammond",
                     role = c("aut", "cre"),
@@ -15,7 +15,7 @@ RoxygenNote: 7.3.2
 Depends: R (>= 3.5.0)
 Imports: xml2, methods, sf
 NeedsCompilation: no
-Packaged: 2025-10-28 16:19:25 UTC; AnthonyHammond
+Packaged: 2026-05-01 11:58:32 UTC; AnthonyHammond
 Author: Anthony Hammond [aut, cre]
 Repository: CRAN
-Date/Publication: 2025-10-28 16:40:02 UTC
+Date/Publication: 2026-05-01 12:50:02 UTC

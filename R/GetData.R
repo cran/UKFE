@@ -155,8 +155,8 @@ GetDataSEPA <- function(Lat = NULL, Lon = NULL, RiverName = NULL, Type = "Flow",
 
 
         if(Period == "Hourly"){
-          if(Type == "Rain") {Result <- AggDayHour(Result, func = sum, "Hour")} else {
-            Result <- AggDayHour(Result, func = mean, "Hour")}
+          if(Type == "Rain") {Result <- AggMonDayHour(Result, func = sum, "Hourly")} else {
+            Result <- AggMonDayHour(Result, func = mean, "Hourly")}
         }
       }
       if(Type == "Level") {colnames(Result)[2] <- "Stage"}
@@ -281,7 +281,11 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
       }
 
       IDPath <- StationInfo$stationGuid
-      Data <- read.csv(paste("https://environment.data.gov.uk/hydrology/id/measures/", IDPath, "-rainfall-t-", PeriodPath, "-mm-qualified/readings.csv?_limit=2000000&mineq-date=", From, "&maxeq-date=", To, sep = ""))
+      Data <- try(read.csv(paste("https://environment.data.gov.uk/hydrology/id/measures/", IDPath, "-rainfall-t-", PeriodPath, "-mm-qualified/readings.csv?_limit=2000000&mineq-date=", From, "&maxeq-date=", To, sep = "")), silent = TRUE)
+      if (inherits(Data, "try-error")) {
+        Data <- (read.csv(paste("https://environment.data.gov.uk/hydrology/id/measures/", IDPath, "_",WISKI_ID, "-rainfall-t-", PeriodPath, "-mm-qualified/readings.csv?_limit=2000000&mineq-date=", From, "&maxeq-date=", To, sep = "")))
+      }
+
       DateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
       Result <- data.frame(DateTime, P = Data$value)
       return(Result)
@@ -314,7 +318,7 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
         Result <- GetP(WISKI_ID = WISKI_ID, From = From, To = To, Period = "15Mins")
       }
       if (Period == "Hourly") {
-        Result <- AggDayHour(Result, func = sum, Freq = "Hour")
+        Result <- AggMonDayHour(Result, func = sum, Freq = "Hourly")
       }
     }
 
@@ -387,7 +391,7 @@ GetDataMetOffice <- function(Variable, Region) {
 #' @description Extracts NRFA data using the API.
 #' @details The function can be used to get daily catchment rainfall or mean flow, or both together (concurrent). It can also be used to get gaugings, AMAX, and POT data. Note that some sites have rejected peak flow years. In which case, if Type = AMAX or POT, the function returns a list, the first element of which is the rejected years, the second is the full AMAX or POT. Lastly if Type = "Catalogue" and ID  is NULL, it will return a dataframe of all the NRFA gauges, associated details, comments, and descriptors. If Type equals "Catalogue" and a valid ID is used, then all these gauge details are provided for that gauge.
 #' @param ID ID number of the gauge of interest.
-#' @param Type Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", or "Catalogue".
+#' @param Type Type of data required. One of "Q", "P", "PQ", "Gaugings", "AMAX", "POT", "CDs", or "Catalogue".
 #' @examples
 #' # Get the concurrent rainfall (P) and mean flow (Q) series for the Tay at Ballathie (site 15006)
 #' \dontrun{
@@ -405,9 +409,9 @@ GetDataMetOffice <- function(Variable, Region) {
 #' @author Anthony Hammond
 
 GetDataNRFA <- function(ID = NULL, Type = "Q") {
-  Types <- c("Q", "P", "PQ", "Gaugings", "AMAX", "POT", "Catalogue")
+  Types <- c("Q", "P", "PQ", "Gaugings", "AMAX", "POT", "CDs", "Catalogue")
   MatchType <- match(Type, Types)
-  if (is.na(MatchType)) stop("Type must be one of Q, P, PQ, Gaugings, AMAX, POT, or Catalogue")
+  if (is.na(MatchType)) stop("Type must be one of Q, P, PQ, Gaugings, AMAX, POT, CDs ,or Catalogue")
 
   PQnrfa <- function(ID, type = "Both") {
     CDRfunc <- function(ID) {
@@ -471,7 +475,8 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
   }
 
   AMAXfunc <- function(ID) {
-    AllCat <- GetDataNRFA(Type = "Catalogue")
+    AllCat <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
+    #AllCat <- GetDataNRFA(Type = "Catalogue")
     Index <- which(AllCat$id == ID)
     if (AllCat$nrfa.peak.flow[Index] == "false") stop("No available peak flows at this site")
     rejYears <- AllCat$peak.flow.rejected.amax.years[Index]
@@ -497,7 +502,8 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
 
   POTfunc <- function(ID) {
     ID <- as.character(ID)
-    AllCat <- GetDataNRFA(Type = "Catalogue")
+    AllCat <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
+    #AllCat <- GetDataNRFA(Type = "Catalogue")
     Index <- which(AllCat$id == ID)
     if (AllCat$nrfa.peak.flow[Index] == "false") stop("No available peak flows at this site")
     rejYears <- AllCat$peak.flow.rejected.amax.years[Index]
@@ -519,6 +525,22 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
       return(ResultList)
     }
   }
+
+  CDsFunc <- function(ID) {
+    AllCat <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
+    #AllCat <- GetDataNRFA(Type = "Catalogue")
+    CDsCat <- AllCat[which(AllCat$id == ID), ]
+    CDIndex <- c(97, 93, 94, 95, 99, 98, 83, 92, 86, 85, 84, 1, 91, 82, 90, 88, 89, 64, 63, 62, 87, 110, 107, 104, 100, 5, 6)
+    CDs39001 <- GetCDs(39001)
+    Value <- as.numeric(CDsCat[1,CDIndex])
+    Result <- data.frame(Descriptor = CDs39001$Descriptor,
+                         Value)
+    Result[grep("FPEXT", Result$Descriptor),2] <- exp(-0.67 * log(Result[grep("DPSBAR", Result$Descriptor) , 2]))
+    warning("The FPEXT is an estimate based on DPSBAR. It may not be appropriate. If your catchment is suitable for pooling/QMED, use the GetCDs function instead. You can also use the CDsXML function")
+    Result[1:25,2] <- round(Result[1:25,2], 3)
+    return(Result)
+  }
+
 
   if (Type == "Q") {
     Result <- PQnrfa(ID, type = "gdf")
@@ -545,6 +567,10 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
   if (Type == "POT") {
     Result <- POTfunc(ID)
   }
+  if (Type == "CDs") {
+    Result <- CDsFunc(ID)
+  }
+
   return(Result)
 }
 
@@ -594,7 +620,11 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
 #' When extracting flow or level data with a WISKI ID then a dataframe with two columns is returned. The first being a Date or POSIXct column/vector and the second is the timeseries of interest.
 #' @author Anthony Hammond
 
-GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WISKI_ID = NULL, From = NULL, To = NULL, Type = "flow", Period = "DailyMean") {
+GetDataEA_QH  <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WISKI_ID = NULL, From = NULL, To = NULL, Type = "flow", Period = "DailyMean") {
+
+  PeriodCheck <- c("DailyMax", "DailyMean", "15Mins", "Hourly")
+  PeriodCheck <- match(Period, PeriodCheck)
+  if(is.na(PeriodCheck)) stop("Period must be one of DailyMax, DailyMean, 15Mins, or Hourly")
   if (is.null(From)) {
     From <- "1901-10-01"
   }
@@ -686,6 +716,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
   }
 
   if (is.null(WISKI_ID) == FALSE) {
+    print("if this function fails with an error along the lines of 'no lines available in input', try putting a preceeding zero in the WISKI ID.")
     # Here is a separate Get q or H function. Then we need a loop one for all the 15 minute data
     if(Type == "level" & Period == "DailyMean") warning("DailyMean is not generally available for the level data.")
     GetQH <- function(WISKI_ID, From = NULL, To = NULL, Period = "DailyMax", Type = "flow") {
@@ -722,7 +753,7 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
         Data <- Data[, c(2, 4)]
         Data$dateTime <- as.POSIXct(Data$dateTime, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT")
         if (Period == "Hourly") {
-          Data <- AggDayHour(Data, func = mean, Freq = "Hour")
+          Data <- AggMonDayHour(Data, func = mean, Freq = "Hourly")
           colnames(Data) <- c("dateTime", "value")
         }
       }
@@ -759,9 +790,14 @@ GetDataEA_QH <- function(Lat = 54, Lon = -2.25, Range = 20, RiverName = NULL, WI
     }
     if (Period == "DailyMax" | Period == "DailyMean") {
       Result <- GetQH(WISKI_ID = WISKI_ID, From = From, To = To, Period = Period, Type = Type)
+    if(Period == "DailyMax") {
+    Result <-  Result[order(Result$value, decreasing = TRUE), ]
+    Result <-  Result[- which(duplicated(Result$date) == TRUE), ]
+    Result <-  Result[order(Result$date), ]
     }
+      }
     if (Period == "Hourly") {
-      Result <- AggDayHour(Result, func = mean, Freq = "Hour")
+      Result <- AggMonDayHour(Result, func = mean, Freq = "Hourly")
     }
     return(Result)
   }

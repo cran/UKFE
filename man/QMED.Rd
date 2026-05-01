@@ -30,7 +30,7 @@ QMED(
 
 \item{alpha}{Logical with a default of TRUE. If TRUE the distance between donors and the subject site impacts the donor adjustment.}
 
-\item{UrbAdj}{logical argument with a default of FALSE. If TRUE, an urban adjustment is made to the estimate after the donor procedure.}
+\item{UrbAdj}{logical argument with a default of TRUE If TRUE, an urban adjustment is made to the estimate after the donor procedure.}
 
 \item{UrbanExpansion}{logical argument with a default of TRUE. If TRUE an urban expansion factor is applied to the URBEXT value for the site of interest - using the current year.}
 

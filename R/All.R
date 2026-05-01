@@ -814,8 +814,9 @@ GenParetoEst <- function(loc, scale, shape, q = NULL, RP = 100, ppy = 1) {
       res <- loc + scale * (1 - (1 - (1 - 1 / RP) / ppy)^shape) / shape
     } else {
       y <- -1 / shape * log(1 - shape * (q - loc) / scale)
-      P <- 1 - exp(-y)
-      RPPOT <- 1 / P
+      #P <- 1 - exp(-y)
+      #RPPOT <- 1 / P
+      RPPOT <- exp(y)
       res <- RPPOT / ppy
     }
   }
@@ -1272,7 +1273,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param DonorIDs This is one or more gauge reference numbers for the gauges you want te be applied as donors. If more than one donor the argiument needs to be a vector of IDs, such as c(71011, 71023, 69082).
 #' @param no.Donors This argument is for an automated approach for the number of donors you wish to apply. The closest donors to the subject site (by catchment centroid) will be chosen.
-#' @param UrbAdj logical argument with a default of FALSE. If TRUE, an urban adjustment is made to the estimate after the donor procedure.
+#' @param UrbAdj logical argument with a default of TRUE If TRUE, an urban adjustment is made to the estimate after the donor procedure.
 #' @param UrbanExpansion logical argument with a default of TRUE. If TRUE an urban expansion factor is applied to the URBEXT value for the site of interest - using the current year.
 #' @param AREA catchment area in km2
 #' @param SAAR standard average annual rainfall (mm)
@@ -1298,14 +1299,8 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
 
   if(is.null(no.Donors) == FALSE) {
     if(no.Donors == 0) {no.Donors <- NULL}
-    }
-
-  if(is.null(CDs)) {
-    if(is.null(DonorIDs) == FALSE | is.null(no.Donors) == FALSE) warning("For donor adjustment you need to input CDs")
-    QMEDEstimate <- 6.8247*AREA^0.8499*0.1780^(1000/SAAR)*FARL^3.0450*0.0321^(BFIHOST^2)
-    QMEDEstimate <- signif(QMEDEstimate, 3)
-    return(QMEDEstimate)
   }
+
 
   if(is.null(CDs) == FALSE) {
     #if(class(CDs) != class(GetCDs(39001))) stop("CDs must be a dataframe with headers 'Descriptor' and 'value' for the first and second column, respectively. You can get them using CDsXML or GetCDs.")
@@ -1316,7 +1311,6 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
     if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
     CDsTest <- GetCDs(rownames(PeakFlowData)[1])
     if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
-
   }
 
   uaf <- function(URBEXT, BFIHOST) {
@@ -1325,15 +1319,23 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
     return(uafEst)
   }
 
-  QMEDEst <- function(CDs, UrbAdj = TRUE, UrbanExpansion = TRUE, AREA, SAAR, FARL, BFIHOST, URBEXT) {
+  QMEDEst <- function(CDs= NULL, UrbAdj = TRUE, UrbanExpansion = TRUE, AREA, SAAR, FARL, BFIHOST, URBEXT) {
 
-    AREA <- CDs[grep("AREA",CDs[,1]),2]
-    SAAR <- CDs[grep("SAAR",CDs[,1])[1],2]
-    FARL <- CDs[grep("FARL",CDs[,1])[1],2]
-    BFIHOST <- CDs[grep("BFIHOST",CDs[,1])[1],2]
-    URBEXT <- CDs[grep("URBEXT",CDs[,1])[1],2]
+    if(is.null(CDs) == FALSE) {
+      AREA <- CDs[grep("AREA",CDs[,1]),2]
+      SAAR <- CDs[grep("SAAR",CDs[,1])[1],2]
+      FARL <- CDs[grep("FARL",CDs[,1])[1],2]
+      BFIHOST <- CDs[grep("BFIHOST",CDs[,1])[1],2]
+      URBEXT <- CDs[grep("URBEXT",CDs[,1])[1],2]
+    } else {
+      AREA <- AREA
+      SAAR <- SAAR
+      FARL <- FARL
+      BFIHOST <- BFIHOST
+      URBEXT <- URBEXT
+    }
 
-      QMEDEstimate <- 6.8247*AREA^0.8499*0.1780^(1000/SAAR)*FARL^3.0450*0.0321^(BFIHOST^2)
+    QMEDEstimate <- 6.8247*AREA^0.8499*0.1780^(1000/SAAR)*FARL^3.0450*0.0321^(BFIHOST^2)
     if(UrbanExpansion == TRUE) {
       DateTime <- as.POSIXlt(Sys.Date())
       Yr <- DateTime$year + 1900
@@ -1341,11 +1343,17 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
 
     if(UrbAdj == TRUE) {QMEDEstimate <- UAF(URBEXT = URBEXT, BFIHOST = BFIHOST) * QMEDEstimate}
     QMEDEstimate <- signif(QMEDEstimate, 3)
-      return(QMEDEstimate)
+    return(QMEDEstimate)
   }
 
   if(is.null(DonorIDs) & is.null(no.Donors)) {
-    QMEDEstimate <- QMEDEst(CDs = CDs, UrbAdj = UrbAdj, UrbanExpansion = UrbanExpansion)
+    if(is.null(CDs) == TRUE) {
+      QMEDEstimate <- QMEDEst(AREA = AREA, SAAR = SAAR, FARL = FARL, BFIHOST = BFIHOST, URBEXT = URBEXT,
+                              UrbAdj = UrbAdj, UrbanExpansion = UrbanExpansion)
+    }
+    if(is.null(CDs) == FALSE) {
+      QMEDEstimate <- QMEDEst(CDs = CDs, UrbAdj = UrbAdj, UrbanExpansion = UrbanExpansion)
+    }
     QMEDEstimate <- signif(QMEDEstimate, 3)
     return(QMEDEstimate)
   }
@@ -1376,6 +1384,11 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
 
   QMEDEsts <- NULL
   for(i in 1:n) {QMEDEsts[i] <- QMEDEst(CDsList[[i]], UrbAdj = FALSE)}
+
+  # if(is.null(no.Donors) == FALSE | is.null(DonorIDs) == FALSE) {
+  #  if(UrbAdj == FALSE) {QMEDs_DeUrbanised[1] <- 1}
+  #}
+
   QMEDRatios <- QMEDs_DeUrbanised/QMEDEsts
 
 
@@ -1409,6 +1422,7 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
   if(alpha == FALSE) {a <- 1}
   Weight <- sum( a*(log(QMEDs_DeUrbanised) - log(QMEDEsts)))
   QMEDCD <- QMEDEst(CDs, UrbAdj = FALSE)
+  #if(UrbAdj == FALSE) {QMEDCD <- QMEDEst(CDs, UrbAdj = TRUE)}
   QMEDAdjustedFEH <- exp(log(QMEDCD) + Weight)
   Result <- QMEDAdjustedFEH
   if(UrbAdj == TRUE) {Result <- UAF(CDs) * Result}
@@ -1423,27 +1437,6 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
 }
 
 
-#' Empirical estimate of QMED from peaks over threshold (POT) data
-#'
-#' Estimates the median annual maximum flow (QMED) from peaks over threshold data
-#'
-#' @details If there are multiple peaks per year, the peaks per year (ppy) argument is used to convert to the annual scale to derive QMED. If ppy is one, then the median of the POT sample is returned (the median of x).
-#' @param x numerical vector. POT data
-#' @param ppy number of peaks per year in the POT data
-#' @examples
-#' # Extract some POT data and estimate QMED
-#' thames_pot <- POTextract(ThamesPQ[, c(1, 3)], thresh = 0.90)
-#' QMEDPOT(thames_pot$peak, ppy = 1.867263)
-#'
-#' @author Anthony Hammond
-QMEDPOT <- function(x, ppy) {
-  if (is.numeric(x) == FALSE) {
-    stop("x must be a numeric vector")
-  }
-  qu <- 1 - (0.5 / ppy)
-  qmed <- quantile(x, qu, na.rm = TRUE)
-  return(as.numeric(qmed))
-}
 
 
 #' QMED Linking equation
@@ -2439,6 +2432,7 @@ POTt <- function(x, threshold = 0.975, div, Plot = TRUE, PlotType = "l", main = 
       points(Res[,1:2], col = "red")
       abline(h = thresh, col = "blue")}
     LengthP <- length(Res[,1])
+    rownames(Res) <- seq(1, nrow(Res))
     #print(paste("Number of peaks:", format(LengthP, trim = TRUE), sep = " "))
   }
   if(is(x, "numeric")) {
@@ -2496,7 +2490,7 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
     x <- x[-DateNA, ]
   }
   PluckOutTime <- function(x, from, to, Plot = FALSE, type = "l") {
-    Ind <- which(as.POSIXct(x[, 1]) >= as.POSIXct(from) & as.POSIXct(x[, 1]) <= as.POSIXct(to))
+    Ind <- which(as.POSIXct(x[, 1]) >= as.POSIXct(from) & as.POSIXct(x[, 1]) < as.POSIXct(to))
     Result <- x[Ind, ]
     if (Plot == TRUE) {
       plot(Result, type = type)
@@ -2573,12 +2567,12 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   if (Sliding == FALSE) {
     AM <- NULL
     for (i in 1:length(WYList)) {
-      AM[i] <- Stat(WYList[[i]][, 2], ...)
+      AM[i] <-  suppressWarnings(Stat(WYList[[i]][, 2], na.rm = TRUE))
     }
     if(Stat(c(1,2,3,5)) == 5) {
       MaxTime <- NULL
       for(i in 1:length(WYList)) {
-        MaxTime[i] <-  WYList[[i]][which.max(WYList[[i]][, 2])  , 1] }
+        try(MaxTime[i] <-  WYList[[i]][which.max(WYList[[i]][, 2])  , 1], silent = TRUE) }
     }
     AM <- data.frame(DateTime = DatesWY[1:length(AM)], AM)
     colnames(AM) <- c("DateTime", "Result")
@@ -2603,6 +2597,7 @@ AnnualStat <- function(x, Stat = max, Truncate = TRUE, Mon = 10, Hr = 9, Sliding
   }
   return(AM)
 }
+
 
 
 
@@ -2774,7 +2769,7 @@ Uncertainty <- function(x, dist = "GenLog", Gauged = FALSE, QMEDEstimate = NULL,
 #' samp_dist <- Bootstrap(am_203018$Flow, Stat = mean, ReturnSD = TRUE)
 #' hist(samp_dist)
 #'
-#' @return If ReturnSD is FALSE a data.frame is returned with one row and three columns; central, lower, and upper. If ReturnSD is TRUE, the sampling distribution is returned.
+#' @return If ReturnSD is FALSE a data.frame is returned with one row and three columns; Mean, lower, and upper (statistics of the bootsrapped sampling distribution). If ReturnSD is TRUE, the sampling distribution is returned.
 #' @author Anthony Hammond
 Bootstrap <- function(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...) {
   if (is.numeric(x) == FALSE) {
@@ -2796,8 +2791,8 @@ Bootstrap <- function(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...) {
   uint <- 1 - (1 - Conf) / 2
   Lower <- as.numeric(quantile(res, lint))
   Upper <- as.numeric(quantile(res, uint))
-  Centre <- Stat(x, ...)
-  Result <- signif(data.frame(Centre, Lower, Upper), 3)
+  Mean <- mean(res)
+  Result <- signif(data.frame(Mean, Lower, Upper), 3)
   if (ReturnSD == TRUE) {
     Result <- res
   }
@@ -4728,6 +4723,7 @@ TrendTest <- function(x, Variance = FALSE, method = "mk", alternative = "two.sid
   }
   if(class(x) == class(runif(2))) {x <-x[!is.na(x)]}
   if(Variance == TRUE) {
+    if(class(x) == class(data.frame(rep(NA,4)))) {x <- x[,2]}
     xVar <- NULL
     for(i in 2:(length(x)-2)) {xVar[i] <- Lcv(x[i:(i+2)])}
     x <- xVar[!is.na(xVar)]
@@ -4971,6 +4967,7 @@ BFI <- function(Q, PlotTitle = "Baseflow plot", Plot = TRUE, ReturnData = FALSE)
 #' @details The power law rating equation optimised here has the form q = c(h+a)^n; where 'q' is flow, 'h' is the stage, c' and 'n' are constants, and 'a' is the stage when flow is zero. The optimisation uses all the data provided in the dataframe (x). If separate rating limbs are necessary, x can be subset per limb. i.e. the rating function would be used multiple times, once for each subset of x. There is the option, with the 'a' argument, to hold the stage correction parameter (a), at a user defined level. If 'a' is NULL it will be calibrated with 'c' & 'n' as part of the optimisation procedure. Note that this is a purely statistical procedure and hydraulic considerations may prove useful for improving results (particularly where extrapolation is required).
 #' @param x a data.frame with discharge in the first column and stage in the second
 #' @param a a user defined stage correction
+#' @param LogLinear Logical statement. If TRUE, the rating is fit using a log linear model and converted to a power function. If FALSE, the power law is fit to the data directly
 #' @examples
 #' # Create some dummy data
 #' flow <- c(177.685, 240.898, 221.954, 205.55, 383.051, 154.061, 216.582)
@@ -4985,7 +4982,7 @@ BFI <- function(Q, PlotTitle = "Baseflow plot", Plot = TRUE, ReturnData = FALSE)
 #'
 #' @return A list with three elements. The first is a vector of the three calibrated rating parameters. The second is the rating equation; discharge as a function of stage. The third is the rating equation; stage as a function of discharge. A rating plot is also returned.
 #' @author Anthony Hammond
-Rating <- function(x, a = NULL) {
+Rating <- function(x, a = NULL, LogLinear = FALSE) {
   colnames(x) <- c("Flow", "Stage")
   if (is.null(a) == TRUE) {
     min.SLS <- function(data, par) {
@@ -5000,6 +4997,20 @@ Rating <- function(x, a = NULL) {
     result <- optim(par = c(1, 1), fn = min.SLS, data = x)
     Params <- c(result$par[1], a, result$par[2])
   }
+
+
+  if(LogLinear == TRUE) {
+    LMModel <- lm(log(x[,1]) ~ log(x[,2]))
+    ParamsLog <- as.numeric(LMModel$coefficients)
+    Params <- numeric(3)
+    Params[1] <- exp(ParamsLog[1])
+    Params[3] <- ParamsLog[2]
+    Params[2] <- 0
+    #ZeroTest <- Params[1]*0^Params[2]
+  }
+
+
+
   Mod <- function(x) {
     Params[1] * (x + Params[2])^Params[3]
   }
@@ -5350,16 +5361,16 @@ MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab
 
 
 
-# AggDayHour ---------------------------------------------------
+# AggMonDayHour ---------------------------------------------------
 
 #' Aggregate a time series
 #'
 #' @description Aggregates time series data, creating hourly data from 15-minute data for example.
-#' @details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
+#' @details The function can be used with a data.frame with POSIXct in the first column and a variable in the second. You can choose the level of aggregation in hours, or you can choose daily or monthly. In the daily case you can choose which hour of the day to start the aggregation. For example, you might want mean flows from 09:00 rather than midnight. You can also choose the function used to aggregate the data. For example, you might want "sum" for rainfall, and "mean" for flow. When aggregating hourly the aggregation starts at whatever hour is in the first row of x and the associated time stamps will reflect this.
 #' @param x a data.frame with POSIXct in the first column and numeric vector in the second.
 #' @param func the function used for aggregation; mean, max, or sum, for example.
-#' @param Freq Choices are "Day", or "Hour".
-#' @param hour An integer between 0 and 23. This is used if "Day" is chosen in the Freq argument to determine when the day starts.
+#' @param Freq Choices are "Monthly", "Daily", or "Hourly".
+#' @param hour An integer between 0 and 23. This is used if "Daily" is chosen in the Freq argument to determine when the day starts.
 #' @examples
 #' # Create a data frame with a normally distributed variable at
 #' # a 15 minute sampling rate
@@ -5371,27 +5382,40 @@ MonthlyStats <- function(x, Stat, AggStat = NULL, TS = FALSE, Plot = FALSE, ylab
 #' ts_df <- data.frame(DateTime = ts_seq, Var = rnorm(length(ts_seq), 10, 2))
 #'
 #' # Aggregate to an hourly sampling rate, taking the maximum of each hour
-#' hourly <- AggDayHour(ts_df, func = max, Freq = "Hour")
+#' hourly <- AggMonDayHour(ts_df, func = max, Freq = "Hourly")
 #'
 #' # Aggregate with the mean at a daily scale
-#' daily <- AggDayHour(ts_df, func = mean, Freq = "Day")
+#' daily <- AggMonDayHour(ts_df, func = mean, Freq = "Daily")
 #'
 #' @return A data.frame with POSIXct in the first column (unless daily is chosen, then it's Date class), and the aggregated variable in the second column
 #' @author Anthony Hammond
 
-AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
+AggMonDayHour <- function(x, func, Freq = "Daily", hour = 9) {
   if (anyNA(x[, 2]) == TRUE) {
     NAWarning <- "Warning: There is at least one missing value in the time series, this may have compromised the aggregation"
     warning(NAWarning)
   }
-  if (Freq != "Day" & Freq != "Hour") stop("The Freq argument must equal Day or Hour")
+  if (Freq != "Daily" & Freq != "Hourly" & Freq != "Monthly") stop("The Freq argument must equal Daily, Hourly, or Monthly")
 
-  if (is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
-  if (is(x[, 1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
+  if (!inherits(x[[1]], c("Date", "POSIXct", "POSIXt"))) {
+    stop("First column must be Date or POSIXct")
+  }
+
+  if(Freq == "Monthly") {
+    dates <- as.Date(x[[1]])
+    ym <- format(dates, "%Y-%m")
+    result <- aggregate(x[[2]], by = list(Month = ym), FUN = func)
+    result$Month <- as.Date(paste0(result$Month, "-01"))
+    colnames(result)[2] <- "Var"
+    #return(result)
+  }
+
+  #if (is(x[1], "data.frame") == FALSE) stop("x must be a data.frame")
+  #if (is(x[, 1], "POSIXct") == FALSE) stop("The first column of x must be POSIXct")
   SampleRate <- x[2, 1] - x[1, 1]
   # DummySample <- seq(as.Date("2021-10-01"), as.Date("2021-10-02"), by = 1)
   # if(SampleRate >= (DummySample[2]-DummySample[1])) stop("The time series you're attempting to aggregate already appears to be at a daily or lower sampling rate")
-  if (Freq == "Day") {
+  if (Freq == "Daily") {
     if (hour < 0 | hour > 23) stop("hour must be an integer >= 0 and <= 23")
     POSlt <- as.POSIXlt(x[, 1])
     NineInd <- which(POSlt$hour == hour & POSlt$min == 0 & POSlt$sec == 0)
@@ -5418,10 +5442,11 @@ AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
       InfInd <- which(DF$Var == -Inf)
       DF$Var[InfInd] <- NA
     }
-    return(DF)
+    #return(DF)
+    result <- DF
   }
 
-  if (Freq == "Hour") {
+  if (Freq == "Hourly") {
     POSlt <- as.POSIXlt(x[, 1])
     NineInd <- which(POSlt$min == 0 & POSlt$sec == 0)
     DateTime <- as.POSIXct(x[NineInd, 1])
@@ -5443,7 +5468,8 @@ AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
       InfInd <- which(DF$Var == -Inf)
       DF$Var[InfInd] <- NA
     }
-    return(DF)
+    #return(DF)
+    result <- DF
   }
   if (is.numeric(Freq) == TRUE) {
     POSlt <- as.POSIXlt(x[, 1])
@@ -5475,8 +5501,27 @@ AggDayHour <- function(x, func, Freq = "Day", hour = 9) {
     Var <- apply(Mat, 2, func)
     DateTime <- seq(as.POSIXct(DF[1, 1]), length.out = length(Var), by = N * 60 * 60)
     DFHour <- data.frame(DateTime, Var)
-    return(DFHour)
+    #return(DFHour)
+    result <- DFHour
   }
+  xAgg <- result
+
+  DT <- xAgg[,1]
+  StDT <- xAgg[1,1]
+  EndDT <- xAgg[,1][nrow(xAgg)]
+  if(Freq == "Hourly") {
+    DT <- seq(StDT, EndDT, by = 60 * 60)
+  }
+  if(Freq == "Daily") {
+    DT <- seq(StDT, EndDT, by = "day")
+  }
+  if(Freq == "Monthly") {
+    DT <- seq(StDT, EndDT, by = "month")
+  }
+  DF <- data.frame(DateTime = DT, Var = rep(NA, length(DT)))
+  MatchDT <- match(xAgg[,1], DF$DateTime)
+  DF[MatchDT,2] <- xAgg[,2]
+  return(DF)
 }
 
 
@@ -6058,81 +6103,6 @@ Seasonality <- function(x, Lines = FALSE) {
 }
 
 
-
-#' Low Flows
-#'
-#' A function to estimate lower flow quantiles in ungauged catchments.
-#'
-#' This function provides estimates of the mean flow, Q95, Q70, Q50, Q10, and Q5.
-#' The function works by finding the 30 catchments in the NRFA data set with the most similar SAAR9120 to the subject site (via the API).
-#' The observed flows for those catchments are scaled by the catchment area. Then a weighted average is taken and multiplied by the subject site catchment area for the final estimate.
-#' The weighting is done by Eucidean distance based on SAAR9120 and BFIHOST19scaled. These are weighted based on the correlation of these descriptors to the scaled flows.
-#' @param CDs Catchment descriptors derived from the GetCDs or CDsXML function.
-#' @param AREA Catchment area (km2) - for when CDs is not applied
-#' @param SAAR Average annual rainfall (mm) - for when CDs is not applied
-#' @param BFIHOST An estimate of baseflow index - for when CDs is not applied
-#' @param Exclude A site reference. This is to exclude sites that you do not want used in the estimate. For example, if you're seeing how the function performs on a gauged site, you may want to exclude it from the analysis.
-#' @examples
-#' # Get some catchment descriptors, then estimate the flows
-#' \dontrun{
-#' CDs_27083 <- GetCDs(27083)
-#' LowFlows(CDs_27083)
-#' }
-#' # Now estimate again but remove gauge 27083 from the analysis
-#' \dontrun{
-#' LowFlows(CDs_27083, Exclude = 27083)
-#' }
-#' @return A data.frame with one column of flow estimates. The row names denote the name of each estimate.
-#' @author Anthony Hammond
-
-LowFlows <- function(CDs = NULL, AREA = NULL, SAAR = NULL, BFIHOST = NULL, Exclude = NULL) {
-
-  if(is.null(CDs) == FALSE) {
-
-    if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
-    CDsTest <- GetCDs(rownames(PeakFlowData)[1])
-    if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
-
-
-    Area <- CDs[grep("AREA", CDs$Descriptor)[1] ,2]
-    SAAR <- CDs[grep("SAAR", CDs$Descriptor)[1] ,2]
-    BFIHOST <- CDs[grep("BFIHOST", CDs$Descriptor)[1],2]
-  }
-  NRFAAllData <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
-  if(is.null(Exclude) == FALSE) {
-    IndExc <- which(NRFAAllData$id == Exclude)
-    NRFAAllData <- NRFAAllData[-IndExc,]
-  }
-  QNames <- c("gdf.mean.flow", "gdf.q95.flow",  "gdf.q70.flow",  "gdf.q50.flow", "gdf.q10.flow",  "gdf.q05.flow")
-  ColnamesNRFA <- colnames(NRFAAllData)
-  MatchCols <- match(QNames, ColnamesNRFA)
-  QScale <- NRFAAllData[,MatchCols] / NRFAAllData$catchment.area
-  xData <- data.frame(SAAR = NRFAAllData$saar.1991.2020,
-                      BFIHOST = NRFAAllData$bfihost19.scaled, QScale)
-  xData <- xData[complete.cases(xData),]
-  EuclidDist <- function(x, y) {
-    SDx <- sd(xData$SAAR)
-    SDy <- sd(xData$BFIHOST)
-    Res <- sqrt( 0.85*((x[1]-x[2])/SDx)^2 + 0.15*((y[1]-y[2])/SDy)^2  )
-    return(Res)
-  }
-  DiffSAAR <- abs(SAAR - xData$SAAR)
-  xData <- xData[order(DiffSAAR),]
-  xData <- xData[1:30,]
-  Dists <- NULL
-  for(i in 1:nrow(xData)) {Dists[i] <- EuclidDist(c(SAAR, xData$SAAR[i]), c(BFIHOST, xData$BFIHOST[i]))}
-  if(any(Dists == 0)) {
-    Dists <- Dists+0.000001
-    warning("One of the NRFA sites has exactly the same SAAR and BFIHOST as the user input. Is the site already gauged? If you are testing a gauged site as if ungauged, use the Exclude argument")
-  }
-  DistsRecip <- 1/Dists
-  Weights <- DistsRecip / sum(DistsRecip)
-  QScaleWeighted <- xData[,3:8] * Weights
-  QScaleArea <- QScaleWeighted * Area
-  Result <- apply(QScaleArea, 2, sum)
-  Result <- data.frame(Q = signif(Result, 3), row.names = c("mean", "Q95", "Q70", "Q50", "Q10", "Q05"))
-  return(Result)
-}
 
 
 #' Historic flood maximum likelihood estimation

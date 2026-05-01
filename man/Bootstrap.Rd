@@ -20,7 +20,7 @@ Bootstrap(x, Stat, n = 500, Conf = 0.95, ReturnSD = FALSE, ...)
 \item{...}{further arguments for the Stat function. For example if you use the GEVAM function you might want to add RP = 50 to derive a sampling distribution for the 50-year quantile.}
 }
 \value{
-If ReturnSD is FALSE a data.frame is returned with one row and three columns; central, lower, and upper. If ReturnSD is TRUE, the sampling distribution is returned.
+If ReturnSD is FALSE a data.frame is returned with one row and three columns; Mean, lower, and upper (statistics of the bootsrapped sampling distribution). If ReturnSD is TRUE, the sampling distribution is returned.
 }
 \description{
 Resampling with replacement to approximate the sampling distribution of a statistic and quantify uncertainty.

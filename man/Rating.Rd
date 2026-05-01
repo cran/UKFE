@@ -4,12 +4,14 @@
 \alias{Rating}
 \title{Stage-Discharge equation optimisation}
 \usage{
-Rating(x, a = NULL)
+Rating(x, a = NULL, LogLinear = FALSE)
 }
 \arguments{
 \item{x}{a data.frame with discharge in the first column and stage in the second}
 
 \item{a}{a user defined stage correction}
+
+\item{LogLinear}{Logical statement. If TRUE, the rating is fit using a log linear model and converted to a power function. If FALSE, the power law is fit to the data directly}
 }
 \value{
 A list with three elements. The first is a vector of the three calibrated rating parameters. The second is the rating equation; discharge as a function of stage. The third is the rating equation; stage as a function of discharge. A rating plot is also returned.

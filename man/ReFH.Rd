@@ -38,7 +38,7 @@ ReFH(
 
 \item{Timestep}{a numeric value. A user defined data interval. The default changes depending on the estimated time to peak to formulate a sensible looking result. This will need updating if the Rain argument is used.}
 
-\item{RainProfile}{This is a choice of the temporal rainfall pattern. The default is the FSR profile. However, you can also choose a randomly generated profile with a different loading. The choices are: "Centre", "Back", "Front", "Uniform", or "Random". The latter randomly chooses between the former four.}
+\item{RainProfile}{This is a choice of the temporal rainfall pattern. The default is the FSR profile. However, you can also choose a randomly generated profile with a different loading. The choices are: "Centre", "Back", "Front", or "Random". The latter randomly chooses between the former three}
 
 \item{PlotTitle}{a character string. A user defined title for the ReFH plot}
 
@@ -46,7 +46,7 @@ ReFH(
 
 \item{alpha}{a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RPa. If FALSE, no alpha adjustment is made}
 
-\item{WaterBalance}{A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not voilated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.}
+\item{WaterBalance}{A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.}
 
 \item{Season}{a choice of "summer" or "winter". The default is "summer" in urban catchments (URBEXT2015 > 0.03) and "winter" in rural catchments}
 
@@ -78,10 +78,10 @@ ReFH(
 A list with two elements, and a plot. First element of the list is a data.frame of parameters, initial conditions and the catchment area. The second is a data.frame with columns Rain, NetRain, Runoff, Baseflow, and TotalFlow. If the scale argument is used a numeric vector containing the scaled hydrograph is returned instead of the results dataframe. The plot is of the ReFH output, with rainfall, net-rainfall, baseflow, runoff and total flow. If the scaled argument is used, a scaled hydrograph is plotted.
 }
 \description{
-Provides outputs for the ReFH model from catchment descriptors or user defined inputs.
+By default this function provides outputs for the ReFH model from catchment descriptors or user defined inputs. It can also be used as a generalised design rainflal runoff modelling tool.
 }
 \details{
-As default this function is the ReFH model as described in the Flood Estimation Handbook Supplementary Report No.1 (2007). However, optional extras have been added such as an urban loss model and an option to ensure a water balance if it has been violated. The urban loss model is applied with default urban parameters (IF = 0.7, DS = 0.5, IRF = 0.4) and is described in the Wallingford Hydrosolutions report "ReFH2 Science Report Closing a Water Balance" (2019). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. This has been slightly adjusted so that even profiles are possible. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and an approximate two-year rainfall for the critical duration. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. This ReFH function is recommended for analysing the plausible catchment response to an input of rainfall. For this reason, and as noted, multiple additional features are available. The user can change components such as the unit hydrograph and the loss. The WaterBalance option can be applied to ensure it is not violated. Also, the baseflow component can be set as a constant (as opposed to a function of the runoff) by setting BR to zero. The rainfall can also be changed by choosing a range of different randomised profiles.
+As default this function is the ReFH model as described in the Flood Estimation Handbook Supplementary Report No.1 (2007). However, optional extras have been added such as an urban loss model and an option to ensure a water balance if it has been violated. The urban loss model is applied with default urban parameters (IF = 0.7, DS = 0.5, IRF = 0.4) and is described in the Wallingford Hydrosolutions report "ReFH2 Science Report Closing a Water Balance" (2019). The method to derive design rainfall profiles is described in the Flood Estimation Handbook (1999), volume 2. Users can also input their own rainfall with the 'Rain' argument. As a default, when catchment descriptors (CDs) are provided the ReFH function uses catchment descriptors to estimate the parameters of the ReFH model and an approximate two-year rainfall for the critical duration. If a parameter argument is used for one or more of the parameters, then these overwrite the CD derived parameters. This ReFH function is recommended for analysing the plausible catchment response to an input of rainfall. For this reason, and as noted, multiple additional features are available. The user can change components such as the unit hydrograph and the loss. The WaterBalance option can be applied to ensure it is not violated. Also, the baseflow component can be set as a constant (as opposed to a function of the runoff) by setting BR to zero. The rainfall can also be changed by choosing a randomised profiles. These are derived by using the shape of the FSR profile as a probability mass function.
 }
 \examples{
 # Get CDs and apply the ReFH function
