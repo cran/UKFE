@@ -24,9 +24,6 @@ Provides 11 plots to compare the sites in the pooling group
 pool_28015 <- Pool(GetCDs(28015))
 DiagPlots(pool_28015, gauged = TRUE)
 
-# Form an ungauged pooling group and plot the diagnostics
-pool_28015 <- Pool(GetCDs(28015), exclude = 28015)
-DiagPlots(pool_28015)
 
 }
 \author{

@@ -9,7 +9,7 @@
 #' QMED is estimated from catchment descriptors: QMED = 8.3062 * AREA^0.851 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.046^(BFIHOST^2) as specified by FEH2008. If the CDs argument is used then the SAAR used is SAAR6190, FARL is FARL (as opposed to FARL2015) and BFIHOST is BFIHOST (as opposed to BFIHOST19 or BFIHOST19scaled). Note that this function is a legacy function and you cannot do donor adjustment within the function. You can however use this in conjunction with the QMEDDonEq function.
 #'
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
-#' @param UrbAdj logical argument with a default of FALSE. If TRUE, an urban adjustment is made to the estimate after the donor procedure.
+#' @param UrbAdj logical argument with a default of TRUE. If TRUE, an urban adjustment is made to the estimate.
 #' @param AREA catchment area in km2
 #' @param SAAR standard average annual rainfall (mm)
 #' @param FARL flood attenuation from reservoirs and lakes
@@ -24,13 +24,24 @@
 #' @return An estimate of QMED from catchment descriptors.
 #' @author Anthony Hammond
 
-QMED_FEH08 <- function(CDs = NULL, UrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT) {
+QMED_FEH08 <- function(CDs = NULL, UrbAdj = TRUE, AREA, SAAR, FARL, BFIHOST, URBEXT) {
   if(is.null(CDs) == FALSE) {
+
+    CDsCheck <- CDs[grep("SAAR", CDs$Descriptor),2]
+    if(length(CDsCheck) == 2) {
+      AREA <- CDs[grep("AREA", CDs$Descriptor),2]
+      SAAR <- CDs[grep("SAAR", CDs$Descriptor)[1],2]
+      FARL <- CDs[grep("FARL", CDs$Descriptor)[1],2]
+      BFIHOST <- CDs[grep("BFIHOST", CDs$Descriptor)[1],2]
+      URBEXT <- CDs[grep("URBEXT2000", CDs$Descriptor),2]
+    }
+    if(length(CDsCheck) == 3) {
     AREA <- CDs[grep("AREA", CDs$Descriptor),2]
-    SAAR <- CDs[grep("SAAR", CDs$Descriptor)[2],2]
+    SAAR <- CDs[grep("SAAR6190", CDs$Descriptor),2]
     FARL <- CDs[grep("FARL", CDs$Descriptor)[2],2]
-    BFIHOST <- CDs[grep("BFIHOST", CDs$Descriptor)[3],2]
-    URBEXT <- CDs[grep("URBEXT", CDs$Descriptor)[2],2]
+    BFIHOST <- CDs[grep("BFIHOST19", CDs$Descriptor)[1],2]
+    URBEXT <- CDs[grep("URBEXT2000", CDs$Descriptor),2]
+    }
   }
 
   QMEDEstimate <- 8.3062 * AREA^0.851 * 0.1536^(1000 / SAAR) * FARL^3.4451 * 0.046^(BFIHOST^2)
@@ -73,16 +84,29 @@ QMED_FEH08 <- function(CDs = NULL, UrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, UR
 
 Pool_FEH08 <- function(CDs, N = 500, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, include = NULL) {
   if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
-  CDsTest <- GetCDs(rownames(PeakFlowData)[1])
-  if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
+  #CDsTest <- GetCDs(rownames(PeakFlowData)[1])
+  #if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
   Suitability <- NULL
+  CDsCheck <- CDs[grep("SAAR", CDs$Descriptor),2]
+
   SDM <- function(CDs, AREA, SAAR, FARL, FPEXT, BFIHOST) {
     CDs[,2] <- signif(CDs[,2], 4)
+
+    if(length(CDsCheck) == 2) {
     AREAi <- CDs[grep("AREA",CDs[,1]),2]
-    SAARi <- (CDs[grep("SAAR",CDs[,1])[2],2])
-    FARLi <- (CDs[grep("FARL",CDs[,1])[2],2])
+    SAARi <- (CDs[grep("SAAR",CDs[,1])[1],2])
+    FARLi <- (CDs[grep("FARL",CDs[,1])[1],2])
     FPEXTi <- CDs[grep("FPEXT",CDs[,1])[1],2]
-    BFIHOSTi <- (CDs[grep("BFIHOST",CDs[,1])[3],2]  )
+    BFIHOSTi <- (CDs[grep("BFIHOST19",CDs[,1]),2]  )
+    }
+
+    if(length(CDsCheck) == 3) {
+      AREAi <- CDs[grep("AREA",CDs[,1]),2]
+      SAARi <- (CDs[grep("SAAR6190",CDs[,1]),2])
+      FARLi <- (CDs[grep("FARL",CDs[,1])[2],2])
+      FPEXTi <- CDs[grep("FPEXT",CDs[,1])[1],2]
+      BFIHOSTi <- (CDs[grep("BFIHOST19",CDs[,1]),2]  )
+    }
 
     AREAj <- (AREA)
     SAARj <- SAAR

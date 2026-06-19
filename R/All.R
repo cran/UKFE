@@ -14,6 +14,7 @@ globalVariables(c("ThamesPQ", "PeakFlowData", "UKOutline", "AMPF", "id", "URBEXT
 #' @param dist a choice of distribution for the estimates. The choices are "GenLog", "GEV", "Kappa3", or "Gumbel; the generalised logistic, generalised extreme value, Kappa3,and Gumbel distributions, respectively. The default is "GenLog"
 #' @param UrbMax A maximum value for URBEXT2015 permitted in the pooling group. The default is 0.03.
 #' @param Include A site reference for any site you want to ensure is in the pooling group if it is not chosen automatically. For example, a site which has URBEXT2015 above UrbMax.
+#' @param Exclude A site reference for any site you want to exclude from the pooling group. Useful for testing a gauged site as if it is ungauged.
 #' @examples
 #' # Get some catchment descriptors
 #' cds_73005 <- GetCDs(73005)
@@ -28,14 +29,14 @@ globalVariables(c("ThamesPQ", "PeakFlowData", "UKOutline", "AMPF", "id", "URBEXT
 #' @return A list of length three. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). The third element is a dataframe with the distribution parameters.
 #' @author Anthony Hammond
 
-QuickResults <- function(CDs, no.Donors = 8, dist = "GenLog", Qmed = NULL, UrbMax = 0.03, Include = NULL) {
+QuickResults <- function(CDs, no.Donors = 8, dist = "GenLog", Qmed = NULL, UrbMax = 0.03, Include = NULL, Exclude = NULL) {
   if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
   CDsTest <- GetCDs(rownames(PeakFlowData)[1])
   if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
 
   QMEDEst <- QMED(CDs = CDs, no.Donors = no.Donors)
 if(is.null(Qmed)) {QMEDEst <- QMEDEst} else {QMEDEst <- Qmed}
-PoolCDs <- Pool(CDs = CDs, UrbMax = UrbMax, include = Include)
+PoolCDs <- Pool(CDs = CDs, UrbMax = UrbMax, include = Include, exclude = Exclude)
 Estimates <- PoolEst(PoolCDs, CDs = CDs, dist = dist, QMEDEstimate = QMEDEst, Uncertainty = FALSE)
 return(Estimates)
 }
@@ -113,7 +114,7 @@ Pool <- function(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, incl
     Indices <- match(exclude, rownames(PoolDataSDM))
     if(any(is.na(Indices))) {Indices <- Indices[!is.na(Indices)]}
     if(length(Indices) == 0) {
-      warning("The exclude index did not match any gauges that are suitable for pooling and have URBEXT2015 below UrbMax")
+      warning("The exclude id did not match any gauges that are suitable for pooling and have URBEXT2015 below UrbMax")
       PoolDataSDM <- PoolDataSDM}
     else {PoolDataSDM <- PoolDataSDM[-Indices,]}
   }
@@ -1310,7 +1311,7 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
     #if(CDs[grep("East", CDs[,1], ignore.case = TRUE),1] != "CEast") stop("These descriptors are derived from the NRFA web pages because the site is not suitable for pooling or QMED. The descriptors don't have easting and northing for the catchment centroid, they are for the gauge location. You have some options to make these CDs work for this function. Firstly, use the CDsXML function to get them from a downloaded NRFA peak flow data set (if they have peak flows but are not suitable for QMED/Pooling), or a FEH webservice export. Secondly, change the Easting and Northing descriptor names to CEast and CNorth, then replace the values with the centroid equivalent. Alternatively, you can input the necessary descriptors manually. Note also that the descriptors can differ a little between the NRFA website and the NRFA peak flow data set (particularly the catchment area)")
     if(class(CDs) != class(data.frame(c(1,2,3)))) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
     CDsTest <- GetCDs(rownames(PeakFlowData)[1])
-    if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function")
+    if(!identical(CDs[,1], CDsTest[,1])) stop("CDs must be a CDs dataframe object which can be derived using the GetCDs or CDsXML function. If you got the CDs using GetDataNRFA, the grid reference is based on the gauge location as opposed to the catchment centroid and the descriptors are called Easting and Northing rather than CEast and CNorth. You can change the grid references mannually, you will also need to change Easting and Northing to CEast and CNorth (or this error will happen again)")
   }
 
   uaf <- function(URBEXT, BFIHOST) {
@@ -1359,6 +1360,7 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
   }
 
   if(is.null(no.Donors) == FALSE) {
+    if(CDs[grep("East", CDs[,1]),1] == "Easting") warning("The easting and northing do not appear to be for the catchment centroid, this is necessary if donor adjustment is being undertaken")
     if(no.Donors < 1) stop("no.Donors should be NULL or equal to or above 1")
     if(no.Donors > 20) stop("no.Donors is rather high")
     no.Donors <- round(no.Donors)
@@ -1371,6 +1373,7 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
     IDs <- rownames(DonOptions)
   }
   if(is.null(DonorIDs) == FALSE) {
+    if(CDs[grep("East", CDs[,1]),1] == "Easting") warning("The easting and northing do not appear to be for the catchment centroid, this is necessary if donor adjustment is being undertaken")
     IDs <- DonorIDs
   }
   CDsList <- list()
@@ -1742,6 +1745,8 @@ DeTrend <- function(x) {
 CDsXML <- function(x) {
   xmlx <- xml2::read_xml(x)
   ListXML <- xml2::as_list(xmlx)
+  TheList <- ListXML$FEHCDROMExportedDescriptors
+  if(length(TheList) == 3) stop("this function cannot be used to read in point files. Use the DDFImport function to import point DDF curves")
   if(attributes(ListXML)$names == "FEHCDROMExportedDescriptors") {
     CDS <- ListXML$FEHCDROMExportedDescriptors$CatchmentDescriptors
   }
@@ -3647,9 +3652,6 @@ AMplot <- function(x, ylab = "Discharge (m3/s)", xlab = "Hydrological year", mai
 #' pool_28015 <- Pool(GetCDs(28015))
 #' DiagPlots(pool_28015, gauged = TRUE)
 #'
-#' # Form an ungauged pooling group and plot the diagnostics
-#' pool_28015 <- Pool(GetCDs(28015), exclude = 28015)
-#' DiagPlots(pool_28015)
 #'
 #' @return Eleven diagnostic plots for pooling groups
 #' @author Anthony Hammond

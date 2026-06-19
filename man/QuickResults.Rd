@@ -10,7 +10,8 @@ QuickResults(
   dist = "GenLog",
   Qmed = NULL,
   UrbMax = 0.03,
-  Include = NULL
+  Include = NULL,
+  Exclude = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ QuickResults(
 \item{UrbMax}{A maximum value for URBEXT2015 permitted in the pooling group. The default is 0.03.}
 
 \item{Include}{A site reference for any site you want to ensure is in the pooling group if it is not chosen automatically. For example, a site which has URBEXT2015 above UrbMax.}
+
+\item{Exclude}{A site reference for any site you want to exclude from the pooling group. Useful for testing a gauged site as if it is ungauged.}
 }
 \value{
 A list of length three. Element one is a data frame with columns; return period (RP), peak flow estimates (Q) and growth factor estimates (GF). The second element is the estimated Lcv and Lskew (linear coefficient of variation and skewness). The third element is a dataframe with the distribution parameters.

@@ -4,12 +4,12 @@
 \alias{QMED_FEH08}
 \title{QMED (median annual maximum flow) estimate from catchment descriptors using the FEH 2008 method.}
 \usage{
-QMED_FEH08(CDs = NULL, UrbAdj = FALSE, AREA, SAAR, FARL, BFIHOST, URBEXT)
+QMED_FEH08(CDs = NULL, UrbAdj = TRUE, AREA, SAAR, FARL, BFIHOST, URBEXT)
 }
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{UrbAdj}{logical argument with a default of FALSE. If TRUE, an urban adjustment is made to the estimate after the donor procedure.}
+\item{UrbAdj}{logical argument with a default of TRUE. If TRUE, an urban adjustment is made to the estimate.}
 
 \item{AREA}{catchment area in km2}
 
