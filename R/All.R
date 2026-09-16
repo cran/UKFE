@@ -136,6 +136,8 @@ Pool <- function(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, incl
     if(length(include) != 1) stop("The 'include' argument must have a length of 1")
     IncludeIndex <- match(include, rownames(PeakFlowData))
     if(is.na(IncludeIndex)) stop("The site ID used in the include argument is not in the PeakFlowDataSet")
+    MatchGroup <- match(include, rownames(Result))
+    if(is.na(MatchGroup) == FALSE) stop("The gauge you are attempting to include is already in the pooling group")
     RowAdd <- PeakFlowData[IncludeIndex,]
     SDMAdd <- SDM(CDs = CDs, PeakFlowData$AREA[IncludeIndex],
                   PeakFlowData$SAAR9120[IncludeIndex],
@@ -475,6 +477,7 @@ Kappa3GF <- function(lcv, lskew, RP) {
   GrRes <- gr(KRes)
   B <- (lcv * KRes) / ((GrRes[1] - GrRes[2]) + lcv * (GrRes[1] - (log(2.22)^KRes)))
   xT <- 1 + (B / KRes) * (log(2.22)^KRes - ((1 - ((RP - 1) / RP)^-0.4) / -0.4)^KRes)
+  xT[1] <- 1
   return(xT)
 }
 
@@ -3126,7 +3129,7 @@ EVPlot <- function(x, dist = "GenLog", scaled = TRUE, Title = "Extreme value plo
   } else {
     if(is.null(LineName) == TRUE) {
       if(scaled == FALSE) {legend("topleft", legend = c("Frequency curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)} else {legend("topleft", legend = c("Growth curve", "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
-    } else {legend("topleft", legend = c(LineName, "Observed", "95% Intervals"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
+    } else {legend("topleft", legend = c(LineName, "Observed", "95% Interval"), col = c("black", "blue", "black"), lty = c(1,0,3), pch = c(NA, 1, NA), bty = "n", lwd = c(2,NA,2), pt.lwd = 1.5, seg.len = 2, x.intersp = 0.8, y.intersp = 0.8, cex = 0.8)}
   }
   T.Plot.Lab <- c(2,5,10,20,50,100, 500)
   At <- log(T.Plot.Lab-1)
@@ -3724,13 +3727,13 @@ DiagPlots <- function(x, gauged = FALSE, UrbMax = 0.03) {
   plot(NRFAData$LSkew, NRFAData$Lcv, main = "", xlab = "LSkew", ylab = "Lcv", pch = 19, cex = 0.4)
   points(x$LSkew, x$Lcv, pch = 21, cex = 1.15, bg = "blue")
   if (gauged == TRUE) {
-    points(LSkew(AMAX$Flow), Lcv(AMAX$Flow), pch = 19, col = "red")
+    points(x$LSkew[1], x$Lcv[1], pch = 19, col = "red")
   }
 
   plot(NRFAData$LSkew, NRFAData$LKurt, main = "", xlab = "LSkew", ylab = "LKurtosis", pch = 19, cex = 0.4)
   points(x$LSkew, x$LKurt, pch = 21, cex = 1.15, bg = "blue")
   if (gauged == TRUE) {
-    points(LSkew(AMAX$Flow), LKurt(AMAX$Flow), pch = 19, col = "red")
+    points(x$LSkew[1], x$LKurt[1], pch = 19, col = "red")
   }
 
   plot(UKOutline$X_BNG / 1000, UKOutline$Y_BNG / 1000, pch = 19, cex = 0.25, xlab = "Easting (km)", ylab = "Northing (km)", xlim = c((25272 / 1000), (650000 / 1000)))
@@ -4220,7 +4223,7 @@ DDFImport <- function(x, ARF = TRUE, Plot = TRUE, DDFVersion = 22) {
     )
     abline(v = seq(0, 1000, by = 20), lty = 3)
     abline(h = seq(0, 1000, by = 20), lty = 3)
-    legend("topleft",
+    legend("bottomright",
            legend = c("2", "10", "56", "100", "180", "560"),
            col = hcl.colors(6, rev = TRUE), lty = c(1, 2, 3, 4, 5, 6), lwd = 2, cex = 0.9, y.intersp = 0.7,
            x.intersp = 0.7, title = "Return Period (yrs)"
@@ -5873,12 +5876,12 @@ GoFComparePool <- function(x) {
   if(! identical(colnames(x), colnames(PoolTest))  ) stop("x must be a Pooling group which can be derived using the Pool function.")
 
 
-  Standardise <- function(y) {
-    GetAM(rownames(x)[1])[, 2] / median(GetAM(rownames(x)[1])[, 2])
+  Standardise <- function(x,y) {
+    GetAM(rownames(x)[y])[, 2] / median(GetAM(rownames(x)[y])[, 2])
   }
   AMList <- list()
   for (i in 1:nrow(x)) {
-    AMList[[i]] <- Standardise(rownames(x)[i])
+    AMList[[i]] <- Standardise(x, y = i)
   }
   AMvec <- AMList[[1]]
   for (i in 2:length(AMList)) {
@@ -6013,6 +6016,7 @@ ERPlot <- function(x, dist = "GenLog", main = NULL, Pars = NULL, GF = NULL, ERTy
 #' The red line shows the average seasonality. The longer it is the more clustered in time the peaks are.
 #' @param x A dataframe with Date or POSIXct in the first folumn and numeric in the second.
 #' @param Lines Logic with a default of FALSE. If TRUE, lines are plotted instead of dots.
+#' @param Main Title for the plot. The default is "Seasonality".
 #' @examples
 #' # Get an AMAX sample and plot the seasonality
 #' am_27083 <- GetAM(27083)
@@ -6024,7 +6028,7 @@ ERPlot <- function(x, dist = "GenLog", main = NULL, Pars = NULL, GF = NULL, ERTy
 #' @return A seasonality plot
 #' @author Anthony Hammond
 
-Seasonality <- function(x, Lines = FALSE) {
+Seasonality <- function(x, Lines = FALSE, Main = "Seasonality") {
   #if(class(x) != class(data.frame(c(1,2,3)))) stop("x must be a data frame with Date or POSIXct in the first column and numeric in the second.")
   #if(class(x[,1]) != as.Date("2025-01-01") & class(x[,1]) != as.POSIXct("2025-01-01 09:00:00")) stop("x must be a data frame with Date or POSIXct in the first column and numeric in the second.")
   x <- x[, 1:2]
@@ -6100,9 +6104,10 @@ Seasonality <- function(x, Lines = FALSE) {
   }
 
   xSeas <- SeasonFunc(xdf = x)
-  CirclePlotFunc(xSeas, main = "Seasonality", Lines = Lines)
+  CirclePlotFunc(xSeas, main = Main, Lines = Lines)
 
 }
+
 
 
 
@@ -6113,12 +6118,12 @@ Seasonality <- function(x, Lines = FALSE) {
 #'
 #' This function applies the case where only the number of exceedances are known. Not the case where the discharge of the historic floods is known.
 #' This latter functionality will be added at a later date.
-#' Note that if Uncertainty is set to TRUE, a range of return periods and associated estimates are returned along with uncertainty - quantified as the FSE. In some cases the uncertainty can increase. This happens when the additional information (number of exceedances and time period) does not outweigh an increase to the scale of skew parameter.
+#' Note that if Uncertainty is set to TRUE, a range of return periods and associated estimates are returned along with uncertainty - quantified as the FSE. In some cases the uncertainty can increase. This happens when the additional information (number of exceedances and time period) does not outweigh an increase to the scale and/or skew parameter.
 #' The uncertainty calculated is a function of sample size and variance.
 #' @param x The observed annual maximum sample. A single numeric vector
 #' @param k The number of exceedances of the threshold
 #' @param h the time period (years) over which the exceedances occurred.
-#' @param threshold The perception threshold. This is the threshold we think the k events exceeded.
+#' @param threshold The perception threshold. This is the threshold (discharge) we think the k events exceeded.
 #' @param dist The choice of statistical distribution. Either "GenLog", or "GEV".
 #' @param Uncertainty Logical argument with a default of FALSE. If TRUE, a data frame of results and uncertainty is also returned.
 #' @examples

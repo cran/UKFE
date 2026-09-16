@@ -34,15 +34,15 @@ GetCDs(39001)
 CDs.39001 <- GetCDs(39001)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  # Extract catchment descriptors from an xml file and store in an object called
-#  # 'CDs.MySite'
-#  CDs.MySite <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")
-#  
-#  # As above but retaining backslashes in the file path
-#  CDs.MySite <- CDsXML(r"{C:\Data\FEH_Catchment_384200_458200.xml}")
+# # Extract catchment descriptors from an xml file and store in an object called
+# # 'CDs.MySite'
+# CDs.MySite <- CDsXML("C:/Data/FEH_Catchment_384200_458200.xml")
+# 
+# # As above but retaining backslashes in the file path
+# CDs.MySite <- CDsXML(r"{C:\Data\FEH_Catchment_384200_458200.xml}")
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  # Extract catchment descriptors from an xml file and store in an object called
-#  # 'CDs.27003'
-#  CDs.27003 <- CDsXML("C:\Data\NRFAPeakFlow_v13-0-2\suitable-for-neither\027003.xml")
+# # Extract catchment descriptors from an xml file and store in an object called
+# # 'CDs.27003'
+# CDs.27003 <- CDsXML("C:\Data\NRFAPeakFlow_v13-0-2\suitable-for-neither\027003.xml")
 

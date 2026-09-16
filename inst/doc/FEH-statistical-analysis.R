@@ -72,7 +72,7 @@ H2(Pool.55002)
 Zdists(Pool.55002)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  MyData <- scan()
+# MyData <- scan()
 
 ## -----------------------------------------------------------------------------
 # Update the pooling group to use user-supplied L-CV and L-skew values for site 55002
@@ -115,7 +115,7 @@ Results55002
 EVPool(PoolUG.55002)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  GenLogAM(MyAMAX, RP = 75)
+# GenLogAM(MyAMAX, RP = 75)
 
 ## ----fig.alt="Bar chart of annual maximum river flow. The x-axis shows years, and the y-axis shows peak flow in cubic meters per second. Each bar represents the highest flow in that year. The flows vary from year to year, with several notably high peaks in recent years."----
 # Extract the AMAX data for NRFA site 55002
@@ -204,9 +204,9 @@ Pool.55002 <- Pool(CDs = CDs.55002, exclude = c(8010, 76017))
 Uncertainty(Pool.55002, Gauged = TRUE)
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  # Save the peak flow estimates to an object called 'Results.55002'
-#  Results.55002 <- PoolEst(PoolUG.55002, QMED = CDsQmed.55002)[[1]]
-#  
-#  # Write to csv
-#  write.csv(Results.55002, "my/file/path/Results55002.csv", row.names = FALSE)
+# # Save the peak flow estimates to an object called 'Results.55002'
+# Results.55002 <- PoolEst(PoolUG.55002, QMED = CDsQmed.55002)[[1]]
+# 
+# # Write to csv
+# write.csv(Results.55002, "my/file/path/Results55002.csv", row.names = FALSE)
 

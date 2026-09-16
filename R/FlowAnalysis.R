@@ -320,16 +320,17 @@ DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plo
 #'
 #' A function to estimate lower flow quantiles in ungauged catchments.
 #'
-#' This function provides estimates of the mean flow, Q95, Q70, Q50, Q10, and Q5.
-#' The function works by finding the 30 catchments in the NRFA data set with the most similar SAAR9120 to the subject site.
-#' The observed flows for those catchments are scaled by the catchment area. Then a weighted average is taken and multiplied by the subject site catchment area for the final estimate.
-#' The weighting is done by Euclidean distance based on SAAR9120 and BFIHOST19scaled. These are weighted based on the "Spearman's Rho" correlation coefficient of these descriptors to the scaled mean flows.
+#' This function provides estimates of the mean flow, Q95, Q70, Q50, Q10, and Q5. The function works by calculating scaled flows for the catchment of interest from the catchments in the NRFA data set. The scaled flow is calculated as Qsi = Qdi * (Area_s / Area_di) * (SAAR_s / SAAR_di), where the subscripts s and d denote the subject site and the donor site, respectively.
+#' A Euclidean distance measure is then used to find the most similar sites using catchment area, SAAR, and BFIHOST. The distance measure is weighted by how correlated each variable is to the scaling factor: Scale_f = Q_d / (Area_d * SAAR_d), and the variables are normalised by the standard deviation (log variables are used).
+#' A weighted average of the scaled flow is taken from the most similar N sites, and the weighting is based on the reciprocal of the similarity.
+#' The function was subjected to a leave one out cross validation (LOOCV). The results across the estimated flows show no systematic biases and the errors show no correlation with the descriptors used in the estimation process. The factorial standard error (FSE) was calculated from the LOOCV process for each of the six estimated flows and these are used to calculate 90 percent confidence intervals for the estimates. The FSEs are 1.25, 1.74, 1.44, 1.34, 1.29, and 1.27, for the mean flow, Q95, Q70, Q50, Q10, Q5, respectively.
 #' @param CDs Catchment descriptors derived from the GetCDs or CDsXML function.
 #' @param AREA Catchment area (km2) - for when CDs is not applied
 #' @param SAAR Average annual rainfall (mm) - for when CDs is not applied
 #' @param BFIHOST An estimate of baseflow index - for when CDs is not applied
 #' @param Exclude A site reference. This is to exclude sites that you do not want used in the estimate. For example, if you're seeing how the function performs on a gauged site, you may want to exclude it from the analysis.
 #' @param FARLRange A vector of length 2. For example c(0.9,1). This determines a FARL range for the catchments you wish to be included in the analysis. Primarily this is to exclude sites which have significant reservoir or lake influence when the site of interest does not. If it is NULL (default) all NRFA sites are included.
+#' @param N Number of donor gauges to use for the assessment. The default is 10.
 #' @examples
 #' # Get some catchment descriptors, then estimate the flows
 #' \dontrun{
@@ -340,10 +341,10 @@ DesHydro <- function(x, Threshold = 0.975, EventSep, N = 10, Exclude = NULL, Plo
 #' \dontrun{
 #' LowFlows(CDs_27083, Exclude = 27083)
 #' }
-#' @return A list. The first element of which is a data.frame with one column of flow estimates. The row names denote the name of each estimate. The second element is the dataframe of catchments used in the analysis, with the relevant descriptors and weighting.
+#' @return A list. The first element of which is a data.frame with three columns. The first is the flow estimates, the second and third are the 90% interval for the estimate. The row names denote the name of each estimate. The second element is the dataframe of catchments used in the analysis, with the relevant descriptors and weighting.
 #' @author Anthony Hammond
 
-LowFlows <- function(CDs = NULL, AREA = NULL, SAAR = NULL, BFIHOST = NULL, Exclude = NULL, FARLRange = NULL) {
+LowFlows <- function(CDs = NULL, AREA = NULL, SAAR = NULL, BFIHOST = NULL, Exclude = NULL, FARLRange = NULL, N = 10) {
 
   if(is.null(CDs) == FALSE) {
 
@@ -380,38 +381,50 @@ LowFlows <- function(CDs = NULL, AREA = NULL, SAAR = NULL, BFIHOST = NULL, Exclu
   QNames <- c("gdf.mean.flow", "gdf.q95.flow",  "gdf.q70.flow",  "gdf.q50.flow", "gdf.q10.flow",  "gdf.q05.flow")
   ColnamesNRFA <- colnames(NRFAAllData)
   MatchCols <- match(QNames, ColnamesNRFA)
-  QScale <- NRFAAllData[,MatchCols] / NRFAAllData$catchment.area
-  xData <- data.frame(SAAR = NRFAAllData$saar.1991.2020,
+  QScale <- NRFAAllData[,MatchCols] *  (Area / NRFAAllData$catchment.area) * (SAAR / NRFAAllData$saar.1991.2020)
+  xData <- data.frame(AREA = NRFAAllData$ihdtm.catchment.area, SAAR = NRFAAllData$saar.1991.2020,
                       BFIHOST = NRFAAllData$bfihost19.scaled, QScale, id = NRFAAllData$id)
   xData <- xData[complete.cases(xData),]
-  EuclidDist <- function(x, y) {
-    SDx <- sd(xData$SAAR)
-    SDy <- sd(xData$BFIHOST)
-    Res <- sqrt( 0.85*((x[1]-x[2])/SDx)^2 + 0.15*((y[1]-y[2])/SDy)^2  )
+  EuclidDist <- function(x, y, z) {
+    SDx <- sd(log(xData$SAAR))
+    SDy <- sd(log(xData$BFIHOST))
+    SDz <- sd(log(xData$AREA))
+    Res <- sqrt( 0.618*((x[1]-x[2])/SDx)^2 + 0.369*((y[1]-y[2])/SDy)^2  +  0.013*((z[1]-z[2])/SDz)^2 )
     return(Res)
   }
+  DiffArea <- abs(Area - xData$AREA)
   DiffSAAR <- abs(SAAR - xData$SAAR)
-  xData <- xData[order(DiffSAAR),]
-  xData <- xData[1:30,]
-  Dists <- NULL
-  for(i in 1:nrow(xData)) {Dists[i] <- EuclidDist(c(SAAR, xData$SAAR[i]), c(BFIHOST, xData$BFIHOST[i]))}
-  if(any(Dists == 0)) {
-    Dists <- Dists+0.000001
+  DiffBFI <- abs(BFIHOST - xData$BFIHOST)
+  DiffCDs <- data.frame(DiffArea, DiffSAAR, DiffBFI)
+  Mins <- apply(DiffCDs[,2:3], 1, sum)
+  Min <- min(Mins)
+
+  if(any(Min == 0)) {
     warning("One of the NRFA sites has exactly the same SAAR and BFIHOST as the user input. Is the site already gauged? If you are testing a gauged site as if ungauged, use the Exclude argument")
   }
-  DistsRecip <- 1/Dists
+
+  Dists <- NULL
+  for(i in 1:nrow(xData)) {Dists[i] <- EuclidDist(c( log(SAAR), log(xData$SAAR[i])), c( log(BFIHOST), log(xData$BFIHOST[i])), c( log(Area), log(xData$AREA[i])))}
+  xData <- data.frame(xData, Dists)
+  xData <- xData[order(xData$Dists),]
+
+  xData <- xData[1:N,]
+  DistsRecip <- 1/xData$Dists
+  if(DistsRecip[1] == Inf) {DistsRecip[1] <- 100000}
   Weights <- DistsRecip / sum(DistsRecip)
-  QScaleWeighted <- xData[,3:8] * Weights
-  QScaleArea <- QScaleWeighted * Area
-  Result <- apply(QScaleArea, 2, sum)
+  QScaleArea <- xData[,4:9] * Weights
+
+  FSEs <- c(1.25, 1.74, 1.44, 1.34, 1.29, 1.27)
+  Result <- as.numeric(apply(QScaleArea, 2, sum))
+  Lower <- signif(Result / (FSEs^1.64), 3)
+  Upper <- signif(Result * (FSEs^1.64), 3)
   Result <- data.frame(Q = signif(Result, 3), row.names = c("mean", "Q95", "Q70", "Q50", "Q10", "Q05"))
+  Result <- data.frame(Result, Lower, Upper)
   QNames <- c("id", "name", "saar.1991.2020", "bfihost19.scaled",  "catchment.area", "farl.2015")
   Sites <- NRFAAllData[match(xData$id, NRFAAllData$id),QNames]
   Sites <- data.frame(Sites, Weight = Weights)
   Sites <- Sites[order(Sites$Weight, decreasing = TRUE), ]
   rownames(Sites) <- seq(1, nrow(Sites))
-
-
   ResultList <- list(Result, Sites)
   return(ResultList)
 }

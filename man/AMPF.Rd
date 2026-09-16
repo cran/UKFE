@@ -5,7 +5,7 @@
 \alias{AMPF}
 \title{National River Flow Archive (NRFA) annual maximum peak flow data for sites suitable for QMED only, and those for pooling.}
 \format{
-A data frame with 43064 rows and 3 columns
+A data frame with 44474 rows and 3 columns
 \describe{
   \item{Date}{Date}
   \item{Flow}{Annual maximum peak flow, m3/s}
@@ -19,6 +19,6 @@ A data frame with 43064 rows and 3 columns
 AMPF
 }
 \description{
-A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version (14)
+A data.frame with three columns; Date, Flow, id. NRFA Peak Flow Dataset - Version (15)
 }
 \keyword{datasets}

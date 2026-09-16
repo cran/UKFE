@@ -228,6 +228,12 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
       Distance[i] <- signif(LatLonDist(Lat, Lon, RainStations$lat[i], RainStations$long[i]) / 1000, 4)
     }
     Type <- RainStations$observedProperty
+    L0 <- which(Type == "")
+    if(length(L0) > 0) {
+      Type <- Type[-L0]
+      RainStations <- RainStations[-L0,]
+      Distance <- Distance[-L0]
+    }
     SplitText <- strsplit(Type, "/")
     Type <- NULL
     for (i in 1:length(SplitText)) {
@@ -332,6 +338,7 @@ GetDataEA_Rain <- function(Lat = 54, Lon = -2, Range = 10, WISKI_ID = NULL, Peri
 
 
 
+
 # GetDataMetOffice ---------------------------------------------------
 
 #' Get regional Met Office average temperature or rainfall series (monthly, seasonal, and annual).
@@ -410,6 +417,7 @@ GetDataMetOffice <- function(Variable, Region) {
 
 GetDataNRFA <- function(ID = NULL, Type = "Q") {
   Types <- c("Q", "P", "PQ", "Gaugings", "AMAX", "POT", "CDs", "Catalogue")
+  if(is.character(Type) == FALSE) stop("Type must be a chaaracter string. i.e. it should have inverted commas")
   MatchType <- match(Type, Types)
   if (is.na(MatchType)) stop("Type must be one of Q, P, PQ, Gaugings, AMAX, POT, CDs ,or Catalogue")
 
@@ -530,7 +538,12 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
     AllCat <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
     #AllCat <- GetDataNRFA(Type = "Catalogue")
     CDsCat <- AllCat[which(AllCat$id == ID), ]
-    CDIndex <- c(97, 93, 94, 95, 99, 98, 83, 92, 86, 85, 84, 103, 91, 82, 90, 88, 89, 64, 63, 62, 87, 110, 107, 104, 100, 5, 6)
+    CDNames <- c("ihdtm.catchment.area", "altbar", "aspbar", "aspvar", "bfihost19.scaled", "bfihost19", "bfihost",
+                 "dplbar", "dpsbar", "farl.2015", "farl", "mean.flood.plain.extent", "ldp", "propwet", "rmed.1h",
+                 "rmed.1d", "rmed.2d", "saar.1991.2020", "saar.1961.1990", "saar.1941.1970", "sprhost", "urbext.2015",
+                 "urbext.2000", "urbext.1990", "draindens", "easting", "northing")
+    #CDIndex <- c(97, 93, 94, 95, 99, 98, 83, 92, 86, 85, 84, 103, 91, 82, 90, 88, 89, 64, 63, 62, 87, 110, 107, 104, 100, 5, 6)
+    CDIndex <- match(CDNames, colnames(CDsCat))
     CDs39001 <- GetCDs(39001)
     Value <- as.numeric(CDsCat[1,CDIndex])
     Result <- data.frame(Descriptor = CDs39001$Descriptor,
@@ -559,11 +572,11 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
   }
   if (Type == "Catalogue") {
     Result <- read.csv("https://nrfaapps.ceh.ac.uk/nrfa/ws/station-info?station=*&format=csv&fields=all")
-  if(is.null(ID) == FALSE) {
-    Result <- Result[Result$id == ID,]
-    row.names(Result) <- 1
+    if(is.null(ID) == FALSE) {
+      Result <- Result[Result$id == ID,]
+      row.names(Result) <- 1
     }
-    }
+  }
   if (Type == "AMAX") {
     Result <- AMAXfunc(ID)
   }
@@ -576,6 +589,7 @@ GetDataNRFA <- function(ID = NULL, Type = "Q") {
 
   return(Result)
 }
+
 
 
 # GetDataEA_QH ---------------------------------------------------

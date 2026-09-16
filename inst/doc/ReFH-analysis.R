@@ -43,12 +43,12 @@ plot(ScaledFlow * Q100.55002, type = "l", lwd = 2, ylab = "Discharge (m3/s)", xl
 
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  # Save the ReFH design hydrograph to an object called 'DesignHydro55002'.
-#  DesignHydro55002 <- ScaledFlow * Q100.55002
-#  
-#  # Write to csv
-#  write.csv(DesignHydro55002, "my/file/path/DesHydro55002.csv", row.names = FALSE)
-#  
+# # Save the ReFH design hydrograph to an object called 'DesignHydro55002'.
+# DesignHydro55002 <- ScaledFlow * Q100.55002
+# 
+# # Write to csv
+# write.csv(DesignHydro55002, "my/file/path/DesHydro55002.csv", row.names = FALSE)
+# 
 
 ## ----fig.alt="ReFH output with settings adjusted to result in the FSR/FEH rainfall runoff model. The baseflow is constant and the shape is less elongated than the default ReFH output which uses a kinked triangle unit hydrograph. The rainfall profile is randomised but centrally loaded."----
 ReFH.FSR <- ReFH(CDs.55002, RainProfile = "Centre", UHShape = "FSR", Loss = 0.3, BR = 0)

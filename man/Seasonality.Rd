@@ -4,12 +4,14 @@
 \alias{Seasonality}
 \title{Seasonality plot}
 \usage{
-Seasonality(x, Lines = FALSE)
+Seasonality(x, Lines = FALSE, Main = "Seasonality")
 }
 \arguments{
 \item{x}{A dataframe with Date or POSIXct in the first folumn and numeric in the second.}
 
 \item{Lines}{Logic with a default of FALSE. If TRUE, lines are plotted instead of dots.}
+
+\item{Main}{Title for the plot. The default is "Seasonality".}
 }
 \value{
 A seasonality plot

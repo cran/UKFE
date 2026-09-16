@@ -13,7 +13,7 @@ HistoricMLE(x, k = NULL, h, threshold, dist = "GenLog", Uncertainty = FALSE)
 
 \item{h}{the time period (years) over which the exceedances occurred.}
 
-\item{threshold}{The perception threshold. This is the threshold we think the k events exceeded.}
+\item{threshold}{The perception threshold. This is the threshold (discharge) we think the k events exceeded.}
 
 \item{dist}{The choice of statistical distribution. Either "GenLog", or "GEV".}
 
@@ -28,7 +28,7 @@ A function to estimate parameters from an annual maximum sample and a known numb
 \details{
 This function applies the case where only the number of exceedances are known. Not the case where the discharge of the historic floods is known.
 This latter functionality will be added at a later date.
-Note that if Uncertainty is set to TRUE, a range of return periods and associated estimates are returned along with uncertainty - quantified as the FSE. In some cases the uncertainty can increase. This happens when the additional information (number of exceedances and time period) does not outweigh an increase to the scale of skew parameter.
+Note that if Uncertainty is set to TRUE, a range of return periods and associated estimates are returned along with uncertainty - quantified as the FSE. In some cases the uncertainty can increase. This happens when the additional information (number of exceedances and time period) does not outweigh an increase to the scale and/or skew parameter.
 The uncertainty calculated is a function of sample size and variance.
 }
 \examples{

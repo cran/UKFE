@@ -13,7 +13,7 @@ ReFH(
   PlotTitle = NULL,
   RPa = NULL,
   alpha = FALSE,
-  WaterBalance = FALSE,
+  WaterBalance = TRUE,
   Season = NULL,
   AREA = NULL,
   TP = NULL,
@@ -46,7 +46,7 @@ ReFH(
 
 \item{alpha}{a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RPa. If FALSE, no alpha adjustment is made}
 
-\item{WaterBalance}{A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.}
+\item{WaterBalance}{A logical argument with a default of TRUE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.}
 
 \item{Season}{a choice of "summer" or "winter". The default is "summer" in urban catchments (URBEXT2015 > 0.03) and "winter" in rural catchments}
 

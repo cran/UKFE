@@ -15,7 +15,7 @@
 #' @param PlotTitle a character string. A user defined title for the ReFH plot
 #' @param RPa return period for alpha adjustment. This is only for the purposes of the alpha adjustment, it doesn't change the rainfall input
 #' @param alpha a logical argument with default TRUE. If TRUE the alpha adjustment is applied based on RPa. If FALSE, no alpha adjustment is made
-#' @param WaterBalance A logical argument with a default of FALSE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.
+#' @param WaterBalance A logical argument with a default of TRUE. If it is TRUE, the water balance is checked, if it is not violated the BR parameter is as per the default estimate. Otherwise BR is set as a function of the proportion of net-rain to rain (NetProp) as BR = (1/NetProp)-1.
 #' @param Season a choice of "summer" or "winter". The default is "summer" in urban catchments (URBEXT2015 > 0.03) and "winter" in rural catchments
 #' @param AREA numeric. Catchment area in km2.
 #' @param TP numeric. Time to peak parameter (hours)
@@ -41,7 +41,7 @@
 #' @author Anthony Hammond
 
 
-ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, RainProfile = "FSR", PlotTitle = NULL, RPa = NULL, alpha = FALSE, WaterBalance = FALSE, Season = NULL, AREA = NULL, TP = NULL, BR = NULL, BL = NULL, Cmax = NULL, Cini = NULL, BFini = NULL, Rain = NULL, UHShape = "KT", UrbanLoss = FALSE, Loss = NULL, LossCini = NULL) {
+ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, RainProfile = "FSR", PlotTitle = NULL, RPa = NULL, alpha = FALSE, WaterBalance = TRUE, Season = NULL, AREA = NULL, TP = NULL, BR = NULL, BL = NULL, Cmax = NULL, Cini = NULL, BFini = NULL, Rain = NULL, UHShape = "KT", UrbanLoss = FALSE, Loss = NULL, LossCini = NULL) {
   if (alpha == FALSE & is.null(RPa) == FALSE) {
     print("Warning: You've chosen an RPa value and have alpha = FALSE. The RPa argument, in this case, does nothing")
   }
@@ -106,7 +106,7 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
         RainVec <- RainVec/sum(RainVec)
       }
       RainDF <- data.frame(Time_hrs = cumsum(rep(Timestep, Steps)),P = RainVec)
-      if(max(cumsum(rep(Timestep, Steps))) != d) warning("Due to the choice of timestep, duration, and the need for a profile with an odd number of steps, the final duration differs from the user input by a timestep. If you leave timestep as null, a timestep will be automatically chosen to fit the duration.")
+      #if(max(cumsum(rep(Timestep, Steps))) != d) warning("Due to the choice of timestep, duration, and the need for a profile with an odd number of steps, the final duration differs from the user input by a timestep. If you leave timestep as null, a timestep will be automatically chosen to fit the duration.")
       return(RainDF)
     }
     P <- PProfile(d = Duration, season = season, timestep = timestep, Randomise = Randomise, Loading = Loading)
@@ -631,6 +631,7 @@ ReFH <- function(CDs = NULL, Depth = NULL, Duration = NULL, Timestep = NULL, Rai
   Pars <- data.frame(Pars, Timestep)
   DurationFinal <- signif(length(EffRain) * Timestep, 3)
   Pars <- data.frame(Pars, DurationFinal, PeakFlow = max(Results$TotalFlow))
+  if(Pars$DurationFinal != Pars$Duration) warning("Due to the choice of timestep, duration, and the need for a profile with an odd number of steps, the final duration differs from the user input by a timestep. If you leave timestep as null, a timestep will be automatically chosen to fit the duration.")
   Time <- seq(0, length.out = nrow(Results), by = Timestep)
   Results <- data.frame(Time_hrs = Time, Results)
   Results <- list(Pars, Results)
