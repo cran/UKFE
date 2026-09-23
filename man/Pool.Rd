@@ -17,7 +17,7 @@ Pool(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, include = NULL)
 
 \item{exclude}{sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric). If this is used the next site with the lowest SDM is included such that the total sample of AMAX is at least N.}
 
-\item{include}{sites to include that otherwise would not be included by default. For example if it is a subject site that has URBEXT2015 above UrbMax. Or one that has not been selected automatically using the similarity distance measure.}
+\item{include}{sites to include that otherwise would not be included by default. For example if it is a subject site that has URBEXT2015 above UrbMax. Or one that has not been selected automatically using the similarity distance measure. Note that one or more sites will be removed to include the user suggested site unless N is increased.}
 }
 \value{
 A data.frame of the pooling group with site reference row names and 24 columns, each providing catchment & gauge details for the sites in the pooling group.

@@ -55,7 +55,7 @@ return(Estimates)
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
 #' @param N minimum Number of total gauged record years for the pooling group
 #' @param exclude sites to exclude from the pooling group. Either a single site reference or a vector of site references (numeric). If this is used the next site with the lowest SDM is included such that the total sample of AMAX is at least N.
-#' @param include sites to include that otherwise would not be included by default. For example if it is a subject site that has URBEXT2015 above UrbMax. Or one that has not been selected automatically using the similarity distance measure.
+#' @param include sites to include that otherwise would not be included by default. For example if it is a subject site that has URBEXT2015 above UrbMax. Or one that has not been selected automatically using the similarity distance measure. Note that one or more sites will be removed to include the user suggested site unless N is increased.
 #' @param UrbMax Maximum URBEXT2015 level with a default of 0.03. Any catchment with URBEXT2015 above this level will be excluded from the pooling group
 #' @param DeUrb logical argument with a default of TRUE. If TRUE, the LCVs of all sites in the pooling group are "De-Urbanised".
 #' @examples
@@ -146,6 +146,15 @@ Pool <- function(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, incl
                   PeakFlowData$BFIHOST19scaled[IncludeIndex])
     RowAdd <- data.frame(RowAdd, SDM = signif(SDMAdd, 4))
     Result <- rbind(Result, RowAdd)
+
+    NCumSum <- cumsum(Result$N)
+    IDinclude <- which(rownames(Result) == include)
+    RowNEvents <- NCumSum + Result$N[IDinclude]
+    RowNEvents <- min(which(RowNEvents >= N)) +1
+    NrowRM <- nrow(Result)-1
+    if(RowNEvents == NrowRM) {Result <- Result[-RowNEvents,]} else {
+      Result <- Result[-seq(RowNEvents,NrowRM),]
+    }
     if(length(unique(rownames(Result)))  != length(rownames(Result))) {
       Result <- Result[-nrow(Result),]
     }
@@ -182,6 +191,8 @@ Pool <- function(CDs, N = 800, UrbMax = 0.03, DeUrb = TRUE, exclude = NULL, incl
   }
   MatchCol <- match(ColNamesKeep, colnames(Result))
   Result <- Result[,MatchCol]
+  #NTest <- sum(PoolTest$N[1:(nrow(Result)-1)])
+  #NCumSum <- cumsum(Result$N)
   return(Result)
 }
 
@@ -1275,7 +1286,7 @@ SimData <- function(n, pars = NULL, dist = "GenLog", GF = NULL) {
 #'
 #' To derive an appropriate estimate when the donor catchment is urban ensure that DonUrbAdj is TRUE.
 #' @param CDs catchment descriptors derived from either GetCDs or CDsXML
-#' @param DonorIDs This is one or more gauge reference numbers for the gauges you want te be applied as donors. If more than one donor the argiument needs to be a vector of IDs, such as c(71011, 71023, 69082).
+#' @param DonorIDs This is one or more gauge reference numbers for the gauges you want te be applied as donors. If more than one donor the argiument needs to be a vector of IDs, such as c(71011, 71023, 69082). To find nearby donors you can use the DonAdj function.
 #' @param no.Donors This argument is for an automated approach for the number of donors you wish to apply. The closest donors to the subject site (by catchment centroid) will be chosen.
 #' @param UrbAdj logical argument with a default of TRUE If TRUE, an urban adjustment is made to the estimate after the donor procedure.
 #' @param UrbanExpansion logical argument with a default of TRUE. If TRUE an urban expansion factor is applied to the URBEXT value for the site of interest - using the current year.
@@ -1370,10 +1381,14 @@ QMED <- function(CDs = NULL, DonorIDs = NULL, no.Donors = NULL, alpha = TRUE, Ur
     if(is.null(Exclude) == FALSE) {
       DonOptions <- DonAdj(CDs = CDs, N = no.Donors+length(Exclude), UrbMax = UrbMax)
       MatchID <- match(Exclude, rownames(DonOptions))
-      if(is.na(MatchID) == FALSE) {DonOptions <- DonOptions[-MatchID]}
-    }
-    DonOptions <- DonAdj(CDs = CDs, N = no.Donors, UrbMax = UrbMax)
-    IDs <- rownames(DonOptions)
+      if(length(MatchID) > 1) {DonOptions <- DonOptions[-MatchID, ]} else {
+        if(is.na(MatchID) == FALSE) {DonOptions <- DonOptions[-MatchID, ]}
+      }
+
+      IDs <- rownames(DonOptions)
+    } else {
+      DonOptions <- DonAdj(CDs = CDs, N = no.Donors, UrbMax = UrbMax)
+      IDs <- rownames(DonOptions)}
   }
   if(is.null(DonorIDs) == FALSE) {
     if(CDs[grep("East", CDs[,1]),1] == "Easting") warning("The easting and northing do not appear to be for the catchment centroid, this is necessary if donor adjustment is being undertaken")

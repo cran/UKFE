@@ -4,7 +4,7 @@ The primary purpose of the UKFE R package is to implement the regional flood fre
 
 The UKFE package was initially developed by Anthony Hammond in 2020, and he has been updating it regularly since then with additional functionality and in response to new published methods and changes to best practice. 
 
-In 2025, the Environment Agency commissioned JBA Consulting to undertake testing of the package, to write this documentation and training material and to assess future needs. Changes to the package for v1.0.0 were a result of this testing and funded by the Environment Agency. The package has been updated since to account for changes to the FEH method and for general improvements and bug fixes. The GitHub webpages including vignette guides, function reference, and a change log, can be found here: <https://agqhammond.github.io/UKFE/>. At the time of writing, the training material is out of date. 
+In 2025, the Environment Agency commissioned JBA Consulting to undertake testing of the package, to write this documentation and training material and to assess future needs. Changes to the package for v1.0.0 were a result of this testing and funded by the Environment Agency. The package has been updated since to account for changes to the FEH method and for general improvements and bug fixes. The GitHub webpages, including vignette guides, function reference, and a change log, can be found here: <https://agqhammond.github.io/UKFE/>. There are also some interactive training materials developed as part of the Environment Agency project. However, at the time of writing, they are out of date (based on the FEH08 methods) and will be amended in due course.
 
 # Contents
 

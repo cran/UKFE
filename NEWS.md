@@ -1,9 +1,38 @@
+# UKFE 2.15.1
+
+## Major changes
+* Updated the PeakFlowData and AMPF dataframes to incorporate NRFA Peak flows version 15.
+
+## Bug fixes.
+* Fixed: When using no.Donors argument with the QMED function, the intention is that the user can exclude gauges from the automatic gauges selected. However, it was not working.
+* Fixed: When using the "include" argument with the Pool function, the extra gauge adds to the total sample size, making it larger than the user setting. This was fixed by removing the least similar gauges until the sample size is correct.
+
+
+# UKFE 2.15.0
+
+## Major changes
+* Added quantified uncertainty to the LowFlows estimates and improved the scaling method.
+
+## Minor changes
+
+* Added a "main" title option in the Seasonality plot.
+* Added an error catch to GetDataNRFA. It now has a warning that says 'Type' must be a character string
+* For the ReFH() function the waterbalance option is now TRUE by default.
+* For the DDFImport - the legend in the plot is now on the bottom right.
+
+## Bug Fixes
+
+* Fixed: When selecting Kappa3 in the PoolEst function, the results were not to the same significant figures as other distributions.
+* Fixed: Due to an odd data response from the API, the GetDataEA_Rain function failed when selecting gauges at latitude 1.39 and just above.
+* Fixed: The CDs option within the GetDataNRFA() was returning odd values. This was caused by column selecting within the function and a change of columns in the underlying data from the API. Now using column selection based on headers.
+* Fixed: The Pool() function 'include' argument led to two of the same gauge being if the gauge is already included.
+
 
 # UKFE 2.0.2
 
 ## Minor changes
 
-* QuickResults and Pool now have an "Exclude" argument so that particular sites can be specifically excluded from the pooling group. Particularly useful if "pretend un-gauged" estimate is wanted from QuickResults.  
+* QuickResults now has an "Exclude" argument so that particular sites can be specifically excluded from the pooling group. Particularly useful if "pretend un-gauged" estimate is wanted from QuickResults.  
 * Some clearer error messaging has been added to the QMED function in regard to the source of the CDs object being applied.
 * Added an error message in the CDsXML function for the case of a user trying to use it with a point CDs file exported from the FEH Webservice. 
 

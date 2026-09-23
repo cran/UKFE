@@ -24,7 +24,7 @@ QMED(
 \arguments{
 \item{CDs}{catchment descriptors derived from either GetCDs or CDsXML}
 
-\item{DonorIDs}{This is one or more gauge reference numbers for the gauges you want te be applied as donors. If more than one donor the argiument needs to be a vector of IDs, such as c(71011, 71023, 69082).}
+\item{DonorIDs}{This is one or more gauge reference numbers for the gauges you want te be applied as donors. If more than one donor the argiument needs to be a vector of IDs, such as c(71011, 71023, 69082). To find nearby donors you can use the DonAdj function.}
 
 \item{no.Donors}{This argument is for an automated approach for the number of donors you wish to apply. The closest donors to the subject site (by catchment centroid) will be chosen.}
 
